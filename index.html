@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#18211d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Pocket Mint">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Pocket Mint — Phase 0</title>
+</head>
+<body>
+  <header class="topbar">
+    <div><div class="eyebrow">PHASE 0 · V0.4.1</div><h1>Pocket Mint</h1></div>
+    <div class="topActions"><span id="offlineBadge" class="badge">ONLINE</span><button id="installBtn" class="smallBtn" hidden>Install</button></div>
+  </header>
+  <main>
+    <section id="homeView" class="view active">
+      <article class="hero card"><div class="eyebrow">LOCAL-FIRST TEST BUILD</div><h2>Australian $1 test catalogue</h2><p>Stress-test Pocket Mint's foundation before the catalogue expands.</p><div id="homeStats" class="stats"></div></article>
+      <div class="grid2"><button class="card action" data-nav="catalogueView"><span>🪙</span><b>Catalogue</b><small>Browse, filter & edit</small></button><button class="card action" data-nav="myMintView"><span>📚</span><b>My Mint</b><small>Owned, favourites & wishlist</small></button></div>
+      <article class="card checklist"><h3>Phase 0 v0.4.1 test</h3><label><input type="checkbox"> Wishlist clears when a coin becomes owned</label><label><input type="checkbox"> Favourite remains independent</label><label><input type="checkbox"> Series progress and related coins work</label><label><input type="checkbox"> Android Back returns detail → catalogue → home</label><label><input type="checkbox"> Backup restores Favourite and Date Added</label></article>
+    </section>
+    <section id="catalogueView" class="view"><div class="sectionHead"><div><div class="eyebrow">REFERENCE DATA</div><h2>Catalogue</h2></div><span id="catVersion" class="badge"></span></div><div class="filterRow"><input id="catalogueSearch" class="search" placeholder="Search coins…"><select id="yearFilter"><option value="">All years</option></select><select id="scopeFilter"><option value="circulation_core">Circulating core</option><option value="">All test records</option><option value="collector_exemplar">Collector exemplars</option></select><select id="stateFilter"><option value="">Any state</option><option value="owned">Owned</option><option value="missing">Missing</option><option value="wishlist">Wishlist</option><option value="favourite">Favourite</option></select></div><div id="catalogueList" class="coinList"></div></section>
+    <section id="searchView" class="view"><div class="sectionHead"><div><div class="eyebrow">GLOBAL SEARCH</div><h2>Search</h2></div></div><input id="searchInput" class="search" placeholder="Try: 2020, Donation, Matildas, privy…"><div id="searchList" class="coinList"></div></section>
+    <section id="myMintView" class="view"><div class="sectionHead"><div><div class="eyebrow">PERSONAL DATA</div><h2>My Mint</h2></div></div><div id="mintStats" class="stats"></div><div class="segmented"><button data-mintfilter="all" class="on">All</button><button data-mintfilter="owned">Owned</button><button data-mintfilter="favourite">Favourites</button><button data-mintfilter="wishlist">Wishlist</button></div><div id="myMintList" class="coinList"></div></section>
+    <section id="settingsView" class="view"><div class="sectionHead"><div><div class="eyebrow">TEST & PORTABILITY</div><h2>Settings</h2></div></div><article class="card settings"><div id="diagnostics"></div><hr><h3>Backup / restore</h3><p class="muted">Backup contains My Mint records (including Favourite and automatic Date Added), personal photos, and local metadata.</p><button id="exportBtn">Export Pocket Mint backup</button><label class="fileBtn">Restore backup<input type="file" id="restoreInput" accept="application/json"></label><hr><h3>Migration test</h3><button id="selfTestBtn">Run Phase 0 integrity test</button><pre id="testOutput"></pre><hr><button id="resetBtn" class="danger">Reset local My Mint</button></article></section>
+  </main>
+  <nav class="bottomNav"><button data-nav="homeView" class="active">Home</button><button data-nav="catalogueView">Catalogue</button><button data-nav="searchView">Search</button><button data-nav="myMintView">My Mint</button><button data-nav="settingsView">Settings</button></nav>
+  <dialog id="coinDialog"><div class="dialogInner"><button id="closeDialog" class="close" type="button" aria-label="Close coin details">×</button><div id="dialogContent"></div></div></dialog>
+  <script src="app.js"></script>
+</body>
+</html>
