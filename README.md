@@ -48,3 +48,5 @@ Before testing a deployment, export a backup from **Settings → Export Pocket M
 4. Navigate Home → Catalogue → coin detail, then use Android Back: detail → Catalogue → Home.
 5. Export, reset, and restore a backup; Favourite and Date Added must return.
 6. Reopen in airplane mode after one successful online load.
+
+  
