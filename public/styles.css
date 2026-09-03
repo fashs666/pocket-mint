@@ -7,3 +7,10 @@
 .seriesList{display:grid;gap:7px}
 .seriesCoin{border:1px solid #dbe2e8;background:#f7f9fa;border-radius:11px;padding:10px 12px;text-align:left;display:flex;justify-content:space-between;gap:10px}
 .seriesCoin span{font-size:.75rem;color:#6c7a88}
+.coinMain{display:block;width:100%;border:0;background:transparent;color:inherit;padding:0;text-align:left}
+.tag.favourite{background:#f6e7aa;color:#684f00}
+.coinControls .star.on{background:#f2c94c;color:#3d3100;border-color:#d8ad25}
+input[type=number]{width:100%;border:1px solid #ccd6cd;background:#fff;border-radius:11px;padding:11px 12px}
+.editBlock label.check{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.autoDate{font-size:.8rem;background:#f0f3f0;border-radius:9px;padding:10px;margin:12px 0}.autoDate span{color:#718078}
+.fatal{padding:20px}.segmented{overflow-x:auto}.segmented button{min-width:max-content}
