@@ -20,6 +20,10 @@
 .qualityItem.warn { background:#f4ead9; color:#76542b; }
 .primaryWide,.identifyButtons button { border:0; border-radius:11px; padding:12px; background:#18211d; color:#fff; font-weight:800; }
 .primaryWide { display:block; width:100%; margin-top:13px; }
+.primaryWide:disabled { opacity:.55; cursor:not-allowed; }
+.photoPrivacy { color:#718078; font-size:.7rem; line-height:1.4; margin:11px 2px 0; }
+.analyseStatus { min-height:18px; margin-top:8px; text-align:center; color:#657269; font-size:.73rem; }
+.analyseStatus.error { color:#8a3434; }
 .textButton { display:block; width:100%; border:0; background:transparent; color:#5c6c62; padding:12px; }
 .clueGrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .clueGrid label { display:block; font-size:.72rem; font-weight:800; }
@@ -39,6 +43,7 @@
 .matchActions .confirmMatch { background:#18211d; color:#fff; border-color:#18211d; }
 .identifyNotice { background:#f0f3f0; border-radius:11px; padding:11px; font-size:.78rem; line-height:1.4; }
 .noMatchHelp { background:#f4ead9; border-radius:11px; padding:12px; color:#684c2d; font-size:.8rem; line-height:1.45; }
+.noMatchHelp + .identifyIntro { margin-top:14px; }
 .bottomNav { grid-template-columns:repeat(6,1fr); }
 .bottomNav button { font-size:.64rem; }
 @media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92}.bottomNav button{font-size:.6rem} }

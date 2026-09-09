@@ -1,9 +1,9 @@
 {
   "name": "pocket-mint-phase-0",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "scripts": {
-    "check": "node --check public/app.js && node --check public/progress.js && node --check public/identify.js && node validate.mjs",
+    "check": "node --check public/app.js && node --check public/progress.js && node --check public/identify.js && node --check src/index.js && node validate.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
   },
