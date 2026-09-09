@@ -12,7 +12,8 @@ function parseObservations(answer) {
     const split=part.indexOf("=");
     if(split>0) fields[part.slice(0,split).trim().toLowerCase()]=part.slice(split+1).trim();
   }
-  return {year:(fields.year||"").match(/20\d{2}/)?.[0]||null,portrait:fields.portrait||"",design_type:fields.type||"",words:[fields.words,fields.subject,fields.likely_name].filter(value=>value&&!/^(unknown|none)$/i.test(value)).join(" ").split(/[,|]+/).map(value=>value.trim()).filter(Boolean),likely_name:fields.likely_name||"",confidence:Math.max(0,Math.min(100,Number(fields.confidence)||0)),raw:text};
+  const confidence=Number((fields.confidence||"").match(/\d+(?:\.\d+)?/)?.[0]||0);
+  return {year:(fields.year||"").match(/20\d{2}/)?.[0]||null,portrait:fields.portrait||"",design_type:fields.type||"",words:[fields.words,fields.subject,fields.likely_name].filter(value=>value&&!/^(unknown|none)$/i.test(value)).join(" ").split(/[,|]+/).map(value=>value.trim()).filter(Boolean),likely_name:fields.likely_name||"",confidence:Math.max(0,Math.min(100,confidence)),raw:text};
 }
 
 function words(value) {
@@ -48,7 +49,7 @@ async function identify(request,env) {
   const catalogueResponse=await env.ASSETS.fetch(new URL("/catalogue.json",request.url));
   const catalogue=await catalogueResponse.json();
   const candidates=catalogue.coins||[];
-  const prompt="Inspect this two-panel photograph of an Australian one-dollar coin. The portrait side is left and reverse design is right. Read the year and all visible words; identify the portrait, reverse subject, whether it is the standard five-kangaroo design or commemorative, and the likely official coin name. Do not explain or reason. Reply in exactly one line: YEAR=value; PORTRAIT=value; TYPE=value; WORDS=value; SUBJECT=value; LIKELY_NAME=value; CONFIDENCE=0-100. Use unknown when unreadable.";
+  const prompt="Inspect this two-panel photograph of an Australian one-dollar coin. The portrait side is left and reverse design is right. Read the year and all visible words; identify the portrait, reverse subject, whether it is the standard five-kangaroo design or commemorative, and the likely official coin name. Do not explain or reason. Reply in exactly one line: YEAR=value; PORTRAIT=value; TYPE=value; WORDS=value; SUBJECT=value; LIKELY_NAME=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100. Use unknown when unreadable.";
   try {
     const output=await env.AI.run(MODEL,{task:"query",image:body.image,question:prompt,reasoning:false,temperature:0,max_tokens:350,stream:false});
     const raw=output?.answer||output?.response||output?.result?.answer||output?.result?.response;
