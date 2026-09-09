@@ -1,17 +1,40 @@
-# Validation report
+# Validation report — Pocket Mint Phase 0 v0.5.0
 
-Validated on 3 September 2026 with Node.js v24.19.0 and Wrangler 4.128.0.
+Prepared 9 September 2026 for branch `v0.5-collection-progress`.
 
-- PASS — `node --check public/app.js`
-- PASS — visible app marker is Phase 0 v0.4.1
-- PASS — IndexedDB name remains `PocketMintPhase0`
-- PASS — IndexedDB schema remains version 2 with the original three stores
-- PASS — Favourite and automatic `date_added` are present and exported/restored as part of My Mint records
-- PASS — History API uses `pushState`/`popstate` for views and coin details
-- PASS — service-worker cache is `pocket-mint-phase0-v0.4.1`
-- PASS — manifest parses, starts at `./#home`, and references valid 192×192 and 512×512 PNG icons
-- PASS — catalogue JSON parses with 56 records, unique IDs, and 7 multi-coin series
-- PASS — `wrangler.jsonc` parses and names the existing Worker `pocket-mint-test`
-- PASS — `wrangler deploy --dry-run` read all 8 static assets with no bindings or configuration errors
+## Automated validation target
 
-The automated checks do not substitute for the phone/PWA acceptance checks in the README, particularly Android Back gestures, IndexedDB migration with real existing data, and offline relaunch after service-worker activation.
+`npm run check` now validates both JavaScript entry points and the repository validator:
+
+- `node --check public/app.js`
+- `node --check public/progress.js`
+- `node validate.mjs`
+
+The validator checks:
+
+- visible v0.5.0 marker
+- compatible IndexedDB name `PocketMintPhase0`
+- database schema remains version 2
+- Favourite and automatic Date Added support remains present
+- History API navigation remains present
+- collection and series intelligence module is loaded
+- duplicate and near-complete-series summaries are present
+- service-worker cache is `pocket-mint-phase0-v0.5.0`
+- `progress.js` and `progress.css` are included in offline assets
+- manifest start route and icons remain valid
+- catalogue JSON remains non-empty with unique IDs and series data
+
+## Data compatibility
+
+v0.5 introduces no IndexedDB migration and no new stored fields. Collection completion, duplicate counts, and series summaries are calculated live from the existing catalogue and `myMint` records.
+
+## Manual phone/PWA acceptance still required
+
+1. Overall and circulation-core percentages update when quantities change.
+2. Duplicate extras count equals the total quantity above one across owned coins.
+3. Missing and Wishlist shortcuts open the expected Catalogue filters.
+4. Near-complete series and next-missing-coin shortcuts behave correctly.
+5. Completed series move into the Complete count.
+6. Existing Wishlist, Favourite, Date Added, series-detail and Android Back behaviour remains intact.
+7. Backup/reset/restore keeps existing personal data.
+8. Offline relaunch succeeds after the v0.5 service worker activates.
