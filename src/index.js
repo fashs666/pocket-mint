@@ -46,7 +46,8 @@ function parseObservations(obverseAnswer,reverseAnswer,titles) {
     design:identifyDesign(reverseText,titles),
     words:[reverse.fields.words,reverse.fields.subject].filter(value=>value&&!/^(unknown|none)$/i.test(value)).join(" ").split(/[,|]+/).map(value=>value.trim()).filter(Boolean),
     confidence:Math.round((obverse.confidence+reverse.confidence)/2),
-    side_confidence:{obverse:obverse.confidence,reverse:reverse.confidence}
+    side_confidence:{obverse:obverse.confidence,reverse:reverse.confidence},
+    _raw:{obverse:obverse.raw,reverse:reverse.raw}
   };
 }
 
@@ -80,7 +81,9 @@ function rankCatalogue(candidates,observed) {
 }
 
 function answerText(output) {
-  return output?.answer||output?.response||output?.result?.answer||output?.result?.response||output?.result||output?.choices?.[0]?.message?.content;
+  if(typeof output==="string") return output;
+  const values=[output?.answer,output?.response,output?.result?.answer,output?.result?.response,output?.choices?.[0]?.message?.content,output?.result];
+  return values.find(value=>typeof value==="string")||"";
 }
 
 async function runVision(env,image,prompt,maxTokens) {
@@ -123,7 +126,8 @@ async function identify(request,env) {
         ? "I recognised the reverse, but could not read enough from the portrait side to choose the exact year."
         : "The photos did not produce one clearly stronger catalogue match."
       : "The reverse design and portrait-side details produced a clear catalogue match.";
-    return json({matches,uncertain,reason,observed});
+    const {_raw,...publicObserved}=observed;
+    return json({matches,uncertain,reason,observed:publicObserved,...(body.debug?{diagnostic:_raw}:{})});
   } catch(error) {
     console.error("Coin identification failed",error);
     return json({error:"Visual analysis could not complete. Please try again or use the clue screen."},503);
