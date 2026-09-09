@@ -1,4 +1,4 @@
-# Pocket Mint Phase 0 v0.6.1
+# Pocket Mint Phase 0 v0.6.2
 
 Pocket Mint is a local-first Progressive Web App for testing an Australian $1 coin collection catalogue. Personal collection records and photos stay in the browser's IndexedDB database; no account, paid dependency, database, or ongoing-cost service is required.
 

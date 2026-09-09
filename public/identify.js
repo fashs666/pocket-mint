@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.6.1";
+const IDENTIFY_VERSION = "0.6.2";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue"};
 
 function setIdentifyStep(step) {
@@ -69,15 +69,12 @@ async function drawContained(context,file,x,y,width,height) {
   bitmap.close();
 }
 
-async function makeAnalysisImage() {
-  const canvas=document.createElement("canvas"); canvas.width=960; canvas.height=520;
+async function makeAnalysisImage(file) {
+  const canvas=document.createElement("canvas"); canvas.width=1024; canvas.height=1024;
   const context=canvas.getContext("2d");
   context.fillStyle="#17211d"; context.fillRect(0,0,canvas.width,canvas.height);
-  context.fillStyle="#fff"; context.font="bold 22px system-ui";
-  context.fillText("PORTRAIT SIDE",24,34); context.fillText("DESIGN SIDE",492,34);
-  await drawContained(context,identifyState.obverse.file,20,50,448,448);
-  await drawContained(context,identifyState.reverse.file,492,50,448,448);
-  return canvas.toDataURL("image/jpeg",.82);
+  await drawContained(context,file,0,0,1024,1024);
+  return canvas.toDataURL("image/jpeg",.88);
 }
 
 function setAnalyseStatus(message,isError=false) {
@@ -90,7 +87,8 @@ async function analysePhotos() {
   const button=document.getElementById("identifyAnalyse");
   button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus("Preparing the two sides for visual analysis…");
   try {
-    const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:await makeAnalysisImage()})});
+    const [obverse,reverse]=await Promise.all([makeAnalysisImage(identifyState.obverse.file),makeAnalysisImage(identifyState.reverse.file)]);
+    const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse,reverse})});
     const data=await response.json();
     if (!response.ok) throw new Error(data.error||"Visual analysis is unavailable");
     const matches=(data.matches||[]).map(match=>({coin:catalogue.find(coin=>coin.id===match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
