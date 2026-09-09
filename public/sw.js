@@ -1,5 +1,5 @@
-const CACHE = "pocket-mint-phase0-v0.4.1";
-const STATIC = ["./", "./index.html", "./styles.css", "./app.js", "./catalogue.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const CACHE = "pocket-mint-phase0-v0.5.0";
+const STATIC = ["./", "./index.html", "./styles.css", "./progress.css", "./app.js", "./progress.js", "./catalogue.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting()));
