@@ -5,6 +5,7 @@ function json(data,status=200) {
 }
 
 function parseAnswer(answer) {
+  if(answer&&typeof answer==="object"&&Array.isArray(answer.matches)) return answer;
   const cleaned=String(answer||"").replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"").trim();
   const start=cleaned.indexOf("{"),end=cleaned.lastIndexOf("}");
   if(start<0||end<=start) throw new Error("The vision model returned an unreadable result");
@@ -29,7 +30,9 @@ async function identify(request,env) {
   const prompt=`You are the visual identification engine for Pocket Mint. The supplied image is a composite: portrait side on the left, design side on the right. Identify the photographed Australian one-dollar coin using only visible evidence and the candidate catalogue below. Inspect portrait, year, lettering, symbols, artwork, mintmarks and privy marks. Never invent a candidate ID. Return ONLY strict JSON with this shape: {"matches":[{"id":"exact candidate id","confidence":0.0,"evidence":["short visible reason"]}],"uncertain":true,"reason":"short explanation","observed":{"year":null,"portrait":"","design_type":"","words":[]}}. Include at most 5 ranked matches. Set uncertain true if the date/design is unreadable, the coin is not in the candidates, or the best match is not clearly stronger than alternatives. Candidate catalogue: ${JSON.stringify(candidates)}`;
   try {
     const output=await env.AI.run(MODEL,{task:"query",image:body.image,question:prompt,reasoning:false,temperature:0,max_tokens:1100,stream:false});
-    return json(safeResult(parseAnswer(output.answer),new Set(candidates.map(item=>item.id))));
+    const raw=output?.answer??output?.response??output?.result?.answer??output;
+    try { return json(safeResult(parseAnswer(raw),new Set(candidates.map(item=>item.id)))); }
+    catch(error) { throw new Error(`${error.message}; response=${JSON.stringify(output).slice(0,500)}`); }
   } catch(error) {
     console.error("Coin identification failed",error);
     return json({error:"Visual analysis could not complete. Please try again or use the clue screen.",diagnostic:String(error?.message||error).slice(0,300)},503);
