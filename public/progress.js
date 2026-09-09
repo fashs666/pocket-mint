@@ -157,3 +157,9 @@ renderDiag = function renderDiagV050() {
   const diagnostics = document.getElementById("diagnostics");
   if (diagnostics) diagnostics.innerHTML = diagnostics.innerHTML.replace("Phase 0 v0.4.1", `Phase 0 v${POCKET_MINT_APP_VERSION}`);
 };
+
+window.addEventListener("load", () => {
+  if (!catalogue.length) return;
+  renderHome();
+  renderDiag();
+});
