@@ -1,17 +1,32 @@
-# Pocket Mint Phase 0 v0.4.1
+# Pocket Mint Phase 0 v0.5.0
 
 Pocket Mint is a local-first Progressive Web App for testing an Australian $1 coin collection catalogue. Personal collection records and photos stay in the browser's IndexedDB database; no account, paid dependency, database, or ongoing-cost service is required.
 
+## v0.5 collection progress
+
+The Home screen now turns the existing collection data into useful collecting intelligence without changing the local database schema:
+
+- overall catalogue completion count and percentage
+- circulation-core completion count and percentage
+- missing coin count
+- duplicate extras count, plus quick links to duplicate coin records
+- Wishlist and Favourite totals
+- completed, in-progress, untouched, and total multi-coin series counts
+- a **Closest to completion** view for started series
+- quick links to the next missing coin in near-complete series
+- Home shortcuts for missing coins and Wishlist
+
+All progress is calculated live from the existing catalogue and `myMint` records. Nothing new is persisted for these statistics.
+
 ## Deploy with GitHub and Cloudflare Workers Builds
 
-1. Extract this repository ZIP.
-2. In GitHub, open the empty `fashs666/pocket-mint` repository and upload **the contents of this folder** to its root (not the enclosing ZIP folder). Commit the files to `main`.
-3. In Cloudflare, open **Workers & Pages → pocket-mint-test → Settings → Builds → Connect**.
-4. Choose **GitHub**, then select `fashs666/pocket-mint`.
-5. Set **Production branch** to `main`.
-6. Leave **Build command** blank.
-7. Set **Deploy command** to `npx wrangler deploy`.
-8. Keep preview builds enabled if desired, then choose **Connect and deploy**.
+1. Use this repository as the source for the existing `pocket-mint-test` Worker.
+2. In Cloudflare, open **Workers & Pages → pocket-mint-test → Settings → Builds**.
+3. Ensure the GitHub repository is `fashs666/pocket-mint`.
+4. Set **Production branch** to `main`.
+5. Leave **Build command** blank.
+6. Set **Deploy command** to `npx wrangler deploy`.
+7. Keep preview builds enabled if desired.
 
 The root `wrangler.jsonc` deliberately uses the existing Worker name `pocket-mint-test` and deploys the `public` directory as static assets.
 
@@ -37,16 +52,17 @@ npm run dev
 - Existing records missing `favourite` remain valid and default to `false`.
 - Existing `date_added` values are preserved. A missing date is automatically set only when quantity first changes from zero to one or more.
 - Catalogue files never overwrite personal records.
+- v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 
-Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.4.1 service worker can refresh its offline cache.
+Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.5.0 service worker can refresh its offline cache.
 
 ## Phase 0 phone checks
 
-1. Wishlist a coin, then increase its quantity: Wishlist must clear.
-2. Favourite a coin independently of ownership and Wishlist.
-3. Open a coin in a multi-coin series and verify progress plus **More coins from this series**.
-4. Navigate Home → Catalogue → coin detail, then use Android Back: detail → Catalogue → Home.
-5. Export, reset, and restore a backup; Favourite and Date Added must return.
-6. Reopen in airplane mode after one successful online load.
-
-  
+1. Add/remove owned quantities and verify overall/core completion updates immediately.
+2. Set a quantity above one and verify **Duplicate extras** plus the duplicate quick link.
+3. Use **Browse missing coins** and **Open wishlist** and verify the Catalogue opens with the correct filter.
+4. Start a multi-coin series and verify **Closest to completion** and its next-missing-coin shortcut.
+5. Complete a series and verify it moves from **In progress** to **Complete**.
+6. Re-check Wishlist auto-removal, Favourite independence, series detail progress, and Android Back navigation.
+7. Export, reset, and restore a backup; Favourite and Date Added must return.
+8. Reopen in airplane mode after one successful online load.
