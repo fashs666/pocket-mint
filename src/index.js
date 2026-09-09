@@ -46,8 +46,7 @@ function parseObservations(obverseAnswer,reverseAnswer,titles) {
     design:identifyDesign(reverseText,titles),
     words:[reverse.fields.words,reverse.fields.subject].filter(value=>value&&!/^(unknown|none)$/i.test(value)).join(" ").split(/[,|]+/).map(value=>value.trim()).filter(Boolean),
     confidence:Math.round((obverse.confidence+reverse.confidence)/2),
-    side_confidence:{obverse:obverse.confidence,reverse:reverse.confidence},
-    _raw:{obverse:obverse.raw,reverse:reverse.raw}
+    side_confidence:{obverse:obverse.confidence,reverse:reverse.confidence}
   };
 }
 
@@ -128,8 +127,7 @@ async function identify(request,env) {
         ? "I recognised the reverse, but could not read enough from the portrait side to choose the exact year."
         : "The photos did not produce one clearly stronger catalogue match."
       : "The reverse design and portrait-side details produced a clear catalogue match.";
-    const {_raw,...publicObserved}=observed;
-    return json({matches,uncertain,reason,observed:publicObserved,...(body.debug?{diagnostic:_raw}:{})});
+    return json({matches,uncertain,reason,observed});
   } catch(error) {
     console.error("Coin identification failed",error);
     return json({error:"Visual analysis could not complete. Please try again or use the clue screen."},503);
