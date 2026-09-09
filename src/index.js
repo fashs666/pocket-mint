@@ -32,7 +32,7 @@ async function identify(request,env) {
     return json(safeResult(parseAnswer(output.answer),new Set(candidates.map(item=>item.id))));
   } catch(error) {
     console.error("Coin identification failed",error);
-    return json({error:"Visual analysis could not complete. Please try again or use the clue screen."},503);
+    return json({error:"Visual analysis could not complete. Please try again or use the clue screen.",diagnostic:String(error?.message||error).slice(0,300)},503);
   }
 }
 
