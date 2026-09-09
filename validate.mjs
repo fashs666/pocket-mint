@@ -30,7 +30,7 @@ const checks = [
   [progress.includes("collectionInsights") && progress.includes("multiCoinSeries"), "collection and series intelligence"],
   [progress.includes("Duplicate extras") && progress.includes("Closest to completion"), "duplicate and near-complete series summaries"],
   [identify.includes("analysePhotos") && identify.includes("/api/identify") && identify.includes("confirmIdentification"), "visual-first analysis and confirm flow"],
-  [worker.includes("env.AI.run") && worker.includes("moondream") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
+  [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
   [sw.includes("pocket-mint-phase0-v0.6.2"), "matching service-worker cache"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],

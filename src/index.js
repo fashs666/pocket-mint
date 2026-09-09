@@ -1,4 +1,4 @@
-const MODEL = "@cf/moondream/moondream3.1-9B-A2B";
+const MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
 
 function json(data,status=200) {
   return new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
@@ -8,10 +8,7 @@ function parseFields(answer) {
   const text=String(answer||"").trim();
   if(!text) throw new Error("The vision model returned an empty result");
   const fields={};
-  for(const part of text.split(/[;\n]+/)) {
-    const split=part.indexOf("=");
-    if(split>0) fields[part.slice(0,split).trim().toLowerCase()]=part.slice(split+1).trim();
-  }
+  for(const match of text.matchAll(/\b(YEAR|PORTRAIT|DESIGN|TYPE|WORDS|SUBJECT|CONFIDENCE)\s*=\s*([^;\n]+)/gi)) fields[match[1].toLowerCase()]=match[2].trim();
   const confidence=Number((fields.confidence||"").match(/\d+(?:\.\d+)?/)?.[0]||0);
   return {fields,confidence:Math.max(0,Math.min(100,confidence)),raw:text};
 }
@@ -28,7 +25,7 @@ function usefulWords(value) {
 function identifyDesign(value,titles) {
   const answer=normalize(value);
   const aliases=[
-    ["100 Years of Qantas",["qantas","100 years qantas","centenary qantas","aeroplane","airplane"]],
+    ["100 Years of Qantas",["qantas","100 years qantas","centenary","aeroplane","airplane","aircraft"]],
     ["Donation Dollar",["donation","give to help others"]],
     ["Five Kangaroos",["five kangaroos","five roos","standard kangaroo"]],
     ["Mob of Six Roos",["mob of six","six roos","six kangaroos"]]
@@ -83,7 +80,17 @@ function rankCatalogue(candidates,observed) {
 }
 
 function answerText(output) {
-  return output?.answer||output?.response||output?.result?.answer||output?.result?.response||output?.result;
+  return output?.answer||output?.response||output?.result?.answer||output?.result?.response||output?.result||output?.choices?.[0]?.message?.content;
+}
+
+async function runVision(env,image,prompt,maxTokens) {
+  return env.AI.run(MODEL,{
+    messages:[{role:"system",content:"Follow the requested output format exactly and report only details visibly supported by the image."},{role:"user",content:prompt}],
+    image,
+    temperature:0,
+    max_tokens:maxTokens,
+    stream:false
+  });
 }
 
 async function identify(request,env) {
@@ -103,8 +110,8 @@ async function identify(request,env) {
   const reversePrompt=`This is the reverse design of an Australian one-dollar coin. Compare the artwork and lettering to these circulation catalogue choices: ${titleOptions}. Select an exact title only when the visible design supports it; otherwise use unknown. Read distinctive visible words and describe the central subject. Reply exactly: DESIGN=value; TYPE=standard or commemorative or unknown; WORDS=value; SUBJECT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100.`;
   try {
     const [obverseOutput,reverseOutput]=await Promise.all([
-      env.AI.run(MODEL,{task:"query",image:body.obverse,question:obversePrompt,reasoning:false,temperature:0,max_tokens:120,stream:false}),
-      env.AI.run(MODEL,{task:"query",image:body.reverse,question:reversePrompt,reasoning:false,temperature:0,max_tokens:180,stream:false})
+      runVision(env,body.obverse,obversePrompt,120),
+      runVision(env,body.reverse,reversePrompt,180)
     ]);
     const observed=parseObservations(answerText(obverseOutput),answerText(reverseOutput),circulationTitles);
     const matches=rankCatalogue(candidates,observed),first=matches[0],second=matches[1];
