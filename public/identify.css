@@ -1,0 +1,44 @@
+.identifyAction { background: linear-gradient(145deg,#17231e,#31513f); color:#fff; border-color:#17231e; }
+.identifyAction small { color:#d3e1d8; }
+.identifySteps { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:4px 0 14px; }
+.identifySteps span { text-align:center; padding:8px 4px; border-radius:999px; background:#e8ece8; color:#6a776f; font-size:.68rem; font-weight:800; }
+.identifySteps span.on { background:#18211d; color:#fff; }
+.identifyPanel { background:#fff; border:1px solid #dce3dc; border-radius:19px; padding:17px; }
+.identifyIntro { color:#657269; font-size:.88rem; line-height:1.45; }
+.captureGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.captureCard { display:block; min-width:0; aspect-ratio:1; border:2px dashed #b8c5bb; border-radius:16px; overflow:hidden; background:#f2f5f2; cursor:pointer; }
+.captureCard input { position:absolute; opacity:0; pointer-events:none; }
+.capturePreview { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; text-align:center; background-size:cover; background-position:center; position:relative; }
+.capturePreview.hasPhoto::before { content:""; position:absolute; inset:0; background:linear-gradient(transparent 35%,rgba(0,0,0,.72)); }
+.capturePreview b { font-size:2rem; font-weight:400; }
+.capturePreview strong,.capturePreview small { display:block; position:relative; }
+.capturePreview.hasPhoto strong,.capturePreview.hasPhoto small { color:#fff; align-self:flex-start; text-align:left; margin-left:4px; }
+.capturePreview.hasPhoto strong { margin-top:auto; }
+.capturePreview small { color:#718078; margin-top:4px; font-size:.7rem; }
+.qualitySummary { display:grid; gap:6px; margin-top:11px; }
+.qualityItem { border-radius:9px; padding:8px 10px; font-size:.75rem; background:#eef3ef; color:#445249; }
+.qualityItem.warn { background:#f4ead9; color:#76542b; }
+.primaryWide,.identifyButtons button { border:0; border-radius:11px; padding:12px; background:#18211d; color:#fff; font-weight:800; }
+.primaryWide { display:block; width:100%; margin-top:13px; }
+.textButton { display:block; width:100%; border:0; background:transparent; color:#5c6c62; padding:12px; }
+.clueGrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.clueGrid label { display:block; font-size:.72rem; font-weight:800; }
+.clueGrid input,.clueGrid select { display:block; width:100%; margin-top:5px; border:1px solid #ccd6cd; background:#fff; border-radius:11px; padding:11px 12px; }
+.clueGrid label:nth-child(4) { grid-column:1/-1; }
+.identifyButtons { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px; }
+.identifyButtons button:not(.primary) { background:#edf1ed; color:#334239; }
+.matchList { display:grid; gap:9px; margin-top:12px; }
+.matchCard { border:1px solid #dce3dc; border-radius:14px; padding:13px; }
+.matchTop { display:flex; justify-content:space-between; gap:10px; }
+.matchTop h3 { font-size:1rem; margin-bottom:4px; }
+.confidence { font-size:.7rem; font-weight:850; border-radius:999px; background:#dfeadf; color:#36533f; padding:6px 8px; height:max-content; white-space:nowrap; }
+.confidence.possible { background:#eee7d6; color:#6b5523; }
+.matchReasons { font-size:.74rem; color:#66736a; margin:8px 0; }
+.matchActions { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.matchActions button { border:1px solid #cad4cc; background:#fff; border-radius:9px; padding:9px; font-weight:750; }
+.matchActions .confirmMatch { background:#18211d; color:#fff; border-color:#18211d; }
+.identifyNotice { background:#f0f3f0; border-radius:11px; padding:11px; font-size:.78rem; line-height:1.4; }
+.noMatchHelp { background:#f4ead9; border-radius:11px; padding:12px; color:#684c2d; font-size:.8rem; line-height:1.45; }
+.bottomNav { grid-template-columns:repeat(6,1fr); }
+.bottomNav button { font-size:.64rem; }
+@media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92}.bottomNav button{font-size:.6rem} }

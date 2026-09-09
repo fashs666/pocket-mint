@@ -1,4 +1,4 @@
-const POCKET_MINT_APP_VERSION = "0.5.0";
+const POCKET_MINT_APP_VERSION = "0.6.0";
 
 function completionPercent(owned, total) {
   return total ? Math.round((owned / total) * 100) : 0;

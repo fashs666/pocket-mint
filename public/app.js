@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 2;
-const VIEW_IDS = new Set(["homeView", "catalogueView", "searchView", "myMintView", "settingsView"]);
+const VIEW_IDS = new Set(["homeView", "identifyView", "catalogueView", "searchView", "myMintView", "settingsView"]);
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), mintFilter = "all", deferredInstallPrompt = null;
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);

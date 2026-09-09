@@ -1,6 +1,17 @@
-# Pocket Mint Phase 0 v0.5.0
+# Pocket Mint Phase 0 v0.6.0
 
 Pocket Mint is a local-first Progressive Web App for testing an Australian $1 coin collection catalogue. Personal collection records and photos stay in the browser's IndexedDB database; no account, paid dependency, database, or ongoing-cost service is required.
+
+## v0.6 guided coin identification
+
+- capture or upload the portrait and design sides on Android or desktop
+- perform on-device brightness, glare and sharpness checks
+- narrow the catalogue by year, portrait, design type, visible words and marks
+- rank up to eight candidates with transparent clue-match reasons
+- confirm a candidate to add one specimen and attach both photos
+- keep all identification photos local unless the user exports a backup
+
+This release does not claim automatic visual recognition. The current catalogue has metadata but no verified reference-image set. The photo pipeline is ready for visual comparison once those reference images are added.
 
 ## v0.5 collection progress
 
