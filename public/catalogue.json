@@ -162,7 +162,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/five-kangaroos.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -192,7 +195,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/donation-dollar.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -222,7 +228,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/qantas-2020.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -252,7 +261,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/five-kangaroos.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -282,7 +294,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/donation-dollar.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -312,7 +327,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/five-kangaroos.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -342,7 +360,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/five-kangaroos.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -372,7 +393,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/five-kangaroos.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_1d"
     },
     {
       "denomination_cents": 100,
@@ -402,7 +426,10 @@
       "verified": 1,
       "test_scope": "circulation_core",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/six-roos.webp",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_sixroos"
     },
     {
       "denomination_cents": 100,
@@ -432,7 +459,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-a.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -462,7 +492,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-b.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -492,7 +525,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-c.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -522,7 +558,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-d.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -552,7 +591,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-e.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -582,7 +624,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-f.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -612,7 +657,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-g.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -642,7 +690,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-h.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -672,7 +723,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-i.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -702,7 +756,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-j.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -732,7 +789,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-k.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -762,7 +822,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-l.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -792,7 +855,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-m.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -822,7 +888,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-n.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -852,7 +921,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-o.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -882,7 +954,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-p.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -912,7 +987,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-q.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -942,7 +1020,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-r.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -972,7 +1053,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-s.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -1002,7 +1086,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/gach3-t.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_gach3"
     },
     {
       "denomination_cents": 100,
@@ -1032,7 +1119,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-australovenator.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1062,7 +1152,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-diamantinasaurus.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1092,7 +1185,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-elaphrosaurine.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1122,7 +1218,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-kunbarrasaurus.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1152,7 +1251,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-diamantinasaurus-d-privy.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1182,7 +1284,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-australovenator-i-privy.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1212,7 +1317,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-kunbarrasaurus-n-privy.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1242,7 +1350,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/dino-elaphrosaurine-o-privy.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_dinos"
     },
     {
       "denomination_cents": 100,
@@ -1272,7 +1383,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/uncirculated-coins-one-dollar-2023-matildas-header.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_matildas"
     },
     {
       "denomination_cents": 100,
@@ -1302,7 +1416,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/uncirculated-coins-one-dollar-2023-matildas-keeper.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_matildas"
     },
     {
       "denomination_cents": 100,
@@ -1332,7 +1449,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/uncirculated-coins-one-dollar-2023-matildas-striker.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_matildas"
     },
     {
       "denomination_cents": 100,
@@ -1362,7 +1482,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/uncirculated-royal-corps-signal-one-dollar-2025-coin.jpg",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_signals"
     },
     {
       "denomination_cents": 100,
@@ -1392,7 +1515,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/uncirculated-coins-one-dollar-2025-aussie-big-things-big-merino.webp",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_bigthings2"
     },
     {
       "denomination_cents": 100,
@@ -1422,7 +1548,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/uncirculated-coins-one-dollar-2025-aussie-big-things-big-galah.webp",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_bigthings2"
     },
     {
       "denomination_cents": 100,
@@ -1452,7 +1581,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/uncirculated-coins-one-dollar-2025-aussie-big-things-big-wheelbarrow.webp",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_bigthings2"
     },
     {
       "denomination_cents": 100,
@@ -1482,7 +1614,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cake-racing-track.webp",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1512,7 +1647,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1542,7 +1680,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1572,7 +1713,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1602,7 +1746,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1632,7 +1779,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1662,7 +1812,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1692,7 +1845,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1722,7 +1878,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1752,7 +1911,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/cakes-collection.webp",
+      "reference_image_kind": "series",
+      "reference_image_source_id": "ram_cakes"
     },
     {
       "denomination_cents": 100,
@@ -1782,7 +1944,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/heart-soul.webp",
+      "reference_image_kind": "product",
+      "reference_image_source_id": "ram_heart"
     },
     {
       "denomination_cents": 100,
@@ -1812,7 +1977,10 @@
       "verified": 1,
       "test_scope": "collector_exemplar",
       "catalogue_status": "verified",
-      "denomination_display": "$1"
+      "denomination_display": "$1",
+      "reference_image": "coin-images/holey-dollar.webp",
+      "reference_image_kind": "product",
+      "reference_image_source_id": "ram_holey"
     }
   ]
 }

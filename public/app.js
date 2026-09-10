@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 2;
-const APP_VERSION = "0.7.0";
+const APP_VERSION = "0.8.0";
 const VIEW_IDS = new Set(["homeView", "findView", "myMintView", "settingsView"]);
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
 
@@ -114,11 +114,26 @@ function seriesHtml(coin) {
   return `<section class="seriesBox"><div class="eyebrow">SERIES</div><h3>${esc(human(coin.series_id))}</h3><p><strong>${owned} / ${coins.length} collected</strong></p><div class="progress"><i style="width:${Math.round(owned / coins.length * 100)}%"></i></div><h3 class="seriesMore">More coins from this series</h3><div class="seriesList">${related}</div></section>`;
 }
 
+function referenceLabel(coin) {
+  if (coin.reference_image_kind === "series") return "Series reference";
+  if (coin.reference_image_kind === "product") return "Official product image";
+  return "Mint reference";
+}
+
+function coinImageHtml(coin, {preferPersonal = true, className = "coinArtwork"} = {}) {
+  const personalPhoto = preferPersonal ? photoMap.get(coin.id)?.[0] : null;
+  const src = personalPhoto?.data_url || coin.reference_image;
+  const label = personalPhoto ? "Your photo" : referenceLabel(coin);
+  if (!src) return `<span class="${className} imageMissing"><span>Image unavailable</span></span>`;
+  const alt = personalPhoto ? `Your photo of ${coin.year} ${coin.title}` : `${coin.year} ${coin.title} catalogue reference`;
+  return `<span class="${className}"><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy"><span class="imageLabel">${esc(label)}</span></span>`;
+}
+
 function card(coin) {
   const record = {...baseRec(coin.id), ...(state.get(coin.id) || {})};
   const element = document.createElement("div");
   element.className = "coin";
-  element.innerHTML = `<button class="coinMain" type="button"><h3>${coin.year} ${esc(coin.title)}</h3><div class="meta">$1 · ${human(coin.coin_class)}${coin.mintage ? ` · Mintage ${Number(coin.mintage).toLocaleString()}` : ""}</div><div class="tags"><span class="tag">${coin.test_scope === "circulation_core" ? "circulating core" : "collector test"}</span>${record.quantity > 0 ? '<span class="tag owned">owned</span>' : ""}${record.wishlist ? '<span class="tag wish">wishlist</span>' : ""}${record.favourite ? '<span class="tag favourite">★ favourite</span>' : ""}</div></button><div class="coinControls"><button data-action="minus" aria-label="Decrease quantity">−</button><span class="qty">${record.quantity}</span><button data-action="plus" aria-label="Increase quantity">+</button><button data-action="wish" class="${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
+  element.innerHTML = `<button class="coinMain" type="button">${coinImageHtml(coin)}<span class="coinCopy"><h3>${coin.year} ${esc(coin.title)}</h3><span class="meta">$1 · ${human(coin.coin_class)}${coin.mintage ? ` · Mintage ${Number(coin.mintage).toLocaleString()}` : ""}</span><span class="tags"><span class="tag">${coin.test_scope === "circulation_core" ? "circulating core" : "collector test"}</span>${record.quantity > 0 ? '<span class="tag owned">owned</span>' : ""}${record.wishlist ? '<span class="tag wish">wishlist</span>' : ""}${record.favourite ? '<span class="tag favourite">★ favourite</span>' : ""}</span></span></button><div class="coinControls"><button data-action="minus" aria-label="Decrease quantity">−</button><span class="qty">${record.quantity}</span><button data-action="plus" aria-label="Increase quantity">+</button><button data-action="wish" class="${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
   element.querySelector(".coinMain").onclick = () => openCoin(coin);
   element.querySelector('[data-action="plus"]').onclick = () => saveRec(coin.id, {quantity: record.quantity + 1});
   element.querySelector('[data-action="minus"]').onclick = () => saveRec(coin.id, {quantity: Math.max(0, record.quantity - 1)});
@@ -188,7 +203,8 @@ function bindSeriesLinks() {
 
 function detailHtml(coin, record) {
   const date = record.date_added ? `<p class="autoDate">Date Added: <strong>${esc(record.date_added)}</strong> <span>(automatic)</span></p>` : '<p class="autoDate muted">Date Added will be recorded automatically when this coin first becomes owned.</p>';
-  return `<div class="eyebrow">${esc(coin.id)}</div><h2>${coin.year} ${esc(coin.title)}</h2><p class="muted">${human(coin.coin_class)} · ${human(coin.issue_type)}</p><div class="detailGrid"><div><span>Denomination</span><b>$1</b></div><div><span>Mintage</span><b>${coin.mintage ? Number(coin.mintage).toLocaleString() : esc(coin.mintage_status || "—")}</b></div><div><span>Composition</span><b>${esc(coin.composition || "—")}</b></div><div><span>Size</span><b>${coin.mass_grams ?? "—"} g · ${coin.diameter_mm ?? "—"} mm</b></div><div><span>Effigy</span><b>${esc(coin.obverse_effigy || "—")}</b></div><div><span>Catalogue class</span><b>${coin.test_scope === "circulation_core" ? "Circulation core" : "Collector exemplar"}</b></div></div>${seriesHtml(coin)}<div class="editBlock"><h3>My Mint record</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}"><label>Condition</label><select id="dCondition"><option value="">Not set</option>${["Poor","Fair","Good","Very Good","Fine","Very Fine","Extremely Fine","About Uncirculated","Uncirculated"].map(value => `<option ${record.condition === value ? "selected" : ""}>${value}</option>`).join("")}</select>${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Personal photos</label><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></div>`;
+  const imageNote = coin.reference_image_kind === "series" ? "This official image shows the series packaging; an exact individual reverse is not available in the current source." : "Use this official catalogue image to compare the design with your coin.";
+  return `<div class="eyebrow">${esc(coin.id)}</div><h2>${coin.year} ${esc(coin.title)}</h2><p class="muted">${human(coin.coin_class)} · ${human(coin.issue_type)}</p><section class="referencePanel"><div><div class="eyebrow">${esc(referenceLabel(coin).toUpperCase())}</div>${coinImageHtml(coin, {preferPersonal: false, className: "detailArtwork"})}</div><p>${esc(imageNote)}</p></section><div class="detailGrid"><div><span>Denomination</span><b>$1</b></div><div><span>Mintage</span><b>${coin.mintage ? Number(coin.mintage).toLocaleString() : esc(coin.mintage_status || "—")}</b></div><div><span>Composition</span><b>${esc(coin.composition || "—")}</b></div><div><span>Size</span><b>${coin.mass_grams ?? "—"} g · ${coin.diameter_mm ?? "—"} mm</b></div><div><span>Effigy</span><b>${esc(coin.obverse_effigy || "—")}</b></div><div><span>Catalogue class</span><b>${coin.test_scope === "circulation_core" ? "Circulation core" : "Collector exemplar"}</b></div></div>${seriesHtml(coin)}<div class="editBlock"><h3>My Mint record</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}"><label>Condition</label><select id="dCondition"><option value="">Not set</option>${["Poor","Fair","Good","Very Good","Fine","Very Fine","Extremely Fine","About Uncirculated","Uncirculated"].map(value => `<option ${record.condition === value ? "selected" : ""}>${value}</option>`).join("")}</select>${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Your photos</label><p class="photoHelp">Add your own photos any time. They will become the thumbnail in My Mint while this reference stays available here.</p><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></div>`;
 }
 
 function renderCoin(coin) {
@@ -205,7 +221,7 @@ function renderCoin(coin) {
   box.querySelector("#photoInput").onchange = async event => {
     for (const file of event.target.files) await addPhoto(coin.id, file);
     renderPhotos(coin.id);
-    renderDiag();
+    renderAll();
   };
 }
 
@@ -237,7 +253,7 @@ function renderPhotos(id) {
       await del("personalPhotos", photo.id);
       photoMap.set(id, (photoMap.get(id) || []).filter(item => item.id !== photo.id));
       renderPhotos(id);
-      renderDiag();
+      renderAll();
     };
     grid.appendChild(item);
   }

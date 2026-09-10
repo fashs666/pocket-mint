@@ -33,6 +33,8 @@
 .identifyButtons button:not(.primary) { background:#edf1ed; color:#334239; }
 .matchList { display:grid; gap:9px; margin-top:12px; }
 .matchCard { border:1px solid #dce3dc; border-radius:14px; padding:13px; }
+.matchLayout { display:grid; grid-template-columns:108px minmax(0,1fr); gap:13px; align-items:start; }
+.matchArtwork { width:108px; aspect-ratio:1; border-radius:12px; }
 .matchTop { display:flex; justify-content:space-between; gap:10px; }
 .matchTop h3 { font-size:1rem; margin-bottom:4px; }
 .confidence { font-size:.7rem; font-weight:850; border-radius:999px; background:#dfeadf; color:#36533f; padding:6px 8px; height:max-content; white-space:nowrap; }
@@ -52,4 +54,4 @@
 .catalogueNotice { margin-bottom:12px; }
 .bottomNav { grid-template-columns:repeat(4,1fr); }
 .bottomNav button { font-size:.7rem; }
-@media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92} }
+@media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92}.matchLayout{grid-template-columns:82px minmax(0,1fr);gap:10px}.matchArtwork{width:82px}.matchTop{display:block}.confidence{display:inline-block;margin-top:7px}.matchActions{grid-template-columns:1fr} }

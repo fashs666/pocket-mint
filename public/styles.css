@@ -14,3 +14,17 @@ input[type=number]{width:100%;border:1px solid #ccd6cd;background:#fff;border-ra
 .editBlock label.check{display:flex;align-items:center;gap:8px;font-size:.9rem}
 .autoDate{font-size:.8rem;background:#f0f3f0;border-radius:9px;padding:10px;margin:12px 0}.autoDate span{color:#718078}
 .fatal{padding:20px}.segmented{overflow-x:auto}.segmented button{min-width:max-content}
+.coinMain{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:13px}
+.coinCopy,.coinCopy .meta,.coinCopy .tags{display:block}
+.coinArtwork,.detailArtwork,.matchArtwork{position:relative;margin:0;overflow:hidden;background:radial-gradient(circle,#fff 0,#eef2ee 72%);border:1px solid #dce3dc}
+.coinArtwork{width:88px;aspect-ratio:1;border-radius:13px}
+.coinArtwork img,.detailArtwork img,.matchArtwork img{width:100%;height:100%;display:block;object-fit:contain}
+.coinArtwork .imageLabel,.detailArtwork .imageLabel,.matchArtwork .imageLabel{position:absolute;left:5px;bottom:5px;padding:3px 6px;border-radius:999px;background:rgba(24,33,29,.82);color:#fff;font-size:.55rem;font-weight:800;line-height:1.2}
+.imageMissing{display:grid;place-items:center;color:#718078;font-size:.68rem;text-align:center}
+.referencePanel{display:grid;grid-template-columns:minmax(150px,230px) 1fr;align-items:center;gap:18px;margin:16px 0;padding:14px;border-radius:15px;background:#f3f6f3;border:1px solid #dce3dc}
+.referencePanel .eyebrow{margin-bottom:6px}
+.referencePanel p{margin:0;color:#66736a;font-size:.8rem;line-height:1.5}
+.detailArtwork{width:100%;aspect-ratio:1;border-radius:13px}
+.photoHelp{margin:-1px 0 8px;color:#718078;font-size:.73rem;line-height:1.4}
+@media(max-width:650px){.coinMain{grid-template-columns:78px minmax(0,1fr)}.coinArtwork{width:78px}.referencePanel{grid-template-columns:125px 1fr;gap:12px}.coinControls{padding-left:91px}}
+@media(max-width:390px){.referencePanel{grid-template-columns:1fr}.detailArtwork{max-width:210px}.coinControls{padding-left:0}}

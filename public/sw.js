@@ -1,8 +1,15 @@
-const CACHE = "pocket-mint-phase0-v0.7.0";
+const CACHE = "pocket-mint-phase0-v0.8.0";
 const STATIC = ["./", "./index.html", "./styles.css", "./progress.css", "./identify.css", "./app.js", "./progress.js", "./identify.js", "./catalogue.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting()));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(STATIC);
+    const catalogue = await fetch("./catalogue.json").then(response => response.json());
+    const images = [...new Set((catalogue.coins || []).map(coin => coin.reference_image).filter(Boolean).map(path => `./${path}`))];
+    await cache.addAll(images);
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", event => {
