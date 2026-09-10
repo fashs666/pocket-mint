@@ -1,12 +1,12 @@
-const IDENTIFY_VERSION = "0.6.2";
-const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue"};
+const IDENTIFY_VERSION = "0.7.0";
+const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null};
 
 function setIdentifyStep(step) {
   document.querySelectorAll("[data-identify-step]").forEach(item => item.classList.toggle("on", Number(item.dataset.identifyStep) === step));
   document.getElementById("identifyPhotos").hidden = step !== 1;
   document.getElementById("identifyClues").hidden = step !== 2;
   document.getElementById("identifyMatches").hidden = step !== 3;
-  if (currentView() === "identifyView") scrollTo(0,0);
+  if (currentView() === "findView") scrollTo(0,0);
 }
 
 function clearIdentifyPhoto(side) {
@@ -91,6 +91,7 @@ async function analysePhotos() {
     const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse,reverse})});
     const data=await response.json();
     if (!response.ok) throw new Error(data.error||"Visual analysis is unavailable");
+    identifyState.lastObserved=data.observed||null;
     const matches=(data.matches||[]).map(match=>({coin:catalogue.find(coin=>coin.id===match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
     const first=matches[0],second=matches[1];
     const decisive=first&&first.confidence>=72&&(!second||first.confidence-second.confidence>=10)&&!data.uncertain;
@@ -163,14 +164,33 @@ async function confirmIdentification(id) {
 }
 
 function resetIdentification() {
-  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";
+  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;
   ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
   document.getElementById("identifyFallbackNotice").hidden=true;document.getElementById("identifyAnalyse").disabled=true;document.getElementById("identifyAnalyse").textContent="Add both photos to analyse";setIdentifyStep(1);
 }
 
-function wireIdentification() {
-  [...new Set(catalogue.map(coin=>coin.year))].sort((a,b)=>b-a).forEach(year=>document.getElementById("identifyYear").add(new Option(year,year)));
+function openFullCatalogueFromIdentification() {
+  const clues=readIdentifyClues(),observed=identifyState.lastObserved||{};
+  const detectedWords=Array.isArray(observed.words)?observed.words.join(" "):"";
+  const query=(clues.words||observed.design||detectedWords||"").trim();
+  const year=clues.year||observed.year||"";
+  document.getElementById("catalogueSearch").value=query;
+  document.getElementById("scopeFilter").value="";
+  document.getElementById("stateFilter").value="";
+  document.getElementById("yearFilter").value=[...document.getElementById("yearFilter").options].some(option=>option.value===String(year))?String(year):"";
+  const notice=document.getElementById("findCatalogueNotice");
+  notice.hidden=false;
+  notice.innerHTML=`<b>Searching the full catalogue.</b><br>${query||year?"I carried across the clues Pocket Mint could read. Adjust or clear them to broaden the results.":"No reliable clues were found, so every current catalogue record is shown."}`;
+  showFindTab("catalogue",{focus:true});
+  renderCatalogue();
+  scrollTo(0,0);
+}
+
+function wireIdentification(years=[]) {
+  const yearSelect=document.getElementById("identifyYear");
+  yearSelect.replaceChildren(new Option("Not sure",""));
+  years.forEach(year=>yearSelect.add(new Option(year,year)));
   document.getElementById("identifyObverse").onchange=async event=>{await loadIdentifyPhoto("obverse",event.target.files[0]);event.target.value="";};
   document.getElementById("identifyReverse").onchange=async event=>{await loadIdentifyPhoto("reverse",event.target.files[0]);event.target.value="";};
   document.getElementById("identifyAnalyse").onclick=analysePhotos;
@@ -179,7 +199,5 @@ function wireIdentification() {
   document.getElementById("identifyBackClues").onclick=()=>setIdentifyStep(2);
   document.getElementById("identifyFind").onclick=runIdentification;
   document.getElementById("identifyReset").onclick=resetIdentification;
-  document.getElementById("identifyNoMatch").onclick=()=>document.getElementById("identifySummary").innerHTML='<div class="noMatchHelp"><b>Not in this test catalogue?</b><br>Pocket Mint currently covers verified Australian $1 test records from 2020 onward. Try “Not sure / all records”, or use Search directly.</div>';
+  document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
 }
-
-window.addEventListener("load",wireIdentification);

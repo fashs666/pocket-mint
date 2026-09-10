@@ -44,6 +44,12 @@
 .identifyNotice { background:#f0f3f0; border-radius:11px; padding:11px; font-size:.78rem; line-height:1.4; }
 .noMatchHelp { background:#f4ead9; border-radius:11px; padding:12px; color:#684c2d; font-size:.8rem; line-height:1.45; }
 .noMatchHelp + .identifyIntro { margin-top:14px; }
-.bottomNav { grid-template-columns:repeat(6,1fr); }
-.bottomNav button { font-size:.64rem; }
-@media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92}.bottomNav button{font-size:.6rem} }
+.findTabs { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin-bottom:14px; border-radius:13px; background:#e8ece8; }
+.findTabs button { border:0; border-radius:10px; padding:11px 8px; background:transparent; color:#617067; font-weight:800; }
+.findTabs button.on { background:#fff; color:#18211d; box-shadow:0 2px 8px rgba(24,33,29,.08); }
+.findPanelHead { display:flex; justify-content:space-between; align-items:end; gap:10px; margin:3px 0 10px; }
+.findPanelHead h3 { margin:0; }
+.catalogueNotice { margin-bottom:12px; }
+.bottomNav { grid-template-columns:repeat(4,1fr); }
+.bottomNav button { font-size:.7rem; }
+@media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92} }

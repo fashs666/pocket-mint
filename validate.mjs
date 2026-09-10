@@ -19,9 +19,9 @@ const manifest = JSON.parse(manifestText);
 const catalogue = JSON.parse(catalogueText);
 
 const checks = [
-  [html.includes("PHASE 0 · V0.6.2"), "visible v0.6.2 marker"],
+  [html.includes("PHASE 0 · V0.7.0"), "visible v0.7.0 marker"],
   [html.includes('href="progress.css"') && html.includes('src="progress.js"'), "progress assets loaded"],
-  [html.includes('href="identify.css"') && html.includes('src="identify.js"') && html.includes('id="identifyView"'), "identification assets and view loaded"],
+  [html.includes('href="identify.css"') && html.includes('src="identify.js"') && html.includes('id="findView"') && html.includes('data-find-tab="identify"'), "combined find workspace loaded"],
   [app.includes("PocketMintPhase0"), "compatible IndexedDB name"],
   [app.includes("DB_VERSION = 2"), "compatible IndexedDB schema"],
   [app.includes("favourite"), "Favourite support"],
@@ -31,7 +31,7 @@ const checks = [
   [progress.includes("Duplicate extras") && progress.includes("Closest to completion"), "duplicate and near-complete series summaries"],
   [identify.includes("analysePhotos") && identify.includes("/api/identify") && identify.includes("confirmIdentification"), "visual-first analysis and confirm flow"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-phase0-v0.6.2"), "matching service-worker cache"],
+  [sw.includes("pocket-mint-phase0-v0.7.0"), "matching service-worker cache"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

@@ -1,7 +1,8 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 2;
-const VIEW_IDS = new Set(["homeView", "identifyView", "catalogueView", "searchView", "myMintView", "settingsView"]);
-let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), mintFilter = "all", deferredInstallPrompt = null;
+const APP_VERSION = "0.7.0";
+const VIEW_IDS = new Set(["homeView", "findView", "myMintView", "settingsView"]);
+let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);
 const human = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, match => match.toUpperCase());
@@ -147,12 +148,6 @@ function fillList(id, coins, empty) {
 
 function renderCatalogue() { fillList("catalogueList", filteredCatalogue(), "No coins match these filters."); }
 
-function renderSearch() {
-  const query = document.getElementById("searchInput").value.trim().toLowerCase();
-  if (!query) return fillList("searchList", [], "Search year, title, series, issue, effigy or privy mark.");
-  fillList("searchList", catalogue.filter(coin => [coin.year, coin.title, coin.series_id, coin.issue_type, coin.coin_class, coin.obverse_effigy, coin.privy_mark, coin.notes].filter(Boolean).join(" ").toLowerCase().includes(query)), "No matching test records.");
-}
-
 function stats(items) { return items.map(([number, label]) => `<div class="stat"><b>${number}</b><span>${label}</span></div>`).join(""); }
 
 function renderMint() {
@@ -177,10 +172,10 @@ function renderHome() {
 }
 
 function renderDiag() {
-  document.getElementById("diagnostics").innerHTML = `<p><b>App:</b> Phase 0 v0.4.1</p><p><b>Database:</b> ${DB_NAME} schema v${DB_VERSION}</p><p><b>Catalogue:</b> ${esc(catMeta.catalogue_version || "—")}</p><p><b>Local records:</b> ${state.size}</p><p><b>Personal photos:</b> ${[...photoMap.values()].reduce((n, photos) => n + photos.length, 0)}</p><p><b>Connection:</b> ${navigator.onLine ? "online" : "offline"}</p>`;
+  document.getElementById("diagnostics").innerHTML = `<p><b>App:</b> Phase 0 v${APP_VERSION}</p><p><b>Database:</b> ${DB_NAME} schema v${DB_VERSION}</p><p><b>Catalogue:</b> ${esc(catMeta.catalogue_version || "—")}</p><p><b>Local records:</b> ${state.size}</p><p><b>Personal photos:</b> ${[...photoMap.values()].reduce((n, photos) => n + photos.length, 0)}</p><p><b>Connection:</b> ${navigator.onLine ? "online" : "offline"}</p>`;
 }
 
-function renderAll() { renderHome(); renderCatalogue(); renderSearch(); renderMint(); renderDiag(); }
+function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderDiag(); }
 
 function bindSeriesLinks() {
   document.querySelectorAll("[data-series-coin]").forEach(button => {
@@ -316,6 +311,17 @@ async function selfTest() {
 function currentView() { return document.querySelector(".view.active")?.id || "homeView"; }
 function routeForView(view) { return `#${view.replace("View", "")}`; }
 
+function showFindTab(tab, options={}) {
+  findTab = tab === "catalogue" ? "catalogue" : "identify";
+  document.querySelectorAll("[data-find-tab]").forEach(button => {
+    const active=button.dataset.findTab===findTab;
+    button.classList.toggle("on",active);
+    button.setAttribute("aria-selected",String(active));
+  });
+  document.querySelectorAll("[data-find-panel]").forEach(panel => panel.hidden=panel.dataset.findPanel!==findTab);
+  if(options.focus&&findTab==="catalogue") document.getElementById("catalogueSearch").focus();
+}
+
 function showView(view) {
   const safeView = VIEW_IDS.has(view) ? view : "homeView";
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item.id === safeView));
@@ -337,10 +343,14 @@ function updateNetwork() {
 }
 
 function wire() {
-  ["yearFilter", "scopeFilter", "stateFilter"].forEach(id => document.getElementById(id).onchange = renderCatalogue);
-  document.getElementById("catalogueSearch").oninput = renderCatalogue;
-  document.getElementById("searchInput").oninput = renderSearch;
+  const updateCatalogue=()=>{document.getElementById("findCatalogueNotice").hidden=true;renderCatalogue();};
+  ["yearFilter", "scopeFilter", "stateFilter"].forEach(id => document.getElementById(id).onchange = updateCatalogue);
+  document.getElementById("catalogueSearch").oninput = updateCatalogue;
   document.querySelectorAll("[data-nav]").forEach(button => button.onclick = () => navigate(button.dataset.nav));
+  document.querySelectorAll("[data-find-tab]").forEach(button => button.onclick = () => {
+    if(button.dataset.findTab==="catalogue") document.getElementById("findCatalogueNotice").hidden=true;
+    showFindTab(button.dataset.findTab,{focus:button.dataset.findTab==="catalogue"});
+  });
   document.querySelectorAll("[data-mintfilter]").forEach(button => button.onclick = () => {
     mintFilter = button.dataset.mintfilter;
     document.querySelectorAll("[data-mintfilter]").forEach(item => item.classList.toggle("on", item === button));
@@ -400,13 +410,19 @@ async function init() {
   catMeta = payload.meta || {};
   await loadLocal();
   await put("appMeta", {key: "catalogue_version", value: catMeta.catalogue_version});
+  const years=[...new Set(catalogue.map(coin => coin.year))].sort((a,b)=>b-a);
   const yearSelect = document.getElementById("yearFilter");
-  [...new Set(catalogue.map(coin => coin.year))].sort().forEach(year => yearSelect.add(new Option(year, year)));
+  years.forEach(year => yearSelect.add(new Option(year, year)));
   wire();
-  const hashView = `${location.hash.slice(1) || "home"}View`;
-  const initialView = VIEW_IDS.has(hashView) ? hashView : "homeView";
+  if(typeof wireIdentification==="function") wireIdentification(years);
+  const hash=location.hash.slice(1)||"home";
+  const legacyTabs={identify:"identify",catalogue:"catalogue",search:"catalogue"};
+  const hashView = `${hash}View`;
+  const initialView = legacyTabs[hash] ? "findView" : VIEW_IDS.has(hashView) ? hashView : "homeView";
+  if(legacyTabs[hash]) findTab=legacyTabs[hash];
   history.replaceState({view: initialView}, "", routeForView(initialView));
   showView(initialView);
+  showFindTab(findTab);
   renderAll();
   updateNetwork();
   if ("serviceWorker" in navigator) await navigator.serviceWorker.register("./sw.js");
