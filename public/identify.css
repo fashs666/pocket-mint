@@ -52,6 +52,28 @@
 .findPanelHead { display:flex; justify-content:space-between; align-items:end; gap:10px; margin:3px 0 10px; }
 .findPanelHead h3 { margin:0; }
 .catalogueNotice { margin-bottom:12px; }
+.identifyFeedback { margin-top:16px; padding-top:16px; border-top:1px solid #dce3dc; }
+.identifyFeedback h3 { margin:3px 0 6px; }
+.outcomeChoices { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:12px 0; }
+.outcomeChoices label { cursor:pointer; }
+.outcomeChoices input { position:absolute; opacity:0; }
+.outcomeChoices span { display:block; padding:10px 8px; border:1px solid #cad4cc; border-radius:10px; text-align:center; font-size:.76rem; font-weight:800; }
+.outcomeChoices input:checked + span { background:#18211d; color:#fff; border-color:#18211d; }
+.feedbackField { display:block; margin-top:10px; font-size:.72rem; font-weight:800; }
+.feedbackField input,.feedbackField textarea { display:block; width:100%; margin-top:5px; border:1px solid #ccd6cd; background:#fff; border-radius:11px; padding:11px 12px; font:inherit; }
+.testLog { display:grid; gap:8px; margin:10px 0 12px; }
+.testLogItem { border:1px solid #dce3dc; border-radius:12px; overflow:hidden; }
+.testLogItem summary { display:grid; grid-template-columns:auto 1fr; gap:9px; align-items:center; padding:11px; cursor:pointer; list-style:none; }
+.testLogItem summary::-webkit-details-marker { display:none; }
+.testLogItem summary small { display:block; margin-top:3px; color:#6a776f; font-size:.68rem; }
+.testOutcome { border-radius:999px; padding:5px 7px; background:#e8ece8; font-size:.65rem; font-weight:850; }
+.testOutcome.correct { background:#dfeadf; color:#36533f; }
+.testOutcome.partial { background:#eee7d6; color:#6b5523; }
+.testOutcome.wrong { background:#f3dddd; color:#7e3333; }
+.testOutcome.unsupported { background:#e5e5ef; color:#46466d; }
+.testLogDetails { padding:0 12px 12px; font-size:.75rem; }
+.testLogDetails pre { max-height:160px; overflow:auto; padding:9px; border-radius:8px; background:#f2f5f2; white-space:pre-wrap; }
+.settingsActions { display:flex; flex-wrap:wrap; gap:8px; }
 .bottomNav { grid-template-columns:repeat(4,1fr); }
 .bottomNav button { font-size:.7rem; }
 @media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92}.matchLayout{grid-template-columns:82px minmax(0,1fr);gap:10px}.matchArtwork{width:82px}.matchTop{display:block}.confidence{display:inline-block;margin-top:7px}.matchActions{grid-template-columns:1fr} }

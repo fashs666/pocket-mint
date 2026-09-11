@@ -1,5 +1,5 @@
-const IDENTIFY_VERSION = "0.8.0";
-const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null};
+const IDENTIFY_VERSION = "0.9.0";
+const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false};
 
 function setIdentifyStep(step) {
   document.querySelectorAll("[data-identify-step]").forEach(item => item.classList.toggle("on", Number(item.dataset.identifyStep) === step));
@@ -21,6 +21,7 @@ function clearIdentifyPhoto(side) {
 
 async function inspectIdentifyPhoto(file) {
   const bitmap = await createImageBitmap(file);
+  const width=bitmap.width,height=bitmap.height;
   const size = 96, canvas = document.createElement("canvas");
   canvas.width = size; canvas.height = size;
   const context = canvas.getContext("2d",{willReadFrequently:true});
@@ -36,7 +37,7 @@ async function inspectIdentifyPhoto(file) {
   if (brightness<45) warnings.push("photo looks too dark");
   if (brightness>225) warnings.push("photo may have too much glare");
   if (edges/samples<13) warnings.push("photo may be blurry");
-  return {warnings};
+  return {warnings,width,height,bytes:file.size,type:file.type||"unknown"};
 }
 
 async function loadIdentifyPhoto(side,file) {
@@ -84,6 +85,7 @@ function setAnalyseStatus(message,isError=false) {
 
 async function analysePhotos() {
   if (!identifyState.obverse||!identifyState.reverse) return;
+  identifyState.visualAttempted=true;
   const button=document.getElementById("identifyAnalyse");
   button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus("Preparing the two sides for visual analysis…");
   try {
@@ -99,6 +101,8 @@ async function analysePhotos() {
       identifyState.results=matches.slice(0,5); identifyState.resultSource="visual";
       renderIdentifyResults(); setIdentifyStep(3);
     } else {
+      identifyState.usedHelpStep=true;
+      identifyState.fallbackReason=data.reason||"The photos did not produce one clear match.";
       prefillClues(data.observed||{});
       const notice=document.getElementById("identifyFallbackNotice");
       notice.hidden=false;
@@ -106,6 +110,8 @@ async function analysePhotos() {
       setIdentifyStep(2);
     }
   } catch(error) {
+    identifyState.usedHelpStep=true;
+    identifyState.fallbackReason=`Visual analysis unavailable: ${error.message}`;
     const notice=document.getElementById("identifyFallbackNotice");
     notice.hidden=false; notice.innerHTML=`<b>Visual analysis wasn’t available.</b><br>${esc(error.message)} You can still narrow it down with visible clues.`;
     setIdentifyStep(2);
@@ -146,9 +152,53 @@ function runIdentification() {
   identifyState.results=ranked.slice(0,8); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
 }
 
+function identifyCoinLabel(coin) { return `${coin.year} ${coin.title}`; }
+
+function resetTestFeedback() {
+  document.querySelectorAll('input[name="identifyOutcome"]').forEach(input=>input.checked=false);
+  document.getElementById("identifyExpected").value="";
+  document.getElementById("identifyExpected").placeholder="e.g. 2020 Donation Dollar";
+  document.getElementById("identifyTestNote").value="";
+  document.getElementById("identifyTestStatus").textContent="";
+  const button=document.getElementById("saveIdentificationTest");
+  button.disabled=false;button.textContent="Save test result";
+  identifyState.testLogSaved=false;
+}
+
+async function saveIdentificationTest() {
+  if(identifyState.testLogSaved)return;
+  const outcome=document.querySelector('input[name="identifyOutcome"]:checked')?.value;
+  const expectedLabel=document.getElementById("identifyExpected").value.trim();
+  const status=document.getElementById("identifyTestStatus");
+  if(!outcome){status.textContent="Choose how the identification performed.";status.classList.add("error");return;}
+  if(!expectedLabel){status.textContent="Enter the coin you tested so the result is useful.";status.classList.add("error");return;}
+  const expectedCoin=catalogue.find(coin=>identifyCoinLabel(coin).toLowerCase()===expectedLabel.toLowerCase());
+  const clean=value=>value==null?null:JSON.parse(JSON.stringify(value));
+  const test={
+    id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:IDENTIFY_VERSION,catalogue_version:catMeta.catalogue_version||"",
+    outcome,expected_label:expectedLabel,expected_coin_id:expectedCoin?.id||null,result_source:identifyState.resultSource,
+    visual_attempted:identifyState.visualAttempted,used_help_step:identifyState.usedHelpStep,fallback_reason:identifyState.fallbackReason||"",
+    observed:clean(identifyState.lastObserved),clues:readIdentifyClues(),
+    photo_quality:{obverse:clean(identifyState.obverse?.quality)||null,reverse:clean(identifyState.reverse?.quality)||null},
+    candidates:identifyState.results.map((item,index)=>({rank:index+1,coin_id:item.coin.id,year:item.coin.year,title:item.coin.title,confidence:item.confidence,reasons:[...item.reasons]})),
+    note:document.getElementById("identifyTestNote").value.trim()
+  };
+  await put("identificationTests",test);
+  identificationTests.unshift(test);
+  identifyState.testLogSaved=true;
+  const button=document.getElementById("saveIdentificationTest");
+  button.disabled=true;button.textContent="Test result saved";
+  status.classList.remove("error");status.textContent="Saved locally. You can review or export it from Settings.";
+  renderAll();
+}
+
 function renderIdentifyResults() {
   const visual=identifyState.resultSource==="visual",photoCount=[identifyState.obverse,identifyState.reverse].filter(Boolean).length;
   document.getElementById("identifySummary").innerHTML=`<div class="identifyNotice"><b>${identifyState.results.length?visual?"Visual identification results":"Best catalogue candidates":"No catalogue match yet"}</b><br>${visual?"Pocket Mint analysed the artwork and visible text in both photos.":"Ranked using the clues supplied."}${photoCount?` ${photoCount} photos are ready to attach.`:""}</div>`;
+  if(!identifyState.testLogSaved){
+    const expected=document.getElementById("identifyExpected");
+    if(!expected.value&&identifyState.results[0]) expected.placeholder=`e.g. ${identifyCoinLabel(identifyState.results[0].coin)}`;
+  }
   const root=document.getElementById("identifyResults");
   if(!identifyState.results.length){root.innerHTML='<div class="empty">Try removing an uncertain clue or search the catalogue manually.</div>';return;}
   root.innerHTML=identifyState.results.map((item,index)=>{const label=visual?`${item.confidence}% visual match`:item.confidence>=75?`${item.confidence}% clue match`:"Possible";return `<article class="matchCard"><div class="matchLayout">${coinImageHtml(item.coin,{preferPersonal:false,className:"matchArtwork"})}<div><div class="matchTop"><div><div class="eyebrow">${index===0?"BEST MATCH":`CANDIDATE ${index+1}`}</div><h3>${item.coin.year} ${esc(item.coin.title)}</h3><div class="meta">${esc(item.coin.denomination_display||"$1")} · ${esc(human(item.coin.issue_type))}</div></div><span class="confidence ${item.confidence<75?"possible":""}">${label}</span></div><p class="matchReasons">Matched: ${esc(item.reasons.length?item.reasons.join(" · "):"visual appearance")}</p><div class="matchActions"><button type="button" data-identify-open="${esc(item.coin.id)}">View details</button><button type="button" class="confirmMatch" data-identify-confirm="${esc(item.coin.id)}">Confirm + add</button></div></div></div></article>`;}).join("");
@@ -164,10 +214,10 @@ async function confirmIdentification(id) {
 }
 
 function resetIdentification() {
-  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;
+  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";
   ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
-  document.getElementById("identifyFallbackNotice").hidden=true;document.getElementById("identifyAnalyse").disabled=true;document.getElementById("identifyAnalyse").textContent="Add both photos to analyse";setIdentifyStep(1);
+  document.getElementById("identifyFallbackNotice").hidden=true;document.getElementById("identifyAnalyse").disabled=true;document.getElementById("identifyAnalyse").textContent="Add both photos to analyse";resetTestFeedback();setIdentifyStep(1);
 }
 
 function openFullCatalogueFromIdentification() {
@@ -191,13 +241,21 @@ function wireIdentification(years=[]) {
   const yearSelect=document.getElementById("identifyYear");
   yearSelect.replaceChildren(new Option("Not sure",""));
   years.forEach(year=>yearSelect.add(new Option(year,year)));
+  const coinOptions=document.getElementById("identificationCoinOptions");
+  coinOptions.replaceChildren(...catalogue.map(coin=>new Option(identifyCoinLabel(coin))));
   document.getElementById("identifyObverse").onchange=async event=>{await loadIdentifyPhoto("obverse",event.target.files[0]);event.target.value="";};
   document.getElementById("identifyReverse").onchange=async event=>{await loadIdentifyPhoto("reverse",event.target.files[0]);event.target.value="";};
   document.getElementById("identifyAnalyse").onclick=analysePhotos;
-  document.getElementById("identifyNeedHelp").onclick=()=>setIdentifyStep(2);
+  document.getElementById("identifyNeedHelp").onclick=()=>{identifyState.usedHelpStep=true;identifyState.fallbackReason="Visual analysis skipped by tester";setIdentifyStep(2);};
   document.getElementById("identifyBackPhotos").onclick=()=>setIdentifyStep(1);
-  document.getElementById("identifyBackClues").onclick=()=>setIdentifyStep(2);
+  document.getElementById("identifyBackClues").onclick=()=>{identifyState.usedHelpStep=true;if(!identifyState.fallbackReason)identifyState.fallbackReason="Tester changed or added clues";setIdentifyStep(2);};
   document.getElementById("identifyFind").onclick=runIdentification;
   document.getElementById("identifyReset").onclick=resetIdentification;
   document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
+  document.getElementById("saveIdentificationTest").onclick=saveIdentificationTest;
+  document.querySelectorAll('input[name="identifyOutcome"]').forEach(input=>input.onchange=()=>{
+    const expected=document.getElementById("identifyExpected");
+    if(input.value==="correct"&&input.checked&&!expected.value&&identifyState.results[0])expected.value=identifyCoinLabel(identifyState.results[0].coin);
+    document.getElementById("identifyTestStatus").classList.remove("error");
+  });
 }

@@ -18,7 +18,7 @@
 </head>
 <body>
   <header class="topbar">
-    <div><div class="eyebrow">PHASE 0 · V0.8.0</div><h1>Pocket Mint</h1></div>
+    <div><div class="eyebrow">PHASE 0 · V0.9.0</div><h1>Pocket Mint</h1></div>
     <div class="topActions"><span id="offlineBadge" class="badge">ONLINE</span><button id="installBtn" class="smallBtn" hidden>Install</button></div>
   </header>
   <main>
@@ -30,7 +30,7 @@
       </div>
       <article class="card progressCard"><div class="eyebrow">COLLECTION INTELLIGENCE</div><h3>Collection progress</h3><div id="collectionProgress"></div></article>
       <article class="card progressCard"><div class="eyebrow">SERIES</div><h3>Series progress</h3><div id="seriesProgress"></div></article>
-      <article class="card checklist"><h3>Phase 0 v0.8.0 test</h3><label><input type="checkbox"> Catalogue and My Mint cards show a coin image</label><label><input type="checkbox"> Your own photo becomes the My Mint thumbnail</label><label><input type="checkbox"> Identification matches include a visual reference</label><label><input type="checkbox"> Coin details keep the Mint reference beside your photos</label><label><input type="checkbox"> Reference images remain available offline</label></article>
+      <article class="card checklist"><h3>Phase 0 v0.9.0 test</h3><label><input type="checkbox"> Test Donation Dollar and Qantas Centenary from clear photos</label><label><input type="checkbox"> Mark each result Correct, Partly right, Wrong or Not in catalogue</label><label><input type="checkbox"> Check Step 2 only appears when visual ID needs help</label><label><input type="checkbox"> Review and export the evidence from Settings</label><label><input type="checkbox"> Confirming a match is the only action that changes My Mint</label></article>
     </section>
 
     <section id="findView" class="view">
@@ -71,6 +71,22 @@
         <section id="identifyMatches" class="identifyPanel" hidden>
           <div id="identifySummary"></div>
           <div id="identifyResults" class="matchList"></div>
+          <section class="identifyFeedback" aria-labelledby="identifyFeedbackTitle">
+            <div class="eyebrow">TEST FEEDBACK</div>
+            <h3 id="identifyFeedbackTitle">How did Pocket Mint do?</h3>
+            <p class="muted">Save the result for later review. This does not add anything to My Mint and does not store your photos.</p>
+            <div class="outcomeChoices" role="radiogroup" aria-label="Identification outcome">
+              <label><input type="radio" name="identifyOutcome" value="correct"><span>Correct</span></label>
+              <label><input type="radio" name="identifyOutcome" value="partial"><span>Partly right</span></label>
+              <label><input type="radio" name="identifyOutcome" value="wrong"><span>Wrong</span></label>
+              <label><input type="radio" name="identifyOutcome" value="unsupported"><span>Not in catalogue</span></label>
+            </div>
+            <label class="feedbackField">What coin was it?<input id="identifyExpected" list="identificationCoinOptions" placeholder="e.g. 2020 Donation Dollar"></label>
+            <datalist id="identificationCoinOptions"></datalist>
+            <label class="feedbackField">Note (optional)<textarea id="identifyTestNote" rows="3" placeholder="What was right or wrong?"></textarea></label>
+            <button id="saveIdentificationTest" class="primaryWide" type="button">Save test result</button>
+            <div id="identifyTestStatus" class="analyseStatus" aria-live="polite"></div>
+          </section>
           <div class="identifyButtons"><button id="identifyBackClues" type="button">Add or change clues</button><button id="identifyNoMatch" type="button">I can't find it</button></div>
         </section>
       </div>
@@ -104,6 +120,11 @@
         <p class="muted">Backup contains My Mint records (including Favourite and automatic Date Added), personal photos, and local metadata.</p>
         <button id="exportBtn">Export Pocket Mint backup</button>
         <label class="fileBtn">Restore backup<input type="file" id="restoreInput" accept="application/json"></label>
+        <hr>
+        <h3>Identification test log</h3>
+        <p class="muted"><span id="identificationTestCount">0 saved tests</span>. Photos are never stored in the test log.</p>
+        <div id="identificationTestLog" class="testLog"></div>
+        <div class="settingsActions"><button id="exportIdentificationTests">Export test report</button><button id="clearIdentificationTests" class="danger">Clear test log</button></div>
         <hr>
         <h3>Migration test</h3>
         <button id="selfTestBtn">Run Phase 0 integrity test</button>

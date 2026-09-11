@@ -1,8 +1,8 @@
 const DB_NAME = "PocketMintPhase0";
-const DB_VERSION = 2;
-const APP_VERSION = "0.8.0";
+const DB_VERSION = 3;
+const APP_VERSION = "0.9.0";
 const VIEW_IDS = new Set(["homeView", "findView", "myMintView", "settingsView"]);
-let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
+let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);
 const human = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, match => match.toUpperCase());
@@ -19,6 +19,10 @@ function openDB() {
         store.createIndex("coin_id", "coin_id", {unique: false});
       }
       if (!db.objectStoreNames.contains("appMeta")) db.createObjectStore("appMeta", {keyPath: "key"});
+      if (!db.objectStoreNames.contains("identificationTests")) {
+        const store = db.createObjectStore("identificationTests", {keyPath: "id"});
+        store.createIndex("created_at", "created_at", {unique: false});
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -67,6 +71,7 @@ async function clearStore(storeName) {
 async function loadLocal() {
   const records = await getAll("myMint");
   const photos = await getAll("personalPhotos");
+  identificationTests = (await getAll("identificationTests")).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   state = new Map(records.map(record => [record.coin_id, record]));
   photoMap = new Map();
   for (const photo of photos) {
@@ -187,10 +192,32 @@ function renderHome() {
 }
 
 function renderDiag() {
-  document.getElementById("diagnostics").innerHTML = `<p><b>App:</b> Phase 0 v${APP_VERSION}</p><p><b>Database:</b> ${DB_NAME} schema v${DB_VERSION}</p><p><b>Catalogue:</b> ${esc(catMeta.catalogue_version || "—")}</p><p><b>Local records:</b> ${state.size}</p><p><b>Personal photos:</b> ${[...photoMap.values()].reduce((n, photos) => n + photos.length, 0)}</p><p><b>Connection:</b> ${navigator.onLine ? "online" : "offline"}</p>`;
+  document.getElementById("diagnostics").innerHTML = `<p><b>App:</b> Phase 0 v${APP_VERSION}</p><p><b>Database:</b> ${DB_NAME} schema v${DB_VERSION}</p><p><b>Catalogue:</b> ${esc(catMeta.catalogue_version || "—")}</p><p><b>Local records:</b> ${state.size}</p><p><b>Personal photos:</b> ${[...photoMap.values()].reduce((n, photos) => n + photos.length, 0)}</p><p><b>Identification tests:</b> ${identificationTests.length}</p><p><b>Connection:</b> ${navigator.onLine ? "online" : "offline"}</p>`;
 }
 
-function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderDiag(); }
+function testOutcomeLabel(outcome) {
+  return ({correct:"Correct",partial:"Partly right",wrong:"Wrong",unsupported:"Not in catalogue"})[outcome] || human(outcome);
+}
+
+function renderIdentificationTestLog() {
+  const count = document.getElementById("identificationTestCount");
+  const root = document.getElementById("identificationTestLog");
+  if (!count || !root) return;
+  count.textContent = `${identificationTests.length} saved test${identificationTests.length === 1 ? "" : "s"}`;
+  if (!identificationTests.length) {
+    root.innerHTML = '<div class="empty">No identification tests saved yet.</div>';
+    return;
+  }
+  root.innerHTML = identificationTests.map(test => {
+    const top = test.candidates?.[0];
+    const date = test.created_at ? new Date(test.created_at).toLocaleString() : "Unknown date";
+    const route = test.used_help_step ? test.visual_attempted ? "Visual + Help" : "Help only" : test.visual_attempted ? "Visual only" : "Clues only";
+    const observed = test.observed ? JSON.stringify(test.observed, null, 2) : "No visual observation recorded";
+    return `<details class="testLogItem"><summary><span class="testOutcome ${esc(test.outcome)}">${esc(testOutcomeLabel(test.outcome))}</span><span><b>${esc(test.expected_label || "Unspecified coin")}</b><small>${esc(date)} · ${esc(route)}</small></span></summary><div class="testLogDetails"><p><b>Top result:</b> ${top ? `${esc(top.year)} ${esc(top.title)} (${esc(top.confidence)}%)` : "No catalogue candidate"}</p>${test.note ? `<p><b>Note:</b> ${esc(test.note)}</p>` : ""}<p><b>Step 2 reason:</b> ${esc(test.fallback_reason || "Not used")}</p><pre>${esc(observed)}</pre></div></details>`;
+  }).join("");
+}
+
+function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderDiag(); renderIdentificationTestLog(); }
 
 function bindSeriesLinks() {
   document.querySelectorAll("[data-series-coin]").forEach(button => {
@@ -288,7 +315,7 @@ async function addPhoto(id, file) {
 }
 
 async function exportBackup() {
-  const data = {format: "pocket-mint-backup", version: 2, created_at: new Date().toISOString(), catalogue_version: catMeta.catalogue_version, fields: ["favourite", "date_added"], my_mint: await getAll("myMint"), personal_photos: await getAll("personalPhotos"), app_meta: await getAll("appMeta")};
+  const data = {format: "pocket-mint-backup", version: 3, created_at: new Date().toISOString(), catalogue_version: catMeta.catalogue_version, fields: ["favourite", "date_added", "identification_tests"], my_mint: await getAll("myMint"), personal_photos: await getAll("personalPhotos"), identification_tests: await getAll("identificationTests"), app_meta: await getAll("appMeta")};
   const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -303,8 +330,10 @@ async function restoreBackup(file) {
   await clearStore("myMint");
   await clearStore("personalPhotos");
   await clearStore("appMeta");
+  if (Array.isArray(data.identification_tests)) await clearStore("identificationTests");
   for (const record of data.my_mint) await put("myMint", {...record, favourite: Boolean(record.favourite), date_added: record.date_added || ""});
   for (const photo of data.personal_photos || []) await put("personalPhotos", photo);
+  for (const test of data.identification_tests || []) await put("identificationTests", test);
   for (const meta of data.app_meta || []) await put("appMeta", meta);
   await loadLocal();
   renderAll();
@@ -314,12 +343,12 @@ async function selfTest() {
   const output = [], db = await openDB();
   output.push(`✓ IndexedDB opened: schema v${db.version}`);
   output.push(db.name === DB_NAME ? "✓ Compatible database name retained" : "✗ Database name changed");
-  for (const store of ["myMint", "personalPhotos", "appMeta"]) output.push(db.objectStoreNames.contains(store) ? `✓ ${store} store present` : `✗ ${store} store missing`);
+  for (const store of ["myMint", "personalPhotos", "appMeta", "identificationTests"]) output.push(db.objectStoreNames.contains(store) ? `✓ ${store} store present` : `✗ ${store} store missing`);
   output.push(`✓ Catalogue loaded: ${catalogue.length} records`);
   output.push(new Set(catalogue.map(coin => coin.id)).size === catalogue.length ? "✓ Catalogue IDs are unique" : "✗ Duplicate catalogue IDs found");
   output.push([...state.keys()].every(id => catalogue.some(coin => coin.id === id)) ? "✓ Every personal record resolves to catalogue" : "⚠ Some personal records reference absent catalogue IDs");
   output.push(navigator.serviceWorker?.controller ? "✓ Service worker controls this page" : "⚠ Reload once to activate the service worker");
-  output.push("✓ Favourite and date_added are included in full-record backups");
+  output.push("✓ Favourite, date_added and identification tests are included in backups");
   output.push("PASS: catalogue and personal data remain separate.");
   document.getElementById("testOutput").textContent = output.join("\n");
 }
@@ -384,6 +413,21 @@ function wire() {
     event.target.value = "";
   };
   document.getElementById("selfTestBtn").onclick = selfTest;
+  document.getElementById("exportIdentificationTests").onclick = () => {
+    const data = {format:"pocket-mint-identification-tests", version:1, exported_at:new Date().toISOString(), app_version:APP_VERSION, catalogue_version:catMeta.catalogue_version, tests:identificationTests};
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `pocket-mint-identification-tests-${today()}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  };
+  document.getElementById("clearIdentificationTests").onclick = async () => {
+    if (!confirm("Delete every saved identification test from this device? This will not change My Mint.")) return;
+    await clearStore("identificationTests");
+    identificationTests = [];
+    renderAll();
+  };
   document.getElementById("resetBtn").onclick = async () => {
     if (!confirm("Delete My Mint records and personal photos from this device?")) return;
     await clearStore("myMint");

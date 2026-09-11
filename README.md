@@ -1,6 +1,14 @@
-# Pocket Mint Phase 0 v0.8.0
+# Pocket Mint Phase 0 v0.9.0
 
 Pocket Mint is a local-first Progressive Web App for testing an Australian $1 coin collection catalogue. Personal collection records and photos stay in the browser's IndexedDB database; no account, paid dependency, database, or ongoing-cost service is required.
+
+## v0.9 identification test log
+
+- mark each identification as Correct, Partly right, Wrong, or Not in catalogue
+- record the expected coin, returned candidates, confidence, detected visual details, clue path, fallback reason, and photo-quality metadata
+- review saved tests in Settings and export a shareable JSON test report
+- include the test log in full Pocket Mint backups while remaining compatible with older backups
+- keep test evidence separate from My Mint and never duplicate the photographed coin images in the log
 
 ## v0.8 catalogue reference images
 
@@ -67,14 +75,15 @@ npm run dev
 ## Data compatibility
 
 - IndexedDB database name remains `PocketMintPhase0`.
-- Database schema remains version 2.
-- Existing `myMint`, `personalPhotos`, and `appMeta` stores are reused.
+- Database schema upgrades in place from version 2 to version 3.
+- Existing `myMint`, `personalPhotos`, and `appMeta` stores are reused; `identificationTests` is added without changing collection records.
 - Existing records missing `favourite` remain valid and default to `false`.
 - Existing `date_added` values are preserved. A missing date is automatically set only when quantity first changes from zero to one or more.
 - Catalogue files never overwrite personal records.
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
+- v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.8.0 service worker can refresh its offline cache.
+Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.9.0 service worker can refresh its offline cache.
 
 ## Phase 0 phone checks
 
@@ -86,3 +95,4 @@ Before testing a deployment, export a backup from **Settings → Export Pocket M
 6. Re-check Wishlist auto-removal, Favourite independence, series detail progress, and Android Back navigation.
 7. Export, reset, and restore a backup; Favourite and Date Added must return.
 8. Reopen in airplane mode after one successful online load.
+9. Save identification feedback, review it in Settings, export the test report, and verify My Mint did not change.
