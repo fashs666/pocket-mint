@@ -16,8 +16,12 @@
 .capturePreview.hasPhoto strong { margin-top:auto; }
 .capturePreview small { color:#718078; margin-top:4px; font-size:.7rem; }
 .qualitySummary { display:grid; gap:6px; margin-top:11px; }
-.qualityItem { border-radius:9px; padding:8px 10px; font-size:.75rem; background:#eef3ef; color:#445249; }
+.qualityItem { border-radius:9px; padding:9px 10px; font-size:.75rem; background:#eef3ef; color:#445249; }
+.qualityItem b,.qualityItem span { display:block; }
+.qualityItem span { margin-top:2px; }
+.qualityItem.good { border-left:4px solid #5a8065; }
 .qualityItem.warn { background:#f4ead9; color:#76542b; }
+.optionalCapture { border-style:dotted; }
 .primaryWide,.identifyButtons button { border:0; border-radius:11px; padding:12px; background:#18211d; color:#fff; font-weight:800; }
 .primaryWide { display:block; width:100%; margin-top:13px; }
 .primaryWide:disabled { opacity:.55; cursor:not-allowed; }

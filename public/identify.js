@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.9.0";
+const IDENTIFY_VERSION = "0.10.0";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false};
 
 function setIdentifyStep(step) {
@@ -16,7 +16,7 @@ function clearIdentifyPhoto(side) {
   const preview = document.querySelector(`#${side}Capture .capturePreview`);
   preview.classList.remove("hasPhoto");
   preview.style.backgroundImage = "";
-  preview.innerHTML = `<b>＋</b><strong>${side === "obverse" ? "Portrait side" : "Design side"}</strong><small>${side === "obverse" ? "King or Queen" : "Artwork or kangaroos"}</small>`;
+  preview.innerHTML = `<b>＋</b><strong>${side === "obverse" ? "Portrait side" : "Design side"}</strong><small>${side === "obverse" ? "Optional · year and portrait" : "Required · artwork and words"}</small>`;
 }
 
 async function inspectIdentifyPhoto(file) {
@@ -49,17 +49,20 @@ async function loadIdentifyPhoto(side,file) {
   const preview=document.querySelector(`#${side}Capture .capturePreview`);
   preview.classList.add("hasPhoto"); preview.style.backgroundImage=`url("${url}")`;
   preview.innerHTML=`<strong>${side === "obverse" ? "Portrait side" : "Design side"}</strong><small>Tap to retake</small>`;
-  renderPhotoQuality();
-  const ready=Boolean(identifyState.obverse&&identifyState.reverse);
-  document.getElementById("identifyAnalyse").disabled=!ready;
-  document.getElementById("identifyAnalyse").textContent=ready ? "Analyse both photos" : "Add both photos to analyse";
+  renderPhotoQuality();updateAnalyseButton();
 }
 
 function renderPhotoQuality() {
   const photos=[["Portrait",identifyState.obverse],["Design",identifyState.reverse]].filter(([,value])=>value);
   document.getElementById("photoQuality").innerHTML=photos.map(([label,item])=>item.quality.warnings.length
-    ? `<div class="qualityItem warn"><b>${label}:</b> ${esc(item.quality.warnings.join("; "))}. Consider retaking it.</div>`
-    : `<div class="qualityItem"><b>${label}:</b> photo quality looks usable.</div>`).join("");
+    ? `<div class="qualityItem warn"><b>${item.quality.warnings.length>1?"Retake recommended":"May reduce accuracy"} · ${label}</b><span>${esc(item.quality.warnings.join("; "))}.</span></div>`
+    : `<div class="qualityItem good"><b>Good photo · ${label}</b><span>Lighting and sharpness passed the checks.</span></div>`).join("");
+}
+
+function updateAnalyseButton() {
+  const button=document.getElementById("identifyAnalyse"),hasDesign=Boolean(identifyState.reverse),hasPortrait=Boolean(identifyState.obverse);
+  button.disabled=!hasDesign;
+  button.textContent=!hasDesign?"Add the design side to analyse":hasPortrait?"Analyse both photos":"Analyse design side";
 }
 
 async function drawContained(context,file,x,y,width,height) {
@@ -84,21 +87,19 @@ function setAnalyseStatus(message,isError=false) {
 }
 
 async function analysePhotos() {
-  if (!identifyState.obverse||!identifyState.reverse) return;
+  if (!identifyState.reverse) return;
   identifyState.visualAttempted=true;
   const button=document.getElementById("identifyAnalyse");
-  button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus("Preparing the two sides for visual analysis…");
+  button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus(identifyState.obverse?"Preparing both sides for visual analysis…":"Preparing the design side for visual analysis…");
   try {
-    const [obverse,reverse]=await Promise.all([makeAnalysisImage(identifyState.obverse.file),makeAnalysisImage(identifyState.reverse.file)]);
+    const [obverse,reverse]=await Promise.all([identifyState.obverse?makeAnalysisImage(identifyState.obverse.file):Promise.resolve(null),makeAnalysisImage(identifyState.reverse.file)]);
     const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse,reverse})});
     const data=await response.json();
     if (!response.ok) throw new Error(data.error||"Visual analysis is unavailable");
     identifyState.lastObserved=data.observed||null;
     const matches=(data.matches||[]).map(match=>({coin:catalogue.find(coin=>coin.id===match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
-    const first=matches[0],second=matches[1];
-    const decisive=first&&first.confidence>=72&&(!second||first.confidence-second.confidence>=10)&&!data.uncertain;
-    if (decisive) {
-      identifyState.results=matches.slice(0,5); identifyState.resultSource="visual";
+    if (matches.length&&!data.uncertain) {
+      identifyState.results=matches.slice(0,3); identifyState.resultSource="visual";
       renderIdentifyResults(); setIdentifyStep(3);
     } else {
       identifyState.usedHelpStep=true;
@@ -116,7 +117,7 @@ async function analysePhotos() {
     notice.hidden=false; notice.innerHTML=`<b>Visual analysis wasn’t available.</b><br>${esc(error.message)} You can still narrow it down with visible clues.`;
     setIdentifyStep(2);
   } finally {
-    button.disabled=false; button.textContent="Analyse both photos"; setAnalyseStatus("");
+    updateAnalyseButton();setAnalyseStatus("");
   }
 }
 
@@ -131,15 +132,31 @@ function prefillClues(observed) {
 
 function identifyHaystack(coin) { return [coin.title,coin.series_id,coin.notes,coin.obverse_effigy,coin.privy_mark,coin.mintmark,coin.issue_type].filter(Boolean).join(" ").toLowerCase(); }
 
+function identifyTerms(value) {
+  const ignored=new Set(["australia","australian","coin","dollar","one","the","and","two","female","footballers"]);
+  return String(value||"").toLowerCase().split(/[^a-z0-9]+/).filter(word=>word.length>1&&!ignored.has(word));
+}
+
 function scoreIdentifyCoin(coin,clues) {
   let score=0,possible=0; const reasons=[];
-  if (clues.year) { possible+=35; if (String(coin.year)===clues.year) {score+=35;reasons.push(`year ${coin.year}`);} }
-  if (clues.portrait) { possible+=18;if ((coin.obverse_effigy||"").toLowerCase().includes(clues.portrait)) {score+=18;reasons.push(clues.portrait==="charles"?"King Charles III portrait":"Queen Elizabeth II portrait");} }
-  if (clues.type) { possible+=18;if (coin.issue_type===clues.type) {score+=18;reasons.push(clues.type==="standard"?"five-kangaroo design":"special design");} }
-  if (clues.scope) { possible+=8;if (coin.test_scope===clues.scope) {score+=8;reasons.push(clues.scope==="circulation_core"?"circulation issue":"collector issue");} }
-  if (clues.mark) { possible+=8;if ((clues.mark==="mintmark"&&coin.mintmark)||(clues.mark==="privy"&&coin.privy_mark)) {score+=8;reasons.push(`${clues.mark} recorded`);} }
-  if (clues.words) { possible+=40;const words=clues.words.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean),haystack=identifyHaystack(coin),hits=words.filter(word=>haystack.includes(word));if(hits.length){score+=40*hits.length/words.length;reasons.push(`matches “${hits.join(" ")}”`);} }
-  return {coin,score,confidence:possible?Math.round(100*score/possible):25,reasons};
+  let identityScore=0;
+  if (clues.words) {
+    possible+=70;
+    const words=identifyTerms(clues.words),haystack=identifyHaystack(coin),hits=[...new Set(words.filter(word=>haystack.includes(word)))];
+    const title=coin.title.toLowerCase(),series=String(coin.series_id||"").replaceAll("_"," ").toLowerCase();
+    const phraseMatch=title.includes(clues.words.toLowerCase())||clues.words.toLowerCase().includes(title)||series&&words.some(word=>series.includes(word));
+    identityScore=phraseMatch?70:Math.min(65,hits.length*32);
+    if(identityScore){score+=identityScore;reasons.push(`distinctive text “${hits.length?hits.join(" "):clues.words}"`);}
+  }
+  if (clues.year) { possible+=25; if (String(coin.year)===clues.year) {score+=25;reasons.push(`year ${coin.year}`);} }
+  if (clues.portrait) { possible+=8;if ((coin.obverse_effigy||"").toLowerCase().includes(clues.portrait)) {score+=8;reasons.push(clues.portrait==="charles"?"King Charles III portrait":"Queen Elizabeth II portrait");} }
+  if (clues.type) { possible+=6;const typeMatch=clues.type==="standard"?(coin.issue_type==="standard"||/kangaroo|roos/i.test(coin.title)):coin.issue_type==="commemorative"||coin.issue_type==="series";if(typeMatch){score+=6;reasons.push(clues.type==="standard"?"kangaroo design":"special design");} }
+  if (clues.scope) { possible+=2;if (coin.test_scope===clues.scope) {score+=2;reasons.push(clues.scope==="circulation_core"?"circulation issue":"collector issue");} }
+  if (clues.mark) { possible+=6;if ((clues.mark==="mintmark"&&coin.mintmark)||(clues.mark==="privy"&&coin.privy_mark)) {score+=6;reasons.push(`${clues.mark} recorded`);} }
+  let confidence=possible?Math.round(100*score/possible):25;
+  if(identityScore>=65&&clues.year&&String(coin.year)===clues.year)confidence=Math.max(confidence,92);
+  else if(identityScore>=65)confidence=Math.max(confidence,82);
+  return {coin,score,confidence:Math.min(96,confidence),reasons,identityScore};
 }
 
 function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value}; }
@@ -147,9 +164,10 @@ function readIdentifyClues() { return {year:document.getElementById("identifyYea
 function runIdentification() {
   const clues=readIdentifyClues(),hasStrongClue=Boolean(clues.year||clues.portrait||clues.type||clues.words||clues.mark);
   let ranked=catalogue.map(coin=>scoreIdentifyCoin(coin,clues));
-  ranked.sort((a,b)=>b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
+  ranked.sort((a,b)=>b.identityScore-a.identityScore||b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
   if(hasStrongClue) ranked=ranked.filter(item=>item.score>0);
-  identifyState.results=ranked.slice(0,8); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
+  const top=ranked[0];
+  identifyState.results=ranked.filter((item,index)=>index===0||!top||item.confidence>=55&&item.confidence>top.confidence-18&&item.score>=top.score-35).slice(0,3); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
 }
 
 function identifyCoinLabel(coin) { return `${coin.year} ${coin.title}`; }
@@ -194,7 +212,7 @@ async function saveIdentificationTest() {
 
 function renderIdentifyResults() {
   const visual=identifyState.resultSource==="visual",photoCount=[identifyState.obverse,identifyState.reverse].filter(Boolean).length;
-  document.getElementById("identifySummary").innerHTML=`<div class="identifyNotice"><b>${identifyState.results.length?visual?"Visual identification results":"Best catalogue candidates":"No catalogue match yet"}</b><br>${visual?"Pocket Mint analysed the artwork and visible text in both photos.":"Ranked using the clues supplied."}${photoCount?` ${photoCount} photos are ready to attach.`:""}</div>`;
+  document.getElementById("identifySummary").innerHTML=`<div class="identifyNotice"><b>${identifyState.results.length?visual?"Visual identification results":"Best catalogue candidates":"No catalogue match yet"}</b><br>${visual?`Pocket Mint analysed the visible artwork and text${photoCount===2?" across both sides":" on the design side"}.`:"Ranked using the clues supplied."}${photoCount?` ${photoCount} photo${photoCount===1?" is":"s are"} ready to attach.`:""}</div>`;
   if(!identifyState.testLogSaved){
     const expected=document.getElementById("identifyExpected");
     if(!expected.value&&identifyState.results[0]) expected.placeholder=`e.g. ${identifyCoinLabel(identifyState.results[0].coin)}`;
@@ -217,7 +235,7 @@ function resetIdentification() {
   clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";
   ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
-  document.getElementById("identifyFallbackNotice").hidden=true;document.getElementById("identifyAnalyse").disabled=true;document.getElementById("identifyAnalyse").textContent="Add both photos to analyse";resetTestFeedback();setIdentifyStep(1);
+  document.getElementById("identifyFallbackNotice").hidden=true;updateAnalyseButton();resetTestFeedback();setIdentifyStep(1);
 }
 
 function openFullCatalogueFromIdentification() {

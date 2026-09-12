@@ -1,6 +1,16 @@
-# Pocket Mint Phase 0 v0.9.0
+# Pocket Mint Phase 0 v0.10.0
 
 Pocket Mint is a local-first Progressive Web App for testing an Australian $1 coin collection catalogue. Personal collection records and photos stay in the browser's IndexedDB database; no account, paid dependency, database, or ongoing-cost service is required.
+
+## v0.10 identification calibration
+
+- identify from the required design-side photo alone; the portrait-side photo is now optional
+- calculate confidence from catalogue evidence instead of trusting the vision model's self-rating
+- prioritise distinctive names and artwork over uncertain year, portrait, and kangaroo-count observations
+- recognise Matildas at series level when the exact player design remains uncertain
+- limit results to three meaningful candidates and suppress weak extras after a decisive match
+- add the missing provisional 2025 Five Kangaroos record with its standard reference image
+- report photo quality as Good photo, May reduce accuracy, or Retake recommended
 
 ## v0.9 identification test log
 
@@ -24,8 +34,8 @@ Pocket Mint is a local-first Progressive Web App for testing an Australian $1 co
 - capture or upload the portrait and design sides on Android or desktop
 - perform on-device brightness, glare and sharpness checks
 - narrow the catalogue by year, portrait, design type, visible words and marks
-- rank up to eight candidates with transparent clue-match reasons
-- confirm a candidate to add one specimen and attach both photos
+- rank up to three meaningful candidates with transparent evidence
+- confirm a candidate to add one specimen and attach every supplied photo
 - keep all identification photos local unless the user exports a backup
 
 Visual analysis now runs before the fallback clue form. Pocket Mint sends a reduced two-side composite to a Cloudflare-hosted vision model, maps its structured result to the local catalogue, and goes directly to likely matches when the result is decisive. The clue form appears only for uncertain, failed, or deliberately skipped visual analysis. Confirmed original photos remain in local IndexedDB.
@@ -83,7 +93,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.9.0 service worker can refresh its offline cache.
+Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.10.0 service worker can refresh its offline cache.
 
 ## Phase 0 phone checks
 

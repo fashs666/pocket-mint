@@ -1,6 +1,7 @@
 {
   "name": "pocket-mint-phase-0",
-  "version": "0.9.0",
+  "version": "0.10.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "check": "node --check public/app.js && node --check public/progress.js && node --check public/identify.js && node --check src/index.js && node validate.mjs",
