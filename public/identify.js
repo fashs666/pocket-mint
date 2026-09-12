@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.10.0";
+const IDENTIFY_VERSION = "0.10.1";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false};
 
 function setIdentifyStep(step) {
@@ -151,7 +151,7 @@ function scoreIdentifyCoin(coin,clues) {
   if (clues.year) { possible+=25; if (String(coin.year)===clues.year) {score+=25;reasons.push(`year ${coin.year}`);} }
   if (clues.portrait) { possible+=8;if ((coin.obverse_effigy||"").toLowerCase().includes(clues.portrait)) {score+=8;reasons.push(clues.portrait==="charles"?"King Charles III portrait":"Queen Elizabeth II portrait");} }
   if (clues.type) { possible+=6;const typeMatch=clues.type==="standard"?(coin.issue_type==="standard"||/kangaroo|roos/i.test(coin.title)):coin.issue_type==="commemorative"||coin.issue_type==="series";if(typeMatch){score+=6;reasons.push(clues.type==="standard"?"kangaroo design":"special design");} }
-  if (clues.scope) { possible+=2;if (coin.test_scope===clues.scope) {score+=2;reasons.push(clues.scope==="circulation_core"?"circulation issue":"collector issue");} }
+  if (clues.scope) { possible+=2;if (clues.scope==="circulation_core"?coin.coin_class==="circulating":coin.test_scope===clues.scope) {score+=2;reasons.push(clues.scope==="circulation_core"?"circulation issue":"collector issue");} }
   if (clues.mark) { possible+=6;if ((clues.mark==="mintmark"&&coin.mintmark)||(clues.mark==="privy"&&coin.privy_mark)) {score+=6;reasons.push(`${clues.mark} recorded`);} }
   let confidence=possible?Math.round(100*score/possible):25;
   if(identityScore>=65&&clues.year&&String(coin.year)===clues.year)confidence=Math.max(confidence,92);

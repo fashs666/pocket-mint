@@ -54,6 +54,7 @@ function parseObservations(obverseAnswer,reverseAnswer,candidates) {
 
 function rankCatalogue(candidates,observed) {
   const visualWords=usefulWords([observed.words.join(" "),observed.design_type].join(" "));
+  const discoveryMark=observed.words.join(" ").match(/\bletter\s+([asu])\b/i)?.[1]?.toUpperCase()||null;
   const titleCounts=new Map();
   for(const coin of candidates) titleCounts.set(coin.title,(titleCounts.get(coin.title)||0)+1);
   const ranked=candidates.map(coin=>{
@@ -64,7 +65,11 @@ function rankCatalogue(candidates,observed) {
     const portraitKnown=/charles|elizabeth|queen/i.test(observed.portrait||"");
     const portraitMatch=(/charles/i.test(observed.portrait)&&/charles/i.test(coin.obverse_effigy||""))||(/elizabeth|queen/i.test(observed.portrait)&&/elizabeth/i.test(coin.obverse_effigy||""));
     const portraitConflict=portraitKnown&&!portraitMatch;
+    const markMatch=coin.series_id==="dollar_discovery"&&discoveryMark===coin.privy_mark;
+    const markConflict=coin.series_id==="dollar_discovery"&&discoveryMark&&!markMatch;
     if(designMatch){score+=seriesMatch?90:100;evidence.push(seriesMatch?"Matildas series artwork":`reverse design: ${coin.title}`);}
+    if(markMatch){score+=85;evidence.push(`visible letter ${discoveryMark}`);}
+    if(markConflict)score-=100;
     if(yearMatch){score+=30;evidence.push(`visible year ${coin.year}`);}
     if(portraitMatch){score+=8;evidence.push(/charles/i.test(observed.portrait)?"King Charles III portrait":"Queen Elizabeth II portrait");}
     if(portraitConflict) score-=18;
@@ -78,7 +83,9 @@ function rankCatalogue(candidates,observed) {
     const repeatedTitle=titleCounts.get(coin.title)>1;
     const countSensitive=/kangaroo|roos/i.test(coin.title);
     let confidence=.35;
-    if(designMatch&&yearMatch) confidence=.95;
+    if(markMatch&&yearMatch) confidence=.95;
+    else if(markMatch) confidence=.84;
+    else if(designMatch&&yearMatch) confidence=.95;
     else if(seriesMatch) confidence=.82;
     else if(designMatch&&!repeatedTitle&&!countSensitive) confidence=.94;
     else if(designMatch&&!repeatedTitle) confidence=.8;
@@ -87,6 +94,7 @@ function rankCatalogue(candidates,observed) {
     else if(distinctiveHits.length) confidence=.76;
     else if(yearMatch&&portraitMatch) confidence=.52;
     if(portraitConflict) confidence-=.22;
+    if(markConflict) confidence=Math.min(confidence,.3);
     return {coin,score,confidence:Math.max(.2,confidence),evidence,designMatch,yearMatch};
   }).filter(item=>item.score>0).sort((a,b)=>b.score-a.score||Number(b.yearMatch)-Number(a.yearMatch)||Number(b.designMatch)-Number(a.designMatch)||Number(b.coin.year)-Number(a.coin.year));
   const top=ranked[0];
@@ -142,7 +150,7 @@ async function identify(request,env) {
   const designChoices=[...new Set(candidates.map(coin=>coin.title))];
   const titleOptions=designChoices.join(" | ");
   const obversePrompt="This is the portrait side of an Australian one-dollar coin. Read only the four-digit mint year and identify Queen Elizabeth II or King Charles III. Do not infer a year that is not visibly readable. Reply exactly: YEAR=value; PORTRAIT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100. Use unknown when unreadable.";
-  const reversePrompt=`This is the reverse design of an Australian one-dollar coin. Compare the artwork and lettering to these catalogue choices: ${titleOptions}. Count kangaroos carefully; do not choose Five Kangaroos or Mob of Six Roos from a rough impression alone. Matildas is a valid series even when the exact player design is unclear. Select an exact title only when visible artwork or lettering supports it; otherwise use unknown. Read distinctive visible words and describe the central subject. Reply exactly: DESIGN=value; TYPE=standard or commemorative or unknown; WORDS=value; SUBJECT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100.`;
+  const reversePrompt=`This is the reverse design of an Australian one-dollar coin. Compare the artwork and lettering to these catalogue choices: ${titleOptions}. Count kangaroos carefully; do not choose Five Kangaroos or Mob of Six Roos from a rough impression alone. Matildas is a valid series even when the exact player design is unclear. For Dollar Discovery, report its A, U or S mark as "letter A", "letter U" or "letter S" in WORDS only when legible. Select an exact title only when visible artwork or lettering supports it; otherwise use unknown. Read distinctive visible words and describe the central subject. Reply exactly: DESIGN=value; TYPE=standard or commemorative or unknown; WORDS=value; SUBJECT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100.`;
   try {
     const [obverseOutput,reverseOutput]=await Promise.all([
       body.obverse?runVision(env,body.obverse,obversePrompt,120):Promise.resolve(null),
