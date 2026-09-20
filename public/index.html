@@ -18,7 +18,7 @@
 </head>
 <body>
   <header class="topbar">
-    <div><div class="eyebrow">PHASE 0 · V0.10.1</div><h1>Pocket Mint</h1></div>
+    <div><div class="eyebrow">PHASE 0 · V0.10.2</div><h1>Pocket Mint</h1></div>
     <div class="topActions"><span id="offlineBadge" class="badge">ONLINE</span><button id="installBtn" class="smallBtn" hidden>Install</button></div>
   </header>
   <main>
@@ -30,7 +30,7 @@
       </div>
       <article class="card progressCard"><div class="eyebrow">COLLECTION INTELLIGENCE</div><h3>Collection progress</h3><div id="collectionProgress"></div></article>
       <article class="card progressCard"><div class="eyebrow">SERIES</div><h3>Series progress</h3><div id="seriesProgress"></div></article>
-      <article class="card checklist"><h3>Phase 0 v0.10.1 test</h3><label><input type="checkbox"> Try Qantas and Donation Dollar using only the design side</label><label><input type="checkbox"> Compare 2019 Dollar Discovery A, U and S letters</label><label><input type="checkbox"> Compare 2014 and 2018 ANZAC coins, with and without the portrait side</label><label><input type="checkbox"> Retest 2025 Five Kangaroos and 2026 Mob of Six Roos</label><label><input type="checkbox"> Save each outcome to the identification test log</label></article>
+      <article class="card checklist"><h3>Phase 0 v0.10.2 test</h3><label><input type="checkbox"> Check Qantas still goes directly to one visual match</label><label><input type="checkbox"> Identify Donation Dollar, then enter 2020 or 2021 and check only that year remains</label><label><input type="checkbox"> Retest Mob of Six Roos and use the five-or-six question only if asked</label><label><input type="checkbox"> Check an uncertain photo is no longer labelled “Good photo”</label><label><input type="checkbox"> Save each outcome to the identification test log</label></article>
     </section>
 
     <section id="findView" class="view">
@@ -62,6 +62,7 @@
             <label>Year<select id="identifyYear"><option value="">Not sure</option></select></label>
             <label>Portrait<select id="identifyPortrait"><option value="">Not sure</option><option value="charles">King Charles III</option><option value="elizabeth">Queen Elizabeth II</option></select></label>
             <label>Design type<select id="identifyType"><option value="">Not sure</option><option value="standard">Five kangaroos</option><option value="commemorative">Special design</option></select></label>
+            <label id="kangarooCountField" hidden>How many kangaroos?<select id="identifyKangarooCount"><option value="">Not sure</option><option value="5">Five</option><option value="6">Six</option></select></label>
             <label>Words, letters or subject<input id="identifyWords" type="search" placeholder="e.g. Matildas, Qantas, A, dinosaur"></label>
             <label>Special mark<select id="identifyMark"><option value="">Not sure / none seen</option><option value="mintmark">Mintmark</option><option value="privy">Privy mark</option></select></label>
             <label>Issue group<select id="identifyScope"><option value="circulation_core">Found in change</option><option value="">Not sure / all records</option><option value="collector_exemplar">Collector issue</option></select></label>

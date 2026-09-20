@@ -1,5 +1,5 @@
-const IDENTIFY_VERSION = "0.10.1";
-const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false};
+const IDENTIFY_VERSION = "0.10.2";
+const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 
 function setIdentifyStep(step) {
   document.querySelectorAll("[data-identify-step]").forEach(item => item.classList.toggle("on", Number(item.dataset.identifyStep) === step));
@@ -42,6 +42,7 @@ async function inspectIdentifyPhoto(file) {
 
 async function loadIdentifyPhoto(side,file) {
   if (!file) return;
+  identifyState.analysisCertain=null;
   clearIdentifyPhoto(side);
   const url=URL.createObjectURL(file);
   try { identifyState[side]={file,url,quality:await inspectIdentifyPhoto(file)}; }
@@ -56,7 +57,11 @@ function renderPhotoQuality() {
   const photos=[["Portrait",identifyState.obverse],["Design",identifyState.reverse]].filter(([,value])=>value);
   document.getElementById("photoQuality").innerHTML=photos.map(([label,item])=>item.quality.warnings.length
     ? `<div class="qualityItem warn"><b>${item.quality.warnings.length>1?"Retake recommended":"May reduce accuracy"} · ${label}</b><span>${esc(item.quality.warnings.join("; "))}.</span></div>`
-    : `<div class="qualityItem good"><b>Good photo · ${label}</b><span>Lighting and sharpness passed the checks.</span></div>`).join("");
+    : identifyState.analysisCertain===false&&label==="Design"
+      ? `<div class="qualityItem warn"><b>May reduce accuracy · ${label}</b><span>Basic checks passed, but the photo did not produce a reliable identification.</span></div>`
+      : identifyState.analysisCertain===true&&label==="Design"
+        ? `<div class="qualityItem good"><b>Analysis-ready · ${label}</b><span>Basic checks passed and the design was recognised.</span></div>`
+        : `<div class="qualityItem"><b>Basic checks passed · ${label}</b><span>Resolution, lighting and overall sharpness look usable. Coin detail is checked during identification.</span></div>`).join("");
 }
 
 function updateAnalyseButton() {
@@ -99,9 +104,11 @@ async function analysePhotos() {
     identifyState.lastObserved=data.observed||null;
     const matches=(data.matches||[]).map(match=>({coin:catalogue.find(coin=>coin.id===match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
     if (matches.length&&!data.uncertain) {
+      identifyState.analysisCertain=true;renderPhotoQuality();
       identifyState.results=matches.slice(0,3); identifyState.resultSource="visual";
       renderIdentifyResults(); setIdentifyStep(3);
     } else {
+      identifyState.analysisCertain=false;renderPhotoQuality();
       identifyState.usedHelpStep=true;
       identifyState.fallbackReason=data.reason||"The photos did not produce one clear match.";
       prefillClues(data.observed||{});
@@ -125,49 +132,73 @@ function prefillClues(observed) {
   if (observed.year&&[...document.getElementById("identifyYear").options].some(option=>option.value===String(observed.year))) document.getElementById("identifyYear").value=String(observed.year);
   if (/charles/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="charles";
   if (/elizabeth/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="elizabeth";
-  if (/kangaroo|standard/i.test(observed.design_type||"")) document.getElementById("identifyType").value="standard";
-  else if (observed.design_type) document.getElementById("identifyType").value="commemorative";
+  if (observed.design_type==="standard") document.getElementById("identifyType").value="standard";
+  else if (observed.design_type==="commemorative") document.getElementById("identifyType").value="commemorative";
   if (observed.words) document.getElementById("identifyWords").value=Array.isArray(observed.words)?observed.words.join(" "):observed.words;
+  const count=Number(observed.kangaroo_count)||(/mob of six|six (?:roos|kangaroos)/i.test(observed.design||"")?6:/five (?:roos|kangaroos)/i.test(observed.design||"")?5:0);
+  document.getElementById("identifyKangarooCount").value=[5,6].includes(count)?String(count):"";
+  const observedWords=Array.isArray(observed.words)?observed.words:[observed.words].filter(Boolean);
+  document.getElementById("kangarooCountField").hidden=!(/kangaroo|roos/i.test([observed.design,...observedWords].join(" "))||[5,6].includes(count));
 }
 
 function identifyHaystack(coin) { return [coin.title,coin.series_id,coin.notes,coin.obverse_effigy,coin.privy_mark,coin.mintmark,coin.issue_type].filter(Boolean).join(" ").toLowerCase(); }
 
 function identifyTerms(value) {
-  const ignored=new Set(["australia","australian","coin","dollar","one","the","and","two","female","footballers"]);
+  const ignored=new Set(["australia","australian","coin","dollar","one","the","and","to","for","of","a","an","give","gives","help","helps","other","others","money","two","female","footballers","standard","special","design","concentric","circle","circles","kangaroo","kangaroos","roo","roos"]);
   return String(value||"").toLowerCase().split(/[^a-z0-9]+/).filter(word=>word.length>1&&!ignored.has(word));
 }
 
 function scoreIdentifyCoin(coin,clues) {
   let score=0,possible=0; const reasons=[];
   let identityScore=0;
+  const exactDesign=Boolean(clues.design&&(clues.design===coin.title||clues.design===`series:${coin.series_id}`));
+  const sameDesign=Boolean(clues.design&&!clues.design.startsWith("series:")&&clues.design===coin.title);
+  if(clues.design){possible+=100;if(exactDesign){score+=100;identityScore=100;reasons.push(clues.design.startsWith("series:")?"recognised series":"recognised design");}}
   if (clues.words) {
     possible+=70;
     const words=identifyTerms(clues.words),haystack=identifyHaystack(coin),hits=[...new Set(words.filter(word=>haystack.includes(word)))];
     const title=coin.title.toLowerCase(),series=String(coin.series_id||"").replaceAll("_"," ").toLowerCase();
     const phraseMatch=title.includes(clues.words.toLowerCase())||clues.words.toLowerCase().includes(title)||series&&words.some(word=>series.includes(word));
-    identityScore=phraseMatch?70:Math.min(65,hits.length*32);
-    if(identityScore){score+=identityScore;reasons.push(`distinctive text “${hits.length?hits.join(" "):clues.words}"`);}
+    const wordScore=phraseMatch?70:Math.min(65,hits.length*32);
+    identityScore=Math.max(identityScore,wordScore);
+    if(wordScore){score+=wordScore;reasons.push(`distinctive text “${hits.length?hits.join(" "):clues.words}"`);}
   }
   if (clues.year) { possible+=25; if (String(coin.year)===clues.year) {score+=25;reasons.push(`year ${coin.year}`);} }
   if (clues.portrait) { possible+=8;if ((coin.obverse_effigy||"").toLowerCase().includes(clues.portrait)) {score+=8;reasons.push(clues.portrait==="charles"?"King Charles III portrait":"Queen Elizabeth II portrait");} }
   if (clues.type) { possible+=6;const typeMatch=clues.type==="standard"?(coin.issue_type==="standard"||/kangaroo|roos/i.test(coin.title)):coin.issue_type==="commemorative"||coin.issue_type==="series";if(typeMatch){score+=6;reasons.push(clues.type==="standard"?"kangaroo design":"special design");} }
   if (clues.scope) { possible+=2;if (clues.scope==="circulation_core"?coin.coin_class==="circulating":coin.test_scope===clues.scope) {score+=2;reasons.push(clues.scope==="circulation_core"?"circulation issue":"collector issue");} }
   if (clues.mark) { possible+=6;if ((clues.mark==="mintmark"&&coin.mintmark)||(clues.mark==="privy"&&coin.privy_mark)) {score+=6;reasons.push(`${clues.mark} recorded`);} }
+  if (clues.kangaroo_count) {
+    possible+=80;
+    const count=Number(clues.kangaroo_count),isSix=coin.id==="AU1-2026-SIX-ROOS",isFive=/Five Kangaroos/i.test(coin.title);
+    if((count===6&&isSix)||(count===5&&isFive)){score+=80;identityScore=Math.max(identityScore,90);reasons.push(`${count} kangaroos visible`);}
+    else if((count===6&&isFive)||(count===5&&isSix))score-=100;
+  }
   let confidence=possible?Math.round(100*score/possible):25;
-  if(identityScore>=65&&clues.year&&String(coin.year)===clues.year)confidence=Math.max(confidence,92);
+  if(exactDesign&&clues.year&&String(coin.year)===clues.year)confidence=96;
+  else if(exactDesign)confidence=Math.max(confidence,sameDesign?84:82);
+  else if(identityScore>=65&&clues.year&&String(coin.year)===clues.year)confidence=Math.max(confidence,92);
   else if(identityScore>=65)confidence=Math.max(confidence,82);
-  return {coin,score,confidence:Math.min(96,confidence),reasons,identityScore};
+  return {coin,score,confidence:Math.max(0,Math.min(96,confidence)),reasons,identityScore,exactDesign};
 }
 
-function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value}; }
+function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value,design:identifyState.lastObserved?.design||"",kangaroo_count:document.getElementById("identifyKangarooCount").value}; }
+
+function rankClueCatalogue(coins,clues) {
+  const hasStrongClue=Boolean(clues.year||clues.portrait||clues.type||clues.words||clues.mark||clues.design||clues.kangaroo_count);
+  let ranked=coins.map(coin=>scoreIdentifyCoin(coin,clues));
+  ranked.sort((a,b)=>b.identityScore-a.identityScore||b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
+  if(hasStrongClue)ranked=ranked.filter(item=>item.score>0);
+  const exactYearDesign=clues.year&&clues.design&&!clues.design.startsWith("series:")?ranked.filter(item=>item.exactDesign&&String(item.coin.year)===clues.year):[];
+  if(exactYearDesign.length) return exactYearDesign.slice(0,1);
+  const exactCount=clues.kangaroo_count?ranked.filter(item=>item.reasons.some(reason=>reason.includes("kangaroos visible"))):[];
+  if(exactCount.length===1)return exactCount;
+  const top=ranked[0];
+  return ranked.filter((item,index)=>index===0||!top||item.confidence>=55&&item.confidence>top.confidence-18&&item.score>=top.score-35).slice(0,3);
+}
 
 function runIdentification() {
-  const clues=readIdentifyClues(),hasStrongClue=Boolean(clues.year||clues.portrait||clues.type||clues.words||clues.mark);
-  let ranked=catalogue.map(coin=>scoreIdentifyCoin(coin,clues));
-  ranked.sort((a,b)=>b.identityScore-a.identityScore||b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
-  if(hasStrongClue) ranked=ranked.filter(item=>item.score>0);
-  const top=ranked[0];
-  identifyState.results=ranked.filter((item,index)=>index===0||!top||item.confidence>=55&&item.confidence>top.confidence-18&&item.score>=top.score-35).slice(0,3); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
+  identifyState.results=rankClueCatalogue(catalogue,readIdentifyClues()); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
 }
 
 function identifyCoinLabel(coin) { return `${coin.year} ${coin.title}`; }
@@ -232,11 +263,14 @@ async function confirmIdentification(id) {
 }
 
 function resetIdentification() {
-  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";
-  ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
+  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;
+  ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark","identifyKangarooCount"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("kangarooCountField").hidden=true;
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
   document.getElementById("identifyFallbackNotice").hidden=true;updateAnalyseButton();resetTestFeedback();setIdentifyStep(1);
 }
+
+if(typeof window!=="undefined")window.PocketMintIdentifyCore={identifyTerms,scoreIdentifyCoin,rankClueCatalogue};
 
 function openFullCatalogueFromIdentification() {
   const clues=readIdentifyClues(),observed=identifyState.lastObserved||{};
@@ -268,6 +302,9 @@ function wireIdentification(years=[]) {
   document.getElementById("identifyBackPhotos").onclick=()=>setIdentifyStep(1);
   document.getElementById("identifyBackClues").onclick=()=>{identifyState.usedHelpStep=true;if(!identifyState.fallbackReason)identifyState.fallbackReason="Tester changed or added clues";setIdentifyStep(2);};
   document.getElementById("identifyFind").onclick=runIdentification;
+  const updateKangarooQuestion=()=>{document.getElementById("kangarooCountField").hidden=!(document.getElementById("identifyType").value==="standard"||/kangaroo|roos/i.test(document.getElementById("identifyWords").value));};
+  document.getElementById("identifyType").onchange=updateKangarooQuestion;
+  document.getElementById("identifyWords").oninput=updateKangarooQuestion;
   document.getElementById("identifyReset").onclick=resetIdentification;
   document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
   document.getElementById("saveIdentificationTest").onclick=saveIdentificationTest;
