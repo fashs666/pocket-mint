@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.10.2";
+const IDENTIFY_VERSION = "0.10.3";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 
 function setIdentifyStep(step) {

@@ -18,7 +18,7 @@
 </head>
 <body>
   <header class="topbar">
-    <div><div class="eyebrow">PHASE 0 · V0.10.2</div><h1>Pocket Mint</h1></div>
+    <div><div class="eyebrow">PHASE 0 · V0.10.3</div><h1>Pocket Mint</h1></div>
     <div class="topActions"><span id="offlineBadge" class="badge">ONLINE</span><button id="installBtn" class="smallBtn" hidden>Install</button></div>
   </header>
   <main>
@@ -30,7 +30,7 @@
       </div>
       <article class="card progressCard"><div class="eyebrow">COLLECTION INTELLIGENCE</div><h3>Collection progress</h3><div id="collectionProgress"></div></article>
       <article class="card progressCard"><div class="eyebrow">SERIES</div><h3>Series progress</h3><div id="seriesProgress"></div></article>
-      <article class="card checklist"><h3>Phase 0 v0.10.2 test</h3><label><input type="checkbox"> Check Qantas still goes directly to one visual match</label><label><input type="checkbox"> Identify Donation Dollar, then enter 2020 or 2021 and check only that year remains</label><label><input type="checkbox"> Retest Mob of Six Roos and use the five-or-six question only if asked</label><label><input type="checkbox"> Check an uncertain photo is no longer labelled “Good photo”</label><label><input type="checkbox"> Save each outcome to the identification test log</label></article>
+      <article class="card checklist"><h3>Phase 0 v0.10.3 test</h3><label><input type="checkbox"> Browse the catalogue and confirm All circulating coins is selected</label><label><input type="checkbox"> Test Year of the Outback and Girl Guiding from the design side</label><label><input type="checkbox"> Test several ANZAC years with both sides photographed</label><label><input type="checkbox"> Check collector-only products no longer appear in Browse or identification</label><label><input type="checkbox"> Save each outcome to the identification test log</label></article>
     </section>
 
     <section id="findView" class="view">
@@ -98,7 +98,7 @@
         <div class="filterRow">
           <input id="catalogueSearch" class="search" type="search" aria-label="Search catalogue" placeholder="Year, title, series, effigy or privy mark…">
           <select id="yearFilter" aria-label="Filter by year"><option value="">All years</option></select>
-          <select id="scopeFilter" aria-label="Filter by issue group"><option value="circulation_core">Circulating core</option><option value="">All records</option><option value="circulation_sample">Earlier circulating samples</option><option value="collector_exemplar">Collector exemplars</option></select>
+          <select id="scopeFilter" aria-label="Filter by issue group"><option value="">All circulating coins</option><option value="circulation_core">Recent circulating core</option><option value="circulation_sample">Earlier circulating coins</option></select>
           <select id="stateFilter" aria-label="Filter by collection state"><option value="">Any state</option><option value="owned">Owned</option><option value="missing">Missing</option><option value="wishlist">Wishlist</option><option value="favourite">Favourite</option></select>
         </div>
         <div id="catalogueList" class="coinList"></div>

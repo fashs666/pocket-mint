@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.10.2";
+const APP_VERSION = "0.10.3";
 const VIEW_IDS = new Set(["homeView", "findView", "myMintView", "settingsView"]);
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
 

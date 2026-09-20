@@ -1,6 +1,15 @@
-# Pocket Mint Phase 0 v0.10.2
+# Pocket Mint Phase 0 v0.10.3
 
 Pocket Mint is a local-first Progressive Web App for testing an Australian $1 coin collection catalogue. Personal collection records and photos stay in the browser's IndexedDB database; no account, paid dependency, database, or ongoing-cost service is required.
+
+## v0.10.3 circulating catalogue expansion
+
+- default Browse & Search to all circulating catalogue records
+- remove collector-only product issues from the active test catalogue
+- add 20 commonly encountered circulating commemoratives from 1986–2017
+- include Year of the Outback, Girl Guiding, Scouting, Peace, Bicentenary, Landcare, APEC and the complete 2014–2018 ANZAC circulating run
+- display official Royal Australian Mint reference artwork for every added coin
+- recognise years beginning with 19 as well as 20 during photo identification
 
 ## v0.10.2 identification repair
 
@@ -102,7 +111,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.10.2 service worker can refresh its offline cache. The earlier circulating samples use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.10.3 service worker can refresh its offline cache. The earlier circulating samples use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 

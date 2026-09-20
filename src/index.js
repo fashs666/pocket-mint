@@ -28,6 +28,13 @@ function identifyDesign(value,candidates) {
   const aliases=[
     ["100 Years of Qantas",["qantas","100 years qantas","centenary","aeroplane","airplane","aircraft"]],
     ["Donation Dollar",["donation","give to help others"]],
+    ["Year of the Outback",["year of the outback","outback","southern cross map"]],
+    ["Centenary of Girl Guiding in Australia",["girl guiding","girl guides","girl guide"]],
+    ["Centenary of Scouting in Australia",["scouting australia","scouts","scouting"]],
+    ["ANZAC Centenary",["anzac centenary","100 years anzac","anzac"]],
+    ["International Year of Peace",["year of peace","peace dove","peace"]],
+    ["Australian Bicentenary",["bicentenary","first fleet"]],
+    ["Landcare Australia",["landcare","tree water"]],
     ["series:matildas",["matildas","female footballers","women footballers"]],
     ["Mob of Six Roos",["mob of six","six roos","six kangaroos"]],
     ["Five Kangaroos",["five kangaroos","five roos","standard kangaroo"]]
@@ -39,7 +46,7 @@ function identifyDesign(value,candidates) {
 
 function parseObservations(obverseAnswer,reverseAnswer,candidates) {
   const obverse=parseFields(obverseAnswer),reverse=parseFields(reverseAnswer);
-  const year=(obverse.fields.year||"").match(/20\d{2}/)?.[0]||null;
+  const year=(obverse.fields.year||"").match(/(?:19|20)\d{2}/)?.[0]||null;
   const reverseText=[reverse.fields.design,reverse.fields.words,reverse.fields.subject].filter(Boolean).join(" ");
   const rawType=normalize(reverse.fields.type);
   const designType=rawType==="standard"||rawType==="commemorative"?rawType:"unknown";
