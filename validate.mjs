@@ -35,6 +35,7 @@ const countedSixRoosMatches = rankCatalogue(catalogue.coins,visualCase({design_t
 const invalidTypeObservation = parseObservations("", "DESIGN=unknown; TYPE=standard or commemorative or unknown; WORDS=DOLLAR kangaroos; SUBJECT=kangaroos; KANGAROOS=unknown; CONFIDENCE=80", catalogue.coins);
 const donation2020Clues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"2020",portrait:"",type:"commemorative",words:"Give to help concentric circles",mark:"",scope:"circulation_core",design:"Donation Dollar",kangaroo_count:""});
 const donation2021Clues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"2021",portrait:"",type:"commemorative",words:"Money to help others concentric circles",mark:"",scope:"circulation_core",design:"Donation Dollar",kangaroo_count:""});
+const manualDonation2021Clues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"2021",portrait:"",type:"commemorative",words:"Donation Dollar Money to help others",mark:"",scope:"circulation_core",design:"",kangaroo_count:""});
 const sixRoosClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portrait:"",type:"standard",words:"DOLLAR kangaroos",mark:"",scope:"circulation_core",design:"",kangaroo_count:"6"});
 const genericRoosClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portrait:"",type:"",words:"DOLLAR kangaroos",mark:"",scope:"circulation_core",design:"",kangaroo_count:""});
 const designOnlyResponse = await workerDefault.fetch(new Request("https://example.test/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse:null,reverse:"data:image/jpeg;base64,AA=="})}),{
@@ -80,6 +81,7 @@ const checks = [
   [invalidTypeObservation.design_type === "unknown" && invalidTypeObservation.kangaroo_count === null, "invalid model fields are normalised"],
   [donation2020Clues.length === 1 && donation2020Clues[0]?.coin.id === "AU1-2020-DONATION", "recognised Donation Dollar plus 2020 yields one exact result"],
   [donation2021Clues.length === 1 && donation2021Clues[0]?.coin.id === "AU1-2021-DONATION", "recognised Donation Dollar plus 2021 yields one exact result"],
+  [manualDonation2021Clues.length === 1 && manualDonation2021Clues[0]?.coin.id === "AU1-2021-DONATION", "typed Donation Dollar plus 2021 yields one exact result"],
   [sixRoosClues.length === 1 && sixRoosClues[0]?.coin.id === "AU1-2026-SIX-ROOS", "six-kangaroo help answer excludes Five Kangaroos"],
   [genericRoosClues.every(item => item.confidence < 75), "generic kangaroo wording cannot create a confident match"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],

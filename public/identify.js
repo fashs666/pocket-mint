@@ -189,8 +189,9 @@ function rankClueCatalogue(coins,clues) {
   let ranked=coins.map(coin=>scoreIdentifyCoin(coin,clues));
   ranked.sort((a,b)=>b.identityScore-a.identityScore||b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
   if(hasStrongClue)ranked=ranked.filter(item=>item.score>0);
-  const exactYearDesign=clues.year&&clues.design&&!clues.design.startsWith("series:")?ranked.filter(item=>item.exactDesign&&String(item.coin.year)===clues.year):[];
-  if(exactYearDesign.length) return exactYearDesign.slice(0,1);
+  const words=String(clues.words||"").toLowerCase();
+  const exactYearDesign=clues.year?ranked.filter(item=>String(item.coin.year)===clues.year&&(item.exactDesign||words.includes(item.coin.title.toLowerCase()))):[];
+  if(exactYearDesign.length===1)return exactYearDesign;
   const exactCount=clues.kangaroo_count?ranked.filter(item=>item.reasons.some(reason=>reason.includes("kangaroos visible"))):[];
   if(exactCount.length===1)return exactCount;
   const top=ranked[0];
