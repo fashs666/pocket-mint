@@ -260,7 +260,7 @@ async function confirmIdentification(id) {
   const coin=catalogue.find(item=>item.id===id); if(!coin)return;
   const record=state.get(id)||baseRec(id); await saveRec(id,{quantity:(record.quantity||0)+1});
   for(const side of ["obverse","reverse"])if(identifyState[side]?.file)await addPhoto(id,identifyState[side].file);
-  await loadLocal();renderAll();alert(`${coin.year} ${coin.title} added to My Mint with its photos.`);resetIdentification();navigate("myMintView");
+  await loadLocal();renderAll();alert(`${coin.year} ${coin.title} added to your collection with its photos.`);resetIdentification();mintFilter="owned";navigate("collectionView");
 }
 
 function resetIdentification() {

@@ -1,8 +1,8 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.10.5";
-const VIEW_IDS = new Set(["homeView", "findView", "myMintView", "settingsView"]);
-let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
+const APP_VERSION = "0.11.0";
+const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
+let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "owned", findTab = "catalogue", deferredInstallPrompt = null;
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);
 const human = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, match => match.toUpperCase());
@@ -134,16 +134,20 @@ function coinImageHtml(coin, {preferPersonal = true, className = "coinArtwork"} 
   return `<span class="${className}"><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy"><span class="imageLabel">${esc(label)}</span></span>`;
 }
 
-function card(coin) {
+function card(coin, mode = "browse") {
   const record = {...baseRec(coin.id), ...(state.get(coin.id) || {})};
   const element = document.createElement("div");
-  element.className = "coin";
-  element.innerHTML = `<button class="coinMain" type="button">${coinImageHtml(coin)}<span class="coinCopy"><h3>${coin.year} ${esc(coin.title)}</h3><span class="meta">$1 · ${human(coin.coin_class)}${coin.mintage ? ` · Mintage ${Number(coin.mintage).toLocaleString()}` : ""}</span><span class="tags"><span class="tag">${coin.test_scope === "circulation_core" ? "circulating core" : coin.test_scope === "circulation_sample" ? "earlier circulating sample" : "collector test"}</span>${record.quantity > 0 ? '<span class="tag owned">owned</span>' : ""}${record.wishlist ? '<span class="tag wish">wishlist</span>' : ""}${record.favourite ? '<span class="tag favourite">★ favourite</span>' : ""}</span></span></button><div class="coinControls"><button data-action="minus" aria-label="Decrease quantity">−</button><span class="qty">${record.quantity}</span><button data-action="plus" aria-label="Increase quantity">+</button><button data-action="wish" class="${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
+  element.className = `coin coinCard ${mode}`;
+  const owned = record.quantity > 0;
+  const controls = mode === "collection"
+    ? `<div class="coinControls"><button data-action="minus" aria-label="Decrease quantity">−</button><span class="qty">${record.quantity}</span><button data-action="plus" aria-label="Increase quantity">+</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`
+    : `<div class="coinControls">${owned ? '<span class="ownedMark">✓ Owned</span>' : '<button data-action="plus" class="addCoin">Add</button>'}<button data-action="wish" class="heart ${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
+  element.innerHTML = `<button class="coinMain" type="button">${coinImageHtml(coin)}<span class="coinCopy"><span class="meta">$1 · ${coin.year}</span><h3>${esc(coin.title)}</h3>${record.quantity > 1 ? `<span class="quantityBadge">×${record.quantity}</span>` : ""}</span></button>${controls}`;
   element.querySelector(".coinMain").onclick = () => openCoin(coin);
-  element.querySelector('[data-action="plus"]').onclick = () => saveRec(coin.id, {quantity: record.quantity + 1});
-  element.querySelector('[data-action="minus"]').onclick = () => saveRec(coin.id, {quantity: Math.max(0, record.quantity - 1)});
-  element.querySelector('[data-action="wish"]').onclick = () => saveRec(coin.id, {wishlist: !record.wishlist});
-  element.querySelector('[data-action="favourite"]').onclick = () => saveRec(coin.id, {favourite: !record.favourite});
+  element.querySelector('[data-action="plus"]')?.addEventListener("click", () => saveRec(coin.id, {quantity: record.quantity + 1}));
+  element.querySelector('[data-action="minus"]')?.addEventListener("click", () => saveRec(coin.id, {quantity: Math.max(0, record.quantity - 1)}));
+  element.querySelector('[data-action="wish"]')?.addEventListener("click", () => saveRec(coin.id, {wishlist: !record.wishlist}));
+  element.querySelector('[data-action="favourite"]')?.addEventListener("click", () => saveRec(coin.id, {favourite: !record.favourite}));
   return element;
 }
 
@@ -160,35 +164,70 @@ function filteredCatalogue() {
   });
 }
 
-function fillList(id, coins, empty) {
+function fillList(id, coins, empty, mode = "browse") {
   const list = document.getElementById(id);
-  list.replaceChildren(...coins.map(card));
+  list.replaceChildren(...coins.map(coin => card(coin, mode)));
   if (!coins.length) list.innerHTML = `<div class="empty">${empty}</div>`;
 }
 
-function renderCatalogue() { fillList("catalogueList", filteredCatalogue(), "No coins match these filters."); }
+function renderCatalogue() { fillList("catalogueList", filteredCatalogue(), "No coins match these filters.", "browse"); }
 
 function stats(items) { return items.map(([number, label]) => `<div class="stat"><b>${number}</b><span>${label}</span></div>`).join(""); }
 
 function renderMint() {
+  const query = document.getElementById("collectionSearch")?.value.trim().toLowerCase() || "";
   const coins = catalogue.filter(coin => {
     const record = state.get(coin.id);
     if (!record) return false;
-    if (mintFilter === "owned") return record.quantity > 0;
-    if (mintFilter === "wishlist") return record.wishlist;
-    if (mintFilter === "favourite") return record.favourite;
-    return record.quantity > 0 || record.wishlist || record.favourite;
+    const matches = !query || `${coin.year} ${coin.title} ${coin.series_id || ""}`.toLowerCase().includes(query);
+    if (mintFilter === "duplicates") return matches && record.quantity > 1;
+    if (mintFilter === "favourite") return matches && record.favourite;
+    return matches && record.quantity > 0;
   });
-  fillList("myMintList", coins, "Nothing here yet.");
-  const records = [...state.values()];
-  document.getElementById("mintStats").innerHTML = stats([[records.filter(r => r.quantity > 0).length, "Unique"], [records.reduce((n, r) => n + (r.quantity || 0), 0), "Specimens"], [records.filter(r => r.favourite).length, "Favourites"], [records.filter(r => r.wishlist).length, "Wishlist"]]);
+  fillList("myMintList", coins, mintFilter === "duplicates" ? "No duplicate coins yet." : mintFilter === "favourite" ? "No favourite coins yet." : "Your collection is empty.", "collection");
+  document.getElementById("collectionCount").textContent = `${coins.length} coin${coins.length === 1 ? "" : "s"}`;
 }
 
 function renderHome() {
-  const core = catalogue.filter(coin => coin.test_scope === "circulation_core");
   const records = [...state.values()];
-  document.getElementById("homeStats").innerHTML = stats([[core.length, "Circulation core"], [core.filter(coin => (state.get(coin.id)?.quantity || 0) > 0).length, "Core owned"], [records.filter(r => r.quantity > 0).length, "Unique owned"], [records.reduce((n, r) => n + (r.quantity || 0), 0), "Specimens"]]);
+  const owned = records.filter(record => record.quantity > 0).length;
+  const percent = catalogue.length ? Math.round(owned / catalogue.length * 100) : 0;
+  document.getElementById("homeStats").innerHTML = stats([[owned, "Collected"], [catalogue.length, "Catalogue"], [`${percent}%`, "Complete"]]);
+  document.querySelector("#homeProgress i").style.width = `${percent}%`;
+  renderHomeSeries();
+  const recent = catalogue.filter(coin => state.get(coin.id)?.quantity > 0).sort((a, b) => String(state.get(b.id).date_added).localeCompare(String(state.get(a.id).date_added))).slice(0, 3);
+  const recentRoot = document.getElementById("recentCoins");
+  recentRoot.replaceChildren(...recent.map(coin => card(coin, "browse")));
+  if (!recent.length) recentRoot.innerHTML = '<div class="empty card">Coins you add will appear here.</div>';
   document.getElementById("catVersion").textContent = `Catalogue ${catMeta.catalogue_version || ""}`;
+}
+
+function renderHomeSeries() {
+  const groups = new Map();
+  catalogue.forEach(coin => { if (coin.series_id) (groups.get(coin.series_id) || groups.set(coin.series_id, []).get(coin.series_id)).push(coin); });
+  const series = [...groups.entries()].filter(([, coins]) => coins.length > 1).map(([id, coins]) => ({id, coins, owned: coins.filter(coin => state.get(coin.id)?.quantity > 0).length})).sort((a, b) => Number(b.owned > 0) - Number(a.owned > 0) || b.owned - a.owned)[0];
+  const root = document.getElementById("homeSeries");
+  if (!series) return root.innerHTML = '<div class="empty card">Series progress will appear here.</div>';
+  const percent = Math.round(series.owned / series.coins.length * 100);
+  root.innerHTML = `<button class="seriesContinue" type="button" data-series-id="${esc(series.id)}"><span><b>${esc(human(series.id))}</b><small>${series.owned} of ${series.coins.length} collected</small><span class="progress"><i style="width:${percent}%"></i></span></span><span aria-hidden="true">›</span></button>`;
+  root.querySelector("button").onclick = () => { document.getElementById("catalogueSearch").value = human(series.id); showFindTab("catalogue"); navigate("findView"); renderCatalogue(); };
+}
+
+function renderWishlist() {
+  const query = document.getElementById("wishlistSearch")?.value.trim().toLowerCase() || "";
+  const coins = catalogue.filter(coin => state.get(coin.id)?.wishlist && (!query || `${coin.year} ${coin.title}`.toLowerCase().includes(query)));
+  fillList("wishlistList", coins, "Your wishlist is empty.", "wishlist");
+  document.getElementById("wishlistCount").textContent = `${coins.length} coin${coins.length === 1 ? "" : "s"}`;
+}
+
+function renderStats() {
+  const records = [...state.values()], owned = records.filter(r => r.quantity > 0).length, wishlist = records.filter(r => r.wishlist).length;
+  const favourites = records.filter(r => r.favourite).length, extras = records.reduce((n, r) => n + Math.max(0, (r.quantity || 0) - 1), 0), percent = catalogue.length ? Math.round(owned / catalogue.length * 100) : 0;
+  document.getElementById("statsSummary").innerHTML = stats([[owned,"Coins collected"],[catalogue.length,"Total catalogue"],[`${percent}%`,"Complete"],[wishlist,"Wishlist"]]);
+  document.getElementById("statsProgress").innerHTML = `<p>${owned} of ${catalogue.length} coins</p><div class="progress"><i style="width:${percent}%"></i></div>`;
+  const groups = new Map(); catalogue.forEach(coin => { if (coin.series_id) (groups.get(coin.series_id) || groups.set(coin.series_id, []).get(coin.series_id)).push(coin); });
+  document.getElementById("statsSeries").innerHTML = [...groups.entries()].filter(([, coins]) => coins.length > 1).slice(0,4).map(([id, coins]) => { const count=coins.filter(coin=>state.get(coin.id)?.quantity>0).length; return `<div class="statSeries"><b>${esc(human(id))}</b><span>${count} of ${coins.length}</span><div class="progress"><i style="width:${Math.round(count/coins.length*100)}%"></i></div></div>`; }).join("") || '<p class="muted">Series progress will appear here.</p>';
+  document.getElementById("statsPersonal").innerHTML = stats([[favourites,"Favourites"],[extras,"Duplicate extras"]]);
 }
 
 function renderDiag() {
@@ -217,7 +256,7 @@ function renderIdentificationTestLog() {
   }).join("");
 }
 
-function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderDiag(); renderIdentificationTestLog(); }
+function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderWishlist(); renderStats(); renderDiag(); renderIdentificationTestLog(); }
 
 function isInstalledApp() {
   return window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -434,7 +473,8 @@ function showFindTab(tab, options={}) {
 function showView(view) {
   const safeView = VIEW_IDS.has(view) ? view : "homeView";
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item.id === safeView));
-  document.querySelectorAll(".bottomNav button").forEach(button => button.classList.toggle("active", button.dataset.nav === safeView));
+  const navView = ["collectionView", "settingsView"].includes(safeView) ? "myMintView" : safeView;
+  document.querySelectorAll(".bottomNav button").forEach(button => button.classList.toggle("active", button.dataset.nav === navView));
   scrollTo(0, 0);
 }
 
@@ -455,7 +495,18 @@ function wire() {
   const updateCatalogue=()=>{document.getElementById("findCatalogueNotice").hidden=true;renderCatalogue();};
   ["yearFilter", "scopeFilter", "stateFilter"].forEach(id => document.getElementById(id).onchange = updateCatalogue);
   document.getElementById("catalogueSearch").oninput = updateCatalogue;
+  document.getElementById("collectionSearch").oninput = renderMint;
+  document.getElementById("wishlistSearch").oninput = renderWishlist;
   document.querySelectorAll("[data-nav]").forEach(button => button.onclick = () => navigate(button.dataset.nav));
+  document.querySelectorAll("[data-open-collection]").forEach(button => button.onclick = () => {
+    const requested = button.dataset.openCollection;
+    mintFilter = requested === "all" ? "owned" : requested;
+    document.querySelectorAll("[data-mintfilter]").forEach(item => item.classList.toggle("on", item.dataset.mintfilter === mintFilter));
+    document.getElementById("collectionTitle").textContent = mintFilter === "favourite" ? "Favourites" : mintFilter === "duplicates" ? "Duplicates" : "Collection";
+    renderMint();
+    navigate("collectionView");
+  });
+  document.querySelectorAll("[data-static-page]").forEach(button => button.onclick = () => alert(`${button.dataset.staticPage} is preserved as a destination for a later content pass.`));
   document.querySelectorAll("[data-find-tab]").forEach(button => button.onclick = () => {
     if(button.dataset.findTab==="catalogue") document.getElementById("findCatalogueNotice").hidden=true;
     showFindTab(button.dataset.findTab,{focus:button.dataset.findTab==="catalogue"});
@@ -463,6 +514,7 @@ function wire() {
   document.querySelectorAll("[data-mintfilter]").forEach(button => button.onclick = () => {
     mintFilter = button.dataset.mintfilter;
     document.querySelectorAll("[data-mintfilter]").forEach(item => item.classList.toggle("on", item === button));
+    document.getElementById("collectionTitle").textContent = mintFilter === "favourite" ? "Favourites" : mintFilter === "duplicates" ? "Duplicates" : "Collection";
     renderMint();
   });
   document.getElementById("closeDialog").onclick = closeCoin;

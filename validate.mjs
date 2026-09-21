@@ -56,7 +56,9 @@ const sixRoosVisual=await identifyMock("DESIGN=unknown; TYPE=standard; WORDS=DOL
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [html.includes("PHASE 0 · V0.10.5"), "visible v0.10.5 marker"],
+  [app.includes('APP_VERSION = "0.11.0"') && html.includes("Pocket Mint v0.11.0"), "v0.11.0 visual-cleanup version"],
+  [html.includes('data-nav="wishlistView"') && html.includes('data-nav="statsView"') && html.includes('data-nav="myMintView"'), "approved five-item navigation"],
+  [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
   [html.includes('href="progress.css"') && html.includes('src="progress.js"'), "progress assets loaded"],
   [html.includes('href="identify.css"') && html.includes('src="identify.js"') && html.includes('id="findView"') && html.includes('data-find-tab="identify"'), "combined find workspace loaded"],
   [app.includes("PocketMintPhase0"), "compatible IndexedDB name"],
@@ -91,7 +93,7 @@ const checks = [
   [sixRoosClues.length === 1 && sixRoosClues[0]?.coin.id === "AU1-2026-SIX-ROOS", "six-kangaroo help answer excludes Five Kangaroos"],
   [genericRoosClues.every(item => item.confidence < 75), "generic kangaroo wording cannot create a confident match"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-phase0-v0.10.5") && sw.includes("!/^https?"), "matching service-worker cache and remote images excluded from precache"],
+  [sw.includes("pocket-mint-v0.11.0") && sw.includes("!/^https?"), "matching service-worker cache and remote images excluded from precache"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
