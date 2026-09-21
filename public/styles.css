@@ -32,7 +32,7 @@ input[type=number]{width:100%;border:1px solid #ccd6cd;background:#fff;border-ra
 
 /* v0.11 visual system */
 :root{--green:#12633f;--green-dark:#0d4d32;--mint:#eaf4ee;--paper:#fbfdfb;--ink:#102019;--muted:#66756d;--line:#d7e4db;--gold:#b5842d;--wish:#346b7d;background:#f6faf7;color:var(--ink)}
-body{padding-bottom:86px;background:linear-gradient(180deg,#fbfdfb 0,#f2f8f4 100%)}
+body{padding-bottom:86px;background:#f6faf7}
 h1{font-size:1.42rem}h2{font-size:2rem;letter-spacing:-.04em;margin:0}h3{letter-spacing:-.02em}
 .topbar{padding:14px max(18px,env(safe-area-inset-left)) 12px;background:rgba(251,253,251,.96);border-color:var(--line)}
 .brand{display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--ink);padding:0}.brandMark{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--green);color:white;font-size:1.35rem}.iconButton{width:40px;height:40px;border:1px solid var(--line);border-radius:50%;background:var(--mint);color:var(--green);font-size:1.35rem}.topActions #installBtn{display:none!important}.badge{background:var(--mint);color:var(--green-dark)}

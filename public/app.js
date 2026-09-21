@@ -210,7 +210,7 @@ function renderHomeSeries() {
   if (!series) return root.innerHTML = '<div class="empty card">Series progress will appear here.</div>';
   const percent = Math.round(series.owned / series.coins.length * 100);
   root.innerHTML = `<button class="seriesContinue" type="button" data-series-id="${esc(series.id)}"><span><b>${esc(human(series.id))}</b><small>${series.owned} of ${series.coins.length} collected</small><span class="progress"><i style="width:${percent}%"></i></span></span><span aria-hidden="true">›</span></button>`;
-  root.querySelector("button").onclick = () => { document.getElementById("catalogueSearch").value = human(series.id); showFindTab("catalogue"); navigate("findView"); renderCatalogue(); };
+  root.querySelector("button").onclick = () => { document.getElementById("catalogueSearch").value = series.id; showFindTab("catalogue"); navigate("findView"); renderCatalogue(); };
 }
 
 function renderWishlist() {
