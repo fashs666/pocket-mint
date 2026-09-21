@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.10.3";
+const APP_VERSION = "0.10.4";
 const VIEW_IDS = new Set(["homeView", "findView", "myMintView", "settingsView"]);
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
 
@@ -219,6 +219,43 @@ function renderIdentificationTestLog() {
 
 function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderDiag(); renderIdentificationTestLog(); }
 
+function isInstalledApp() {
+  return window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function showInstallHelp(message, kind = "") {
+  const help = document.getElementById("installHelp");
+  if (!help) return;
+  help.hidden = false;
+  help.className = `installHelp ${kind}`.trim();
+  help.textContent = message;
+}
+
+async function installOnAndroid() {
+  if (isInstalledApp()) {
+    showInstallHelp("Pocket Mint is already installed on this device.", "success");
+    return;
+  }
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice;
+    if (choice.outcome === "accepted") showInstallHelp("Pocket Mint is being installed.", "success");
+    else showInstallHelp("Installation was not completed. You can try again whenever you’re ready.");
+    deferredInstallPrompt = null;
+    document.getElementById("installBtn").hidden = true;
+    return;
+  }
+  showInstallHelp("On Android, open Pocket Mint in Chrome, tap the ⋮ menu, then choose “Install app” or “Add to Home screen”.");
+}
+
+function installOnApple() {
+  if (isInstalledApp()) {
+    showInstallHelp("Pocket Mint is already installed on this device.", "success");
+    return;
+  }
+  showInstallHelp("On iPhone or iPad, open Pocket Mint in Safari, tap Share, choose “Add to Home Screen”, then tap Add.");
+}
+
 function bindSeriesLinks() {
   document.querySelectorAll("[data-series-coin]").forEach(button => {
     button.onclick = () => {
@@ -413,6 +450,8 @@ function wire() {
     event.target.value = "";
   };
   document.getElementById("selfTestBtn").onclick = selfTest;
+  document.getElementById("installAndroidBtn").onclick = installOnAndroid;
+  document.getElementById("installAppleBtn").onclick = installOnApple;
   document.getElementById("exportIdentificationTests").onclick = () => {
     const data = {format:"pocket-mint-identification-tests", version:1, exported_at:new Date().toISOString(), app_version:APP_VERSION, catalogue_version:catMeta.catalogue_version, tests:identificationTests};
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
@@ -453,12 +492,12 @@ function wire() {
     deferredInstallPrompt = event;
     const button = document.getElementById("installBtn");
     button.hidden = false;
-    button.onclick = async () => {
-      deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
-      button.hidden = true;
-      deferredInstallPrompt = null;
-    };
+    button.onclick = installOnAndroid;
+  });
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    document.getElementById("installBtn").hidden = true;
+    showInstallHelp("Pocket Mint has been installed.", "success");
   });
 }
 

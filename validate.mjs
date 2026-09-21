@@ -56,7 +56,7 @@ const sixRoosVisual=await identifyMock("DESIGN=unknown; TYPE=standard; WORDS=DOL
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [html.includes("PHASE 0 · V0.10.3"), "visible v0.10.3 marker"],
+  [html.includes("PHASE 0 · V0.10.4"), "visible v0.10.4 marker"],
   [html.includes('href="progress.css"') && html.includes('src="progress.js"'), "progress assets loaded"],
   [html.includes('href="identify.css"') && html.includes('src="identify.js"') && html.includes('id="findView"') && html.includes('data-find-tab="identify"'), "combined find workspace loaded"],
   [app.includes("PocketMintPhase0"), "compatible IndexedDB name"],
@@ -64,6 +64,8 @@ const checks = [
   [app.includes("favourite"), "Favourite support"],
   [app.includes("date_added"), "automatic Date Added support"],
   [app.includes("pushState") && app.includes("popstate"), "History API navigation"],
+  [html.includes('id="installAndroidBtn"') && html.includes('id="installAppleBtn"') && html.includes('id="installHelp"'), "Android and Apple installation controls"],
+  [app.includes("beforeinstallprompt") && app.includes("installOnAndroid") && app.includes("Add to Home Screen") && app.includes("open Pocket Mint in Safari"), "platform-appropriate installation flows"],
   [progress.includes("collectionInsights") && progress.includes("multiCoinSeries"), "collection and series intelligence"],
   [progress.includes("Duplicate extras") && progress.includes("Closest to completion"), "duplicate and near-complete series summaries"],
   [identify.includes("analysePhotos") && identify.includes("/api/identify") && identify.includes("confirmIdentification"), "visual-first analysis and confirm flow"],
@@ -87,7 +89,7 @@ const checks = [
   [sixRoosClues.length === 1 && sixRoosClues[0]?.coin.id === "AU1-2026-SIX-ROOS", "six-kangaroo help answer excludes Five Kangaroos"],
   [genericRoosClues.every(item => item.confidence < 75), "generic kangaroo wording cannot create a confident match"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-phase0-v0.10.3") && sw.includes("!/^https?"), "matching service-worker cache and remote images excluded from precache"],
+  [sw.includes("pocket-mint-phase0-v0.10.4") && sw.includes("!/^https?"), "matching service-worker cache and remote images excluded from precache"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
