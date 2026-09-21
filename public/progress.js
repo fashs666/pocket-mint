@@ -1,4 +1,4 @@
-const POCKET_MINT_APP_VERSION = "0.11.0";
+const POCKET_MINT_APP_VERSION = "0.11.1";
 
 function completionPercent(owned, total) {
   return total ? Math.round((owned / total) * 100) : 0;
@@ -158,9 +158,3 @@ renderDiag = function renderDiagV050() {
   const diagnostics = document.getElementById("diagnostics");
   if (diagnostics) diagnostics.innerHTML = diagnostics.innerHTML.replace("Phase 0 v0.4.1", `Phase 0 v${POCKET_MINT_APP_VERSION}`);
 };
-
-window.addEventListener("load", () => {
-  if (!catalogue.length) return;
-  renderHome();
-  renderDiag();
-});

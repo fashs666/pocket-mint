@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.0";
+const APP_VERSION = "0.11.1";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "owned", findTab = "catalogue", deferredInstallPrompt = null;
 
@@ -473,7 +473,7 @@ function showFindTab(tab, options={}) {
 function showView(view) {
   const safeView = VIEW_IDS.has(view) ? view : "homeView";
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item.id === safeView));
-  const navView = ["collectionView", "settingsView"].includes(safeView) ? "myMintView" : safeView;
+  const navView = ["wishlistView", "statsView", "collectionView", "settingsView"].includes(safeView) ? "myMintView" : safeView;
   document.querySelectorAll(".bottomNav button").forEach(button => button.classList.toggle("active", button.dataset.nav === navView));
   scrollTo(0, 0);
 }
