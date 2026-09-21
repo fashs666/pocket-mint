@@ -1,4 +1,4 @@
-const POCKET_MINT_APP_VERSION = "0.10.2";
+const POCKET_MINT_APP_VERSION = "0.11.0";
 
 function completionPercent(owned, total) {
   return total ? Math.round((owned / total) * 100) : 0;
@@ -131,7 +131,8 @@ function bindProgressActions() {
         if (scope) scope.value = "";
       }
       renderCatalogue();
-      navigate("catalogueView");
+      showFindTab("catalogue");
+      navigate("findView");
     };
   });
 
