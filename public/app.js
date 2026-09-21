@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.10.4";
+const APP_VERSION = "0.10.5";
 const VIEW_IDS = new Set(["homeView", "findView", "myMintView", "settingsView"]);
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "all", findTab = "identify", deferredInstallPrompt = null;
 
@@ -221,6 +221,33 @@ function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderDiag
 
 function isInstalledApp() {
   return window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function installPlatform() {
+  const agent = navigator.userAgent || "";
+  if (/android/i.test(agent)) return "android";
+  if (/iphone|ipad|ipod/i.test(agent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return "apple";
+  return "";
+}
+
+function setupInstallControls() {
+  const block = document.getElementById("installBlock");
+  if (!block) return;
+  if (isInstalledApp()) {
+    block.hidden = true;
+    return;
+  }
+  block.hidden = false;
+  const platform = installPlatform();
+  const buttons = {
+    android: document.getElementById("installAndroidBtn"),
+    apple: document.getElementById("installAppleBtn")
+  };
+  Object.entries(buttons).forEach(([name, button]) => {
+    const recommended = name === platform;
+    button.classList.toggle("recommended", recommended);
+    button.querySelector(".recommendBadge").hidden = !recommended;
+  });
 }
 
 function showInstallHelp(message, kind = "") {
@@ -452,6 +479,7 @@ function wire() {
   document.getElementById("selfTestBtn").onclick = selfTest;
   document.getElementById("installAndroidBtn").onclick = installOnAndroid;
   document.getElementById("installAppleBtn").onclick = installOnApple;
+  setupInstallControls();
   document.getElementById("exportIdentificationTests").onclick = () => {
     const data = {format:"pocket-mint-identification-tests", version:1, exported_at:new Date().toISOString(), app_version:APP_VERSION, catalogue_version:catMeta.catalogue_version, tests:identificationTests};
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
@@ -497,7 +525,7 @@ function wire() {
   window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null;
     document.getElementById("installBtn").hidden = true;
-    showInstallHelp("Pocket Mint has been installed.", "success");
+    document.getElementById("installBlock").hidden = true;
   });
 }
 
