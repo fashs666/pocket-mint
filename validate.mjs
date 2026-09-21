@@ -3,7 +3,7 @@ import path from "node:path";
 import vm from "node:vm";
 
 const root = path.resolve("public");
-const required = ["index.html", "styles.css", "progress.css", "identify.css", "app.js", "progress.js", "identify.js", "catalogue.json", "manifest.webmanifest", "sw.js", "icon-192.png", "icon-512.png"];
+const required = ["index.html", "styles.css", "progress.css", "identify.css", "app.js", "progress.js", "identify.js", "catalogue.json", "manifest.webmanifest", "manifest-seal.webmanifest", "manifest-spiral.webmanifest", "manifest-character.webmanifest", "sw.js", "icon-192.png", "icon-512.png", "icons/seal-192.png", "icons/seal-512.png", "icons/spiral-192.png", "icons/spiral-512.png", "icons/character-192.png", "icons/character-512.png"];
 for (const file of required) await access(path.join(root, file));
 
 const [html, app, progress, identify, worker, sw, manifestText, catalogueText, rootCatalogueText] = await Promise.all([
@@ -57,7 +57,7 @@ const sixRoosVisual=await identifyMock("DESIGN=unknown; TYPE=standard; WORDS=DOL
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.11.2"') && identify.includes('IDENTIFY_VERSION = "0.11.2"') && html.includes("Pocket Mint v0.11.2"), "v0.11.2 grouped-year and mobile-fix version"],
+  [app.includes('APP_VERSION = "0.11.3"') && identify.includes('IDENTIFY_VERSION = "0.11.3"') && html.includes("Pocket Mint v0.11.3"), "v0.11.3 selectable-icon version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -72,6 +72,9 @@ const checks = [
   [app.includes("beforeinstallprompt") && app.includes("installOnAndroid") && app.includes("Add to Home Screen") && app.includes("open Pocket Mint in Safari"), "platform-appropriate installation flows"],
   [app.includes("installPlatform") && app.includes("setupInstallControls") && app.includes('document.getElementById("installBlock").hidden = true'), "device recommendation and installed-app hiding"],
   [html.includes("Recommended for this device") && html.includes('id="installBlock"'), "device recommendation presentation"],
+  [html.includes('data-app-icon="seal"') && html.includes('data-app-icon="spiral"') && html.includes('data-app-icon="character"'), "three Settings app-icon choices"],
+  [app.includes("setupAppIconControls") && app.includes("pocketMintAppIcon") && app.includes("manifest-character.webmanifest"), "app-icon choice persistence and manifest switching"],
+  [app.includes("export a backup first") && app.includes("Share → Add to Home Screen") && app.includes("install it again"), "installed-icon refresh guidance protects local data"],
   [progress.includes("collectionInsights") && progress.includes("multiCoinSeries"), "collection and series intelligence"],
   [progress.includes("Duplicate extras") && progress.includes("Closest to completion"), "duplicate and near-complete series summaries"],
   [identify.includes("analysePhotos") && identify.includes("/api/identify") && identify.includes("confirmIdentification"), "visual-first analysis and confirm flow"],
@@ -99,7 +102,7 @@ const checks = [
   [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-v0.11.2") && sw.includes("!/^https?"), "matching service-worker cache and remote images excluded from precache"],
+  [sw.includes("pocket-mint-v0.11.3") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

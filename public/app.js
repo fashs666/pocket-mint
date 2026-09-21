@@ -1,7 +1,13 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.2";
+const APP_VERSION = "0.11.3";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
+const APP_ICON_KEY = "pocketMintAppIcon";
+const APP_ICONS = {
+  seal: {name: "Pocket Mint Seal", manifest: "manifest.webmanifest"},
+  spiral: {name: "Spiral Emblem", manifest: "manifest-spiral.webmanifest"},
+  character: {name: "Character Icon", manifest: "manifest-character.webmanifest"}
+};
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "owned", findTab = "catalogue", deferredInstallPrompt = null;
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);
@@ -273,7 +279,7 @@ function renderStats() {
 }
 
 function renderDiag() {
-  document.getElementById("diagnostics").innerHTML = `<p><b>App:</b> Phase 0 v${APP_VERSION}</p><p><b>Database:</b> ${DB_NAME} schema v${DB_VERSION}</p><p><b>Catalogue:</b> ${esc(catMeta.catalogue_version || "—")}</p><p><b>Local records:</b> ${state.size}</p><p><b>Personal photos:</b> ${[...photoMap.values()].reduce((n, photos) => n + photos.length, 0)}</p><p><b>Identification tests:</b> ${identificationTests.length}</p><p><b>Connection:</b> ${navigator.onLine ? "online" : "offline"}</p>`;
+  document.getElementById("diagnostics").innerHTML = `<p><b>App:</b> Phase 0 v${APP_VERSION}</p><p><b>App icon:</b> ${esc(APP_ICONS[selectedAppIcon()].name)}</p><p><b>Database:</b> ${DB_NAME} schema v${DB_VERSION}</p><p><b>Catalogue:</b> ${esc(catMeta.catalogue_version || "—")}</p><p><b>Local records:</b> ${state.size}</p><p><b>Personal photos:</b> ${[...photoMap.values()].reduce((n, photos) => n + photos.length, 0)}</p><p><b>Identification tests:</b> ${identificationTests.length}</p><p><b>Connection:</b> ${navigator.onLine ? "online" : "offline"}</p>`;
 }
 
 function testOutcomeLabel(outcome) {
@@ -309,6 +315,53 @@ function installPlatform() {
   if (/android/i.test(agent)) return "android";
   if (/iphone|ipad|ipod/i.test(agent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) return "apple";
   return "";
+}
+
+function selectedAppIcon() {
+  try {
+    const saved = localStorage.getItem(APP_ICON_KEY) || window.POCKET_MINT_APP_ICON;
+    return APP_ICONS[saved] ? saved : "seal";
+  } catch {
+    return "seal";
+  }
+}
+
+function appIconInstruction(icon) {
+  const name = APP_ICONS[icon].name;
+  const platform = installPlatform();
+  if (isInstalledApp() && platform === "android") return `${name} is selected inside Pocket Mint. Android may take time to refresh an installed launcher icon. If it remains unchanged, export a backup first, remove the installed Pocket Mint shortcut/app, reopen this site in Chrome, confirm this choice, then install it again.`;
+  if (isInstalledApp() && platform === "apple") return `${name} is selected inside Pocket Mint. iPhone and iPad keep the artwork used when the Home Screen icon was created. Export a backup first, remove the existing Pocket Mint Home Screen icon, reopen this site in Safari, confirm this choice, then use Share → Add to Home Screen.`;
+  if (platform === "android") return `${name} is selected. The Pocket Mint header updates immediately. Reload once before using “Install on Android” below so Chrome uses this icon for the launcher.`;
+  if (platform === "apple") return `${name} is selected. The Pocket Mint header updates immediately. Reload once in Safari, then use Share → Add to Home Screen to create the icon.`;
+  return `${name} is selected. The Pocket Mint header updates immediately. Reload once before installing Pocket Mint so the browser reads the chosen icon.`;
+}
+
+function applyAppIcon(icon, options = {}) {
+  const safeIcon = APP_ICONS[icon] ? icon : "seal";
+  try { localStorage.setItem(APP_ICON_KEY, safeIcon); } catch {}
+  window.POCKET_MINT_APP_ICON = safeIcon;
+  document.documentElement.dataset.appIcon = safeIcon;
+  document.getElementById("appManifest")?.setAttribute("href", APP_ICONS[safeIcon].manifest);
+  document.getElementById("appFavicon")?.setAttribute("href", `icons/${safeIcon}-192.png`);
+  document.getElementById("appleTouchIcon")?.setAttribute("href", `icons/${safeIcon}-192.png`);
+  document.getElementById("brandIcon")?.setAttribute("src", `icons/${safeIcon}-192.png`);
+  document.querySelectorAll("[data-app-icon]").forEach(button => {
+    const active = button.dataset.appIcon === safeIcon;
+    button.classList.toggle("selected", active);
+    button.setAttribute("aria-checked", String(active));
+  });
+  const help = document.getElementById("appIconHelp");
+  if (help) help.textContent = appIconInstruction(safeIcon);
+  renderDiag();
+  if (options.announce) showToast(`${APP_ICONS[safeIcon].name} selected`, "The in-app icon has updated. Follow the Settings note if you also want to refresh an installed launcher icon.");
+}
+
+function setupAppIconControls() {
+  const icon = selectedAppIcon();
+  applyAppIcon(icon);
+  document.querySelectorAll("[data-app-icon]").forEach(button => {
+    button.onclick = () => applyAppIcon(button.dataset.appIcon, {announce: true});
+  });
 }
 
 function setupInstallControls() {
@@ -578,6 +631,7 @@ function wire() {
     event.target.value = "";
   };
   document.getElementById("selfTestBtn").onclick = selfTest;
+  setupAppIconControls();
   document.getElementById("installAndroidBtn").onclick = installOnAndroid;
   document.getElementById("installAppleBtn").onclick = installOnApple;
   setupInstallControls();
