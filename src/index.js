@@ -125,18 +125,20 @@ function assessMatches(matches,observed,candidates) {
   const first=matches[0],second=matches[1];
   const gap=first&&second?first.confidence-second.confidence:1;
   const sameDesignCount=observed.design&&!observed.design.startsWith("series:")?candidates.filter(coin=>coin.title===observed.design).length:0;
-  const unresolvedDesign=Boolean(observed.design?.startsWith("series:")||(observed.design&&sameDesignCount>1&&!candidates.some(coin=>coin.title===observed.design&&String(coin.year)===observed.year)));
-  const uncertain=!first||first.confidence<.75||gap<.1||unresolvedDesign;
+  const needsYear=Boolean(observed.design&&sameDesignCount>1&&!candidates.some(coin=>coin.title===observed.design&&String(coin.year)===observed.year));
+  const unresolvedSeries=Boolean(observed.design?.startsWith("series:"));
+  const sameRecognisedDesign=Boolean(needsYear&&matches.length&&matches.every(match=>candidates.find(coin=>coin.id===match.id)?.title===observed.design));
+  const uncertain=!first||unresolvedSeries||(!sameRecognisedDesign&&first.confidence<.75)||(!sameRecognisedDesign&&gap<.1);
   const reason=uncertain
-    ? observed.design?.startsWith("series:")
+    ? unresolvedSeries
       ? "I recognised the coin series, but need help choosing the exact design."
-      : observed.design&&sameDesignCount>1
-        ? "I recognised the reverse, but need a reliable year to choose the exact coin."
-        : /kangaroo|roos/i.test(observed.words?.join(" ")||"")&&!observed.kangaroo_count
+      : /kangaroo|roos/i.test(observed.words?.join(" ")||"")&&!observed.kangaroo_count
           ? "I can see a kangaroo design, but need help confirming whether there are five or six kangaroos."
           : "The photo did not produce one clearly stronger catalogue match."
-    : "The visible design and supporting details produced a clear catalogue match.";
-  return {uncertain,reason};
+    : needsYear
+      ? "The reverse design is clear. Choose the issue year when adding it to My Mint."
+      : "The visible design and supporting details produced a clear catalogue match.";
+  return {uncertain,reason,needs_year:needsYear};
 }
 
 function answerText(output) {
@@ -179,8 +181,8 @@ async function identify(request,env) {
     ]);
     const observed=parseObservations(answerText(obverseOutput),answerText(reverseOutput),candidates);
     const matches=rankCatalogue(candidates,observed);
-    const {uncertain,reason}=assessMatches(matches,observed,candidates);
-    return json({matches,uncertain,reason,observed});
+    const {uncertain,reason,needs_year}=assessMatches(matches,observed,candidates);
+    return json({matches,uncertain,reason,needs_year,observed});
   } catch(error) {
     console.error("Coin identification failed",error);
     return json({error:"Visual analysis could not complete. Please try again or use the clue screen."},503);

@@ -1,12 +1,46 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.1";
+const APP_VERSION = "0.11.2";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 let catalogue = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "owned", findTab = "catalogue", deferredInstallPrompt = null;
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"})[char]);
 const human = value => String(value || "").replaceAll("_", " ").replace(/\b\w/g, match => match.toUpperCase());
 const today = () => new Date().toISOString().slice(0, 10);
+
+function designVariants(coin) {
+  return catalogue
+    .filter(item => item.title === coin.title && item.denomination_display === coin.denomination_display)
+    .sort((a, b) => Number(b.year) - Number(a.year));
+}
+
+function groupCatalogueCoins(coins) {
+  const groups = new Map();
+  for (const coin of coins) {
+    const key = `${coin.denomination_display || coin.denomination}|${coin.title}`;
+    if (!groups.has(key)) groups.set(key, coin);
+  }
+  return [...groups.values()];
+}
+
+function issueYearLabel(coin) {
+  const variants = designVariants(coin);
+  if (variants.length === 1) return String(coin.year);
+  const years = variants.map(item => Number(item.year)).sort((a, b) => a - b);
+  return `${years[0]}–${years.at(-1)} · ${years.length} years`;
+}
+
+let toastTimer = null;
+function showToast(title, message = "") {
+  const region = document.getElementById("toastRegion");
+  if (!region) return;
+  clearTimeout(toastTimer);
+  region.innerHTML = `<div class="toastCard"><span class="toastIcon" aria-hidden="true">✓</span><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}</span><button type="button" aria-label="Dismiss message">×</button></div>`;
+  region.classList.add("show");
+  const dismiss = () => { region.classList.remove("show"); toastTimer = null; };
+  region.querySelector("button").onclick = dismiss;
+  toastTimer = setTimeout(dismiss, 4200);
+}
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -136,15 +170,23 @@ function coinImageHtml(coin, {preferPersonal = true, className = "coinArtwork"} 
 
 function card(coin, mode = "browse") {
   const record = {...baseRec(coin.id), ...(state.get(coin.id) || {})};
+  const variants = designVariants(coin);
+  const catalogueMode = mode === "catalogue";
+  const multiYear = catalogueMode && variants.length > 1;
+  const variantRecords = variants.map(item => state.get(item.id)).filter(Boolean);
+  const ownedYears = variantRecords.filter(item => item.quantity > 0).length;
   const element = document.createElement("div");
   element.className = `coin coinCard ${mode}`;
   const owned = record.quantity > 0;
   const controls = mode === "collection"
     ? `<div class="coinControls"><button data-action="minus" aria-label="Decrease quantity">−</button><span class="qty">${record.quantity}</span><button data-action="plus" aria-label="Increase quantity">+</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`
-    : `<div class="coinControls">${owned ? '<span class="ownedMark">✓ Owned</span>' : '<button data-action="plus" class="addCoin">Add</button>'}<button data-action="wish" class="heart ${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
-  element.innerHTML = `<button class="coinMain" type="button">${coinImageHtml(coin)}<span class="coinCopy"><span class="meta">$1 · ${coin.year}</span><h3>${esc(coin.title)}</h3>${record.quantity > 1 ? `<span class="quantityBadge">×${record.quantity}</span>` : ""}</span></button>${controls}`;
+    : multiYear
+      ? `<div class="coinControls"><span class="ownedMark">${ownedYears ? `✓ ${ownedYears} year${ownedYears === 1 ? "" : "s"} owned` : `${variants.length} issue years`}</span><button data-action="plus" class="addCoin">Choose year</button></div>`
+    : `<div class="coinControls">${owned ? '<span class="ownedMark">✓ Owned</span>' : `<button data-action="plus" class="addCoin">${multiYear ? "Choose year" : "Add"}</button>`}<button data-action="wish" class="heart ${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
+  const yearLabel = catalogueMode ? (document.getElementById("yearFilter")?.value ? String(coin.year) : issueYearLabel(coin)) : String(coin.year);
+  element.innerHTML = `<button class="coinMain" type="button">${coinImageHtml(coin)}<span class="coinCopy"><span class="meta">$1 · ${esc(yearLabel)}</span><h3>${esc(coin.title)}</h3>${record.quantity > 1 ? `<span class="quantityBadge">×${record.quantity}</span>` : ""}</span></button>${controls}`;
   element.querySelector(".coinMain").onclick = () => openCoin(coin);
-  element.querySelector('[data-action="plus"]')?.addEventListener("click", () => saveRec(coin.id, {quantity: record.quantity + 1}));
+  element.querySelector('[data-action="plus"]')?.addEventListener("click", () => multiYear ? openCoin(coin) : saveRec(coin.id, {quantity: record.quantity + 1}));
   element.querySelector('[data-action="minus"]')?.addEventListener("click", () => saveRec(coin.id, {quantity: Math.max(0, record.quantity - 1)}));
   element.querySelector('[data-action="wish"]')?.addEventListener("click", () => saveRec(coin.id, {wishlist: !record.wishlist}));
   element.querySelector('[data-action="favourite"]')?.addEventListener("click", () => saveRec(coin.id, {favourite: !record.favourite}));
@@ -170,7 +212,7 @@ function fillList(id, coins, empty, mode = "browse") {
   if (!coins.length) list.innerHTML = `<div class="empty">${empty}</div>`;
 }
 
-function renderCatalogue() { fillList("catalogueList", filteredCatalogue(), "No coins match these filters.", "browse"); }
+function renderCatalogue() { fillList("catalogueList", groupCatalogueCoins(filteredCatalogue()), "No coins match these filters.", "catalogue"); }
 
 function stats(items) { return items.map(([number, label]) => `<div class="stat"><b>${number}</b><span>${label}</span></div>`).join(""); }
 
@@ -332,9 +374,12 @@ function bindSeriesLinks() {
 }
 
 function detailHtml(coin, record) {
+  const variants = designVariants(coin);
+  const multiYear = variants.length > 1;
+  const yearControl = multiYear ? `<label for="dYear">Issue year</label><select id="dYear">${variants.map(item => `<option value="${esc(item.id)}" ${item.id === coin.id ? "selected" : ""}>${esc(item.year)}</option>`).join("")}</select><p class="yearHelp">Choose a year to view its details and update that year in My Mint.</p>` : "";
   const date = record.date_added ? `<p class="autoDate">Date Added: <strong>${esc(record.date_added)}</strong> <span>(automatic)</span></p>` : '<p class="autoDate muted">Date Added will be recorded automatically when this coin first becomes owned.</p>';
   const imageNote = coin.reference_image_kind === "series" ? "This official image shows the series packaging; an exact individual reverse is not available in the current source." : "Use this official catalogue image to compare the design with your coin.";
-  return `<div class="eyebrow">${esc(coin.id)}</div><h2>${coin.year} ${esc(coin.title)}</h2><p class="muted">${human(coin.coin_class)} · ${human(coin.issue_type)}</p><section class="referencePanel"><div><div class="eyebrow">${esc(referenceLabel(coin).toUpperCase())}</div>${coinImageHtml(coin, {preferPersonal: false, className: "detailArtwork"})}</div><p>${esc(imageNote)}</p></section><div class="detailGrid"><div><span>Denomination</span><b>$1</b></div><div><span>Mintage</span><b>${coin.mintage ? Number(coin.mintage).toLocaleString() : esc(coin.mintage_status || "—")}</b></div><div><span>Composition</span><b>${esc(coin.composition || "—")}</b></div><div><span>Size</span><b>${coin.mass_grams ?? "—"} g · ${coin.diameter_mm ?? "—"} mm</b></div><div><span>Effigy</span><b>${esc(coin.obverse_effigy || "—")}</b></div><div><span>Catalogue class</span><b>${coin.test_scope === "circulation_core" ? "Circulation core" : coin.test_scope === "circulation_sample" ? "Earlier circulation sample" : "Collector exemplar"}</b></div></div>${seriesHtml(coin)}<div class="editBlock"><h3>My Mint record</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}"><label>Condition</label><select id="dCondition"><option value="">Not set</option>${["Poor","Fair","Good","Very Good","Fine","Very Fine","Extremely Fine","About Uncirculated","Uncirculated"].map(value => `<option ${record.condition === value ? "selected" : ""}>${value}</option>`).join("")}</select>${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Your photos</label><p class="photoHelp">Add your own photos any time. They will become the thumbnail in My Mint while this reference stays available here.</p><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></div>`;
+  return `<div class="eyebrow">${esc(coin.id)}</div><h2>${multiYear ? esc(coin.title) : `${coin.year} ${esc(coin.title)}`}</h2><p class="muted">${multiYear ? `${variants.length} catalogue years · ` : ""}${human(coin.coin_class)} · ${human(coin.issue_type)}</p>${yearControl}<section class="referencePanel"><div><div class="eyebrow">${esc(referenceLabel(coin).toUpperCase())}</div>${coinImageHtml(coin, {preferPersonal: false, className: "detailArtwork"})}</div><p>${esc(imageNote)}</p></section><div class="detailGrid"><div><span>Year</span><b>${esc(coin.year)}</b></div><div><span>Denomination</span><b>$1</b></div><div><span>Mintage</span><b>${coin.mintage ? Number(coin.mintage).toLocaleString() : esc(coin.mintage_status || "—")}</b></div><div><span>Composition</span><b>${esc(coin.composition || "—")}</b></div><div><span>Size</span><b>${coin.mass_grams ?? "—"} g · ${coin.diameter_mm ?? "—"} mm</b></div><div><span>Effigy</span><b>${esc(coin.obverse_effigy || "—")}</b></div></div>${seriesHtml(coin)}<div class="editBlock"><h3>My Mint record · ${esc(coin.year)}</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}"><label>Condition</label><select id="dCondition"><option value="">Not set</option>${["Poor","Fair","Good","Very Good","Fine","Very Fine","Extremely Fine","About Uncirculated","Uncirculated"].map(value => `<option ${record.condition === value ? "selected" : ""}>${value}</option>`).join("")}</select>${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Your photos</label><p class="photoHelp">Add your own photos any time. They will become the thumbnail in My Mint while this reference stays available here.</p><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></div>`;
 }
 
 function renderCoin(coin) {
@@ -343,6 +388,10 @@ function renderCoin(coin) {
   box.innerHTML = detailHtml(coin, record);
   renderPhotos(coin.id);
   bindSeriesLinks();
+  box.querySelector("#dYear")?.addEventListener("change", event => {
+    const selected = catalogue.find(item => item.id === event.target.value);
+    if (selected) replaceCoin(selected);
+  });
   box.querySelector("#saveDetail").onclick = async () => {
     await saveRec(coin.id, {quantity: box.querySelector("#dQty").value, condition: box.querySelector("#dCondition").value, notes: box.querySelector("#dNotes").value.trim(), wishlist: box.querySelector("#dWish").checked, favourite: box.querySelector("#dFavourite").checked});
     renderCoin(coin);

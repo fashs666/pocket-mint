@@ -15,6 +15,8 @@
 .capturePreview.hasPhoto strong,.capturePreview.hasPhoto small { color:#fff; align-self:flex-start; text-align:left; margin-left:4px; }
 .capturePreview.hasPhoto strong { margin-top:auto; }
 .capturePreview small { color:#718078; margin-top:4px; font-size:.7rem; }
+.photoSpinner { animation:photoSpin .9s linear infinite; }
+@keyframes photoSpin { to { transform:rotate(360deg); } }
 .qualitySummary { display:grid; gap:6px; margin-top:11px; }
 .qualityItem { border-radius:9px; padding:9px 10px; font-size:.75rem; background:#eef3ef; color:#445249; }
 .qualityItem b,.qualityItem span { display:block; }
@@ -26,6 +28,10 @@
 .primaryWide { display:block; width:100%; margin-top:13px; }
 .primaryWide:disabled { opacity:.55; cursor:not-allowed; }
 .photoPrivacy { color:#718078; font-size:.7rem; line-height:1.4; margin:11px 2px 0; }
+.matchYear { display:block; margin:12px 0 4px; }
+.matchYear span { display:block; margin-bottom:5px; color:#4d5f55; font-size:.72rem; font-weight:800; }
+.matchYear select { width:100%; }
+.confirmMatch:disabled { opacity:.48; cursor:not-allowed; }
 .analyseStatus { min-height:18px; margin-top:8px; text-align:center; color:#657269; font-size:.73rem; }
 .analyseStatus.error { color:#8a3434; }
 .textButton { display:block; width:100%; border:0; background:transparent; color:#5c6c62; padding:12px; }

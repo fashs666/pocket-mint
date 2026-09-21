@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.10.5";
+const IDENTIFY_VERSION = "0.11.2";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 
 function setIdentifyStep(step) {
@@ -40,14 +40,35 @@ async function inspectIdentifyPhoto(file) {
   return {warnings,width,height,bytes:file.size,type:file.type||"unknown"};
 }
 
+async function prepareIdentifyPhoto(file) {
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, {resizeWidth: 1600, resizeQuality: "high"});
+  } catch {
+    bitmap = await createImageBitmap(file);
+  }
+  const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Photo preparation failed")), "image/jpeg", .86));
+  return new File([blob], file.name?.replace(/\.[^.]+$/, ".jpg") || "coin-photo.jpg", {type: "image/jpeg", lastModified: Date.now()});
+}
+
 async function loadIdentifyPhoto(side,file) {
   if (!file) return;
   identifyState.analysisCertain=null;
   clearIdentifyPhoto(side);
-  const url=URL.createObjectURL(file);
-  try { identifyState[side]={file,url,quality:await inspectIdentifyPhoto(file)}; }
-  catch { identifyState[side]={file,url,quality:{warnings:["quality could not be checked on this device"]}}; }
   const preview=document.querySelector(`#${side}Capture .capturePreview`);
+  preview.innerHTML=`<b class="photoSpinner">◌</b><strong>Preparing photo…</strong><small>Keep Pocket Mint open</small>`;
+  let prepared=file;
+  try { prepared=await prepareIdentifyPhoto(file); }
+  catch { /* Keep the original when this browser cannot resize it. */ }
+  const url=URL.createObjectURL(prepared);
+  try { identifyState[side]={file:prepared,url,quality:await inspectIdentifyPhoto(prepared)}; }
+  catch { identifyState[side]={file:prepared,url,quality:{warnings:["quality could not be checked on this device"]}}; }
   preview.classList.add("hasPhoto"); preview.style.backgroundImage=`url("${url}")`;
   preview.innerHTML=`<strong>${side === "obverse" ? "Portrait side" : "Design side"}</strong><small>Tap to retake</small>`;
   renderPhotoQuality();updateAnalyseButton();
@@ -185,7 +206,8 @@ function scoreIdentifyCoin(coin,clues) {
 function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value,design:identifyState.lastObserved?.design||"",kangaroo_count:document.getElementById("identifyKangarooCount").value}; }
 
 function rankClueCatalogue(coins,clues) {
-  const hasStrongClue=Boolean(clues.year||clues.portrait||clues.type||clues.words||clues.mark||clues.design||clues.kangaroo_count);
+  const hasStrongClue=Boolean(clues.year||clues.portrait||clues.words||clues.mark||clues.design||clues.kangaroo_count);
+  if(!hasStrongClue)return [];
   let ranked=coins.map(coin=>scoreIdentifyCoin(coin,clues));
   ranked.sort((a,b)=>b.identityScore-a.identityScore||b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
   if(hasStrongClue)ranked=ranked.filter(item=>item.score>0);
@@ -251,8 +273,22 @@ function renderIdentifyResults() {
   }
   const root=document.getElementById("identifyResults");
   if(!identifyState.results.length){root.innerHTML='<div class="empty">Try removing an uncertain clue or search the catalogue manually.</div>';return;}
-  root.innerHTML=identifyState.results.map((item,index)=>{const label=visual?`${item.confidence}% visual match`:item.confidence>=75?`${item.confidence}% clue match`:"Possible";return `<article class="matchCard"><div class="matchLayout">${coinImageHtml(item.coin,{preferPersonal:false,className:"matchArtwork"})}<div><div class="matchTop"><div><div class="eyebrow">${index===0?"BEST MATCH":`CANDIDATE ${index+1}`}</div><h3>${item.coin.year} ${esc(item.coin.title)}</h3><div class="meta">${esc(item.coin.denomination_display||"$1")} · ${esc(human(item.coin.issue_type))}</div></div><span class="confidence ${item.confidence<75?"possible":""}">${label}</span></div><p class="matchReasons">Matched: ${esc(item.reasons.length?item.reasons.join(" · "):"visual appearance")}</p><div class="matchActions"><button type="button" data-identify-open="${esc(item.coin.id)}">View details</button><button type="button" class="confirmMatch" data-identify-confirm="${esc(item.coin.id)}">Confirm + add</button></div></div></div></article>`;}).join("");
+  const grouped=[];
+  for(const item of identifyState.results){
+    const existing=grouped.find(result=>result.coin.title===item.coin.title&&result.coin.denomination_display===item.coin.denomination_display);
+    if(existing){existing.confidence=Math.max(existing.confidence,item.confidence);existing.reasons=[...new Set([...existing.reasons,...item.reasons])];}
+    else grouped.push({...item,reasons:[...item.reasons]});
+  }
+  root.innerHTML=grouped.map((item,index)=>{
+    const variants=designVariants(item.coin),multiYear=variants.length>1;
+    const label=visual?`${item.confidence}% visual match`:item.confidence>=75?`${item.confidence}% clue match`:"Possible";
+    const exactYear=identifyState.lastObserved?.year;
+    const selected=variants.find(variant=>String(variant.year)===String(exactYear));
+    const yearPicker=multiYear?`<label class="matchYear"><span>Issue year</span><select data-identify-year>${selected?"":'<option value="">Choose year</option>'}${variants.map(variant=>`<option value="${esc(variant.id)}" ${selected?.id===variant.id?"selected":""}>${esc(variant.year)}</option>`).join("")}</select></label>`:"";
+    return `<article class="matchCard"><div class="matchLayout">${coinImageHtml(item.coin,{preferPersonal:false,className:"matchArtwork"})}<div><div class="matchTop"><div><div class="eyebrow">${index===0?"BEST MATCH":`CANDIDATE ${index+1}`}</div><h3>${multiYear?esc(item.coin.title):`${item.coin.year} ${esc(item.coin.title)}`}</h3><div class="meta">${esc(item.coin.denomination_display||"$1")} · ${multiYear?`${variants.length} issue years`:esc(human(item.coin.issue_type))}</div></div><span class="confidence ${item.confidence<75?"possible":""}">${label}</span></div><p class="matchReasons">Matched: ${esc(item.reasons.length?item.reasons.join(" · "):"visual appearance")}</p>${yearPicker}<div class="matchActions"><button type="button" data-identify-open="${esc(item.coin.id)}">View details</button><button type="button" class="confirmMatch" data-identify-confirm="${esc(selected?.id||item.coin.id)}" ${multiYear&&!selected?"disabled":""}>Confirm + add</button></div></div></div></article>`;
+  }).join("");
   root.querySelectorAll("[data-identify-open]").forEach(button=>button.onclick=()=>openCoin(catalogue.find(coin=>coin.id===button.dataset.identifyOpen)));
+  root.querySelectorAll("[data-identify-year]").forEach(select=>select.onchange=()=>{const button=select.closest(".matchCard").querySelector("[data-identify-confirm]");button.disabled=!select.value;button.dataset.identifyConfirm=select.value||button.dataset.identifyConfirm;});
   root.querySelectorAll("[data-identify-confirm]").forEach(button=>button.onclick=()=>confirmIdentification(button.dataset.identifyConfirm));
 }
 
@@ -260,7 +296,9 @@ async function confirmIdentification(id) {
   const coin=catalogue.find(item=>item.id===id); if(!coin)return;
   const record=state.get(id)||baseRec(id); await saveRec(id,{quantity:(record.quantity||0)+1});
   for(const side of ["obverse","reverse"])if(identifyState[side]?.file)await addPhoto(id,identifyState[side].file);
-  await loadLocal();renderAll();alert(`${coin.year} ${coin.title} added to your collection with its photos.`);resetIdentification();mintFilter="owned";navigate("collectionView");
+  const photoCount=[identifyState.obverse,identifyState.reverse].filter(Boolean).length;
+  await loadLocal();renderAll();resetIdentification();mintFilter="owned";navigate("collectionView");
+  showToast("Added to My Mint",`${coin.year} ${coin.title}${photoCount?` · ${photoCount} photo${photoCount===1?"":"s"} saved`:""}`);
 }
 
 function resetIdentification() {
@@ -296,8 +334,10 @@ function wireIdentification(years=[]) {
   years.forEach(year=>yearSelect.add(new Option(year,year)));
   const coinOptions=document.getElementById("identificationCoinOptions");
   coinOptions.replaceChildren(...catalogue.map(coin=>new Option(identifyCoinLabel(coin))));
-  document.getElementById("identifyObverse").onchange=async event=>{await loadIdentifyPhoto("obverse",event.target.files[0]);event.target.value="";};
-  document.getElementById("identifyReverse").onchange=async event=>{await loadIdentifyPhoto("reverse",event.target.files[0]);event.target.value="";};
+  const photoInputs=[document.getElementById("identifyObverse"),document.getElementById("identifyReverse")];
+  if(typeof installPlatform==="function"&&installPlatform()==="apple")photoInputs.forEach(input=>input.removeAttribute("capture"));
+  document.getElementById("identifyObverse").onchange=async event=>{const file=event.target.files[0];event.target.value="";await loadIdentifyPhoto("obverse",file);};
+  document.getElementById("identifyReverse").onchange=async event=>{const file=event.target.files[0];event.target.value="";await loadIdentifyPhoto("reverse",file);};
   document.getElementById("identifyAnalyse").onclick=analysePhotos;
   document.getElementById("identifyNeedHelp").onclick=()=>{identifyState.usedHelpStep=true;identifyState.fallbackReason="Visual analysis skipped by tester";setIdentifyStep(2);};
   document.getElementById("identifyBackPhotos").onclick=()=>setIdentifyStep(1);

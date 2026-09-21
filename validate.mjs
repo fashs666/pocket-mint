@@ -39,6 +39,7 @@ const donation2021Clues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"20
 const manualDonation2021Clues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"2021",portrait:"",type:"commemorative",words:"Donation Dollar Money to help others",mark:"",scope:"circulation_core",design:"",kangaroo_count:""});
 const sixRoosClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portrait:"",type:"standard",words:"DOLLAR kangaroos",mark:"",scope:"circulation_core",design:"",kangaroo_count:"6"});
 const genericRoosClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portrait:"",type:"",words:"DOLLAR kangaroos",mark:"",scope:"circulation_core",design:"",kangaroo_count:""});
+const emptyClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portrait:"",type:"",words:"",mark:"",scope:"circulation_core",design:"",kangaroo_count:""});
 const designOnlyResponse = await workerDefault.fetch(new Request("https://example.test/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse:null,reverse:"data:image/jpeg;base64,AA=="})}),{
   AI:{run:async()=>({response:"DESIGN=100 Years of Qantas; TYPE=commemorative; WORDS=Qantas airplane; SUBJECT=aircraft; CONFIDENCE=100"})},
   ASSETS:{fetch:async()=>new Response(catalogueText,{headers:{"content-type":"application/json"}})}
@@ -56,7 +57,7 @@ const sixRoosVisual=await identifyMock("DESIGN=unknown; TYPE=standard; WORDS=DOL
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.11.1"') && html.includes("Pocket Mint v0.11.1"), "v0.11.1 navigation and scroll-fix version"],
+  [app.includes('APP_VERSION = "0.11.2"') && identify.includes('IDENTIFY_VERSION = "0.11.2"') && html.includes("Pocket Mint v0.11.2"), "v0.11.2 grouped-year and mobile-fix version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -76,7 +77,7 @@ const checks = [
   [identify.includes("analysePhotos") && identify.includes("/api/identify") && identify.includes("confirmIdentification"), "visual-first analysis and confirm flow"],
   [identify.includes("saveIdentificationTest") && html.includes('id="identificationTestLog"'), "identification test capture and review"],
   [worker.includes("body.obverse?") && identify.includes("Analyse design side") && designOnlyResponse.status === 200 && designOnlyPayload.matches?.[0]?.id === "AU1-2020-QANTAS", "design-side-only identification"],
-  [donationVisual.status === 200 && donationVisual.payload.uncertain && donationVisual.payload.matches?.length === 2 && donationVisual.payload.matches.every(match=>match.id.includes("DONATION")), "design-side Donation Dollar asks only for its year"],
+  [donationVisual.status === 200 && !donationVisual.payload.uncertain && donationVisual.payload.needs_year && donationVisual.payload.matches?.length === 2 && donationVisual.payload.matches.every(match=>match.id.includes("DONATION")), "design-side Donation Dollar goes directly to grouped matches"],
   [sixRoosVisual.status === 200 && !sixRoosVisual.payload.uncertain && sixRoosVisual.payload.matches?.length === 1 && sixRoosVisual.payload.matches[0].id === "AU1-2026-SIX-ROOS", "visible six-kangaroo count produces one visual match"],
   [qantasMatches.length === 1 && qantasMatches[0]?.id === "AU1-2020-QANTAS", "decisive Qantas result suppresses weak extras"],
   [outbackMatches.length === 1 && outbackMatches[0]?.id === "AU1-2002-OUTBACK" && !assessMatches(outbackMatches,visualCase({year:"2002",design:"Year of the Outback"}),catalogue.coins).uncertain, "Year of the Outback produces a decisive visual match"],
@@ -84,7 +85,7 @@ const checks = [
   [discoveryMatches[0]?.id === "AU1-2019-DISCOVERY-S" && discoveryMatches.length === 1, "2019 letter S resolves without wrong-letter extras"],
   [discoveryLetterOnlyMatches[0]?.id === "AU1-2019-DISCOVERY-U", "visible letter U resolves even without an exact model title"],
   [anzacMatches[0]?.id === "AU1-2014-ANZAC" && !assessMatches(anzacMatches,visualCase({year:"2014",design:"ANZAC Centenary"}),catalogue.coins).uncertain, "ANZAC year selects the exact issue"],
-  [anzacDesignOnlyMatches[0]?.id === "AU1-2018-ANZAC" && assessMatches(anzacDesignOnlyMatches,visualCase({design:"ANZAC Centenary"}),catalogue.coins).uncertain, "ANZAC without a readable year needs help"],
+  [anzacDesignOnlyMatches[0]?.id === "AU1-2018-ANZAC" && !assessMatches(anzacDesignOnlyMatches,visualCase({design:"ANZAC Centenary"}),catalogue.coins).uncertain, "ANZAC without a readable year goes to grouped matches"],
   [countedSixRoosMatches.length === 1 && countedSixRoosMatches[0]?.id === "AU1-2026-SIX-ROOS", "visible count of six selects Mob of Six Roos"],
   [invalidTypeObservation.design_type === "unknown" && invalidTypeObservation.kangaroo_count === null, "invalid model fields are normalised"],
   [olderYearObservation.year === "1986" && olderYearObservation.design === "International Year of Peace", "older four-digit years and common designs are recognised"],
@@ -93,8 +94,12 @@ const checks = [
   [manualDonation2021Clues.length === 1 && manualDonation2021Clues[0]?.coin.id === "AU1-2021-DONATION", "typed Donation Dollar plus 2021 yields one exact result"],
   [sixRoosClues.length === 1 && sixRoosClues[0]?.coin.id === "AU1-2026-SIX-ROOS", "six-kangaroo help answer excludes Five Kangaroos"],
   [genericRoosClues.every(item => item.confidence < 75), "generic kangaroo wording cannot create a confident match"],
+  [emptyClues.length === 0, "empty clues cannot create false high-confidence kangaroo matches"],
+  [app.includes("groupCatalogueCoins") && app.includes('id="dYear"') && identify.includes("data-identify-year"), "multi-year designs use one catalogue card with year selection"],
+  [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
+  [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-v0.11.1") && sw.includes("!/^https?"), "matching service-worker cache and remote images excluded from precache"],
+  [sw.includes("pocket-mint-v0.11.2") && sw.includes("!/^https?"), "matching service-worker cache and remote images excluded from precache"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
