@@ -1,13 +1,20 @@
-# Pocket Mint v0.11.0
+# Pocket Mint v0.11.1
 
 Pocket Mint is a local-first Progressive Web App for testing an Australian $1 coin collection catalogue. Personal collection records and photos stay in the browser's IndexedDB database; no account, paid dependency, database, or ongoing-cost service is required.
+
+## v0.11.1 navigation and Home stability
+
+- simplify bottom navigation to Home, Find and My Mint
+- move Wishlist and Stats into My Mint alongside the other personal collection destinations
+- remove a duplicate delayed Home render that could return a scrolling phone to the top
+- preserve the Home shortcuts and all Wishlist and Stats functionality
 
 ## v0.11.0 visual cleanup
 
 - introduce one calm, Android-first visual system across the app
 - simplify Home around collection progress, Find a coin, series progress and recently added coins
 - keep Browse and Identify together inside Find
-- use a five-item bottom navigation: Home, Find, Wishlist, Stats and My Mint
+- use a focused bottom navigation for the main app destinations
 - group Collection, Favourites, Duplicates and future Swaps inside My Mint
 - add dedicated Wishlist and Stats views without changing stored data
 - move the testing checklist and technical diagnostics into Settings
@@ -137,7 +144,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.0 service worker can refresh its offline cache. The earlier circulating samples use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.1 service worker can refresh its offline cache. The earlier circulating samples use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 
