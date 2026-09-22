@@ -124,16 +124,17 @@ function rankCatalogue(candidates,observed) {
 function assessMatches(matches,observed,candidates) {
   const first=matches[0],second=matches[1];
   const gap=first&&second?first.confidence-second.confidence:1;
+  const kangarooFamily=Boolean(observed.kangaroo_count||/kangaroo|roos/i.test([observed.design,observed.words?.join(" ")].filter(Boolean).join(" ")));
   const sameDesignCount=observed.design&&!observed.design.startsWith("series:")?candidates.filter(coin=>coin.title===observed.design).length:0;
   const needsYear=Boolean(observed.design&&sameDesignCount>1&&!candidates.some(coin=>coin.title===observed.design&&String(coin.year)===observed.year));
   const unresolvedSeries=Boolean(observed.design?.startsWith("series:"));
   const sameRecognisedDesign=Boolean(needsYear&&matches.length&&matches.every(match=>candidates.find(coin=>coin.id===match.id)?.title===observed.design));
-  const uncertain=!first||unresolvedSeries||(!sameRecognisedDesign&&first.confidence<.75)||(!sameRecognisedDesign&&gap<.1);
+  const uncertain=!first||unresolvedSeries||kangarooFamily||(!sameRecognisedDesign&&first.confidence<.75)||(!sameRecognisedDesign&&gap<.1);
   const reason=uncertain
     ? unresolvedSeries
       ? "I recognised the coin series, but need help choosing the exact design."
-      : /kangaroo|roos/i.test(observed.words?.join(" ")||"")&&!observed.kangaroo_count
-          ? "I can see a kangaroo design, but need help confirming whether there are five or six kangaroos."
+      : kangarooFamily
+          ? "I can see a kangaroo design, but the photo count is not reliable enough. Please confirm whether there are five or six kangaroos."
           : "The photo did not produce one clearly stronger catalogue match."
     : needsYear
       ? "The reverse design is clear. Choose the issue year when adding it to My Mint."
@@ -172,7 +173,7 @@ async function identify(request,env) {
   const candidates=catalogue.coins||[];
   const designChoices=[...new Set(candidates.map(coin=>coin.title))];
   const titleOptions=designChoices.join(" | ");
-  const obversePrompt="This is the portrait side of an Australian one-dollar coin. Read only the four-digit mint year and identify Queen Elizabeth II or King Charles III. Do not infer a year that is not visibly readable. Reply exactly: YEAR=value; PORTRAIT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100. Use unknown when unreadable.";
+  const obversePrompt="This is the portrait side of an Australian one-dollar coin. Read only the four digits physically stamped at the bottom of this exact coin and identify Queen Elizabeth II or King Charles III. Do not infer the year from the portrait, coin design, likely issue, or catalogue. If every digit is not sharply legible, use YEAR=unknown even if one year seems likely. Reply exactly: YEAR=value; PORTRAIT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100. Use unknown when unreadable.";
   const reversePrompt=`This is the reverse design of an Australian one-dollar coin. Compare the artwork and lettering to these catalogue choices: ${titleOptions}. Count kangaroos carefully and report KANGAROOS=5, KANGAROOS=6 or KANGAROOS=unknown; never estimate a count when the whole design is not clear. Do not choose Five Kangaroos or Mob of Six Roos from a rough impression alone. Matildas is a valid series even when the exact player design is unclear. For Dollar Discovery, report its A, U or S mark as "letter A", "letter U" or "letter S" in WORDS only when legible. Select an exact title only when visible artwork or lettering supports it; otherwise use unknown. TYPE must be exactly standard, commemorative or unknown. Read distinctive visible words and describe the central subject. Reply exactly: DESIGN=value; TYPE=value; WORDS=value; SUBJECT=value; KANGAROOS=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100.`;
   try {
     const [obverseOutput,reverseOutput]=await Promise.all([

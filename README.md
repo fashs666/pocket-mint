@@ -1,4 +1,11 @@
-# Pocket Mint v0.11.4
+# Pocket Mint v0.11.5
+
+## v0.11.5 safer year and kangaroo identification
+
+- requires a deliberate issue-year choice for visually identified designs issued across multiple years
+- sends Five Kangaroos and Mob of Six Roos photos to the focused five-or-six question instead of trusting an unreliable visual count
+- leaves the five-or-six answer blank and avoids copying a suspect kangaroo year into the clue screen
+- makes the portrait-side reading prompt reject inferred or partly legible years
 
 ## v0.11.4 unobtrusive icon selection
 
@@ -167,7 +174,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.4 service worker can refresh its offline cache. The earlier circulating samples use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.5 service worker can refresh its offline cache. The earlier circulating samples use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 
