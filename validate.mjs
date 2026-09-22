@@ -57,7 +57,7 @@ const sixRoosVisual=await identifyMock("DESIGN=unknown; TYPE=standard; WORDS=DOL
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.11.3"') && identify.includes('IDENTIFY_VERSION = "0.11.3"') && html.includes("Pocket Mint v0.11.3"), "v0.11.3 selectable-icon version"],
+  [app.includes('APP_VERSION = "0.11.4"') && identify.includes('IDENTIFY_VERSION = "0.11.4"') && html.includes("Pocket Mint v0.11.4"), "v0.11.4 unobtrusive-icon-selector version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -73,7 +73,7 @@ const checks = [
   [app.includes("installPlatform") && app.includes("setupInstallControls") && app.includes('document.getElementById("installBlock").hidden = true'), "device recommendation and installed-app hiding"],
   [html.includes("Recommended for this device") && html.includes('id="installBlock"'), "device recommendation presentation"],
   [html.includes('data-app-icon="seal"') && html.includes('data-app-icon="spiral"') && html.includes('data-app-icon="character"'), "three Settings app-icon choices"],
-  [app.includes("setupAppIconControls") && app.includes("pocketMintAppIcon") && app.includes("manifest-character.webmanifest"), "app-icon choice persistence and manifest switching"],
+  [app.includes("setupAppIconControls") && app.includes("pocketMintAppIcon") && app.includes("manifest-character.webmanifest") && !app.includes("in-app icon has updated"), "app-icon choice persistence without a blocking selection popup"],
   [app.includes("export a backup first") && app.includes("Share → Add to Home Screen") && app.includes("install it again"), "installed-icon refresh guidance protects local data"],
   [progress.includes("collectionInsights") && progress.includes("multiCoinSeries"), "collection and series intelligence"],
   [progress.includes("Duplicate extras") && progress.includes("Closest to completion"), "duplicate and near-complete series summaries"],
@@ -102,7 +102,7 @@ const checks = [
   [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-v0.11.3") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.11.4") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.3";
+const APP_VERSION = "0.11.4";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -336,7 +336,7 @@ function appIconInstruction(icon) {
   return `${name} is selected. The Pocket Mint header updates immediately. Reload once before installing Pocket Mint so the browser reads the chosen icon.`;
 }
 
-function applyAppIcon(icon, options = {}) {
+function applyAppIcon(icon) {
   const safeIcon = APP_ICONS[icon] ? icon : "seal";
   try { localStorage.setItem(APP_ICON_KEY, safeIcon); } catch {}
   window.POCKET_MINT_APP_ICON = safeIcon;
@@ -353,14 +353,13 @@ function applyAppIcon(icon, options = {}) {
   const help = document.getElementById("appIconHelp");
   if (help) help.textContent = appIconInstruction(safeIcon);
   renderDiag();
-  if (options.announce) showToast(`${APP_ICONS[safeIcon].name} selected`, "The in-app icon has updated. Follow the Settings note if you also want to refresh an installed launcher icon.");
 }
 
 function setupAppIconControls() {
   const icon = selectedAppIcon();
   applyAppIcon(icon);
   document.querySelectorAll("[data-app-icon]").forEach(button => {
-    button.onclick = () => applyAppIcon(button.dataset.appIcon, {announce: true});
+    button.onclick = () => applyAppIcon(button.dataset.appIcon);
   });
 }
 
