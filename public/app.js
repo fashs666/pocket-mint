@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.6";
+const APP_VERSION = "0.11.7";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -215,7 +215,8 @@ function filteredCatalogue() {
     const record = {...baseRec(coin.id), ...(state.get(coin.id) || {})};
     const haystack = [coin.year, coin.title, coin.series_id, coin.issue_type, coin.coin_class, coin.obverse_effigy, coin.privy_mark].filter(Boolean).join(" ").toLowerCase();
     const stateMatch = !filter || (filter === "owned" && record.quantity > 0) || (filter === "missing" && record.quantity === 0) || (filter === "wishlist" && record.wishlist) || (filter === "favourite" && record.favourite);
-    return (!query || haystack.includes(query)) && (!year || String(coin.year) === year) && (!scope || coin.test_scope === scope) && stateMatch;
+    const scopeMatch = !scope || (scope === "core_circulation" ? ["circulation_core", "circulation_sample"].includes(coin.test_scope) : coin.test_scope === scope);
+    return (!query || haystack.includes(query)) && (!year || String(coin.year) === year) && scopeMatch && stateMatch;
   });
 }
 
