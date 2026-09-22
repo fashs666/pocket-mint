@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.8";
+const APP_VERSION = "0.11.9";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -209,6 +209,8 @@ function card(coin, mode = "browse") {
 function filteredCatalogue() {
   const query = document.getElementById("catalogueSearch").value.trim().toLowerCase();
   const year = document.getElementById("yearFilter").value;
+  const series = document.getElementById("seriesFilter").value;
+  const type = document.getElementById("typeFilter").value;
   const scope = document.getElementById("scopeFilter").value;
   const filter = document.getElementById("stateFilter").value;
   return catalogue.filter(coin => {
@@ -216,7 +218,7 @@ function filteredCatalogue() {
     const haystack = [coin.year, coin.title, coin.series_id, coin.issue_type, coin.coin_class, coin.obverse_effigy, coin.privy_mark].filter(Boolean).join(" ").toLowerCase();
     const stateMatch = !filter || (filter === "owned" && record.quantity > 0) || (filter === "missing" && record.quantity === 0) || (filter === "wishlist" && record.wishlist) || (filter === "favourite" && record.favourite);
     const scopeMatch = !scope || (scope === "core_circulation" ? ["circulation_core", "circulation_sample"].includes(coin.test_scope) : coin.test_scope === scope);
-    return (!query || haystack.includes(query)) && (!year || String(coin.year) === year) && scopeMatch && stateMatch;
+    return (!query || haystack.includes(query)) && (!year || String(coin.year) === year) && (!series || coin.series_id === series) && (!type || coin.issue_type === type) && scopeMatch && stateMatch;
   });
 }
 
@@ -602,7 +604,7 @@ function updateNetwork() {
 
 function wire() {
   const updateCatalogue=()=>{document.getElementById("findCatalogueNotice").hidden=true;renderCatalogue();};
-  ["yearFilter", "scopeFilter", "stateFilter"].forEach(id => document.getElementById(id).onchange = updateCatalogue);
+  ["yearFilter", "seriesFilter", "typeFilter", "scopeFilter", "stateFilter"].forEach(id => document.getElementById(id).onchange = updateCatalogue);
   document.getElementById("catalogueSearch").oninput = updateCatalogue;
   document.getElementById("collectionSearch").oninput = renderMint;
   document.getElementById("wishlistSearch").oninput = renderWishlist;
@@ -702,6 +704,9 @@ async function init() {
   const years=[...new Set(catalogue.map(coin => coin.year))].sort((a,b)=>b-a);
   const yearSelect = document.getElementById("yearFilter");
   years.forEach(year => yearSelect.add(new Option(year, year)));
+  const seriesNames={afl2023:"AFL 2023",anzac_centennial:"ANZAC Centennial",aussie_big_things:"Aussie Big Things",australian_dinosaurs:"Australian Dinosaurs",bluey_dollarbucks:"Bluey Dollarbucks",decimal_currency_50:"50 Years of Decimal Currency",dollar_discovery:"Dollar Discovery",donation:"Donation Dollar",gach1:"Great Aussie Coin Hunt 1",gach2:"Great Aussie Coin Hunt 2",gach3:"Great Aussie Coin Hunt 3",gc2018:"Gold Coast 2018",matildas:"Matildas",mr_squiggle:"Mr Squiggle",possum_magic:"Possum Magic",std_roos:"Kangaroo Dollar",tokyo2020:"Tokyo 2020",wiggles30:"30 Years of The Wiggles"};
+  const seriesSelect=document.getElementById("seriesFilter");
+  [...new Set(catalogue.map(coin=>coin.series_id).filter(Boolean))].sort((a,b)=>(seriesNames[a]||a).localeCompare(seriesNames[b]||b)).forEach(series=>seriesSelect.add(new Option(seriesNames[series]||series.replaceAll("_"," "),series)));
   wire();
   if(typeof wireIdentification==="function") wireIdentification(years);
   const hash=location.hash.slice(1)||"home";

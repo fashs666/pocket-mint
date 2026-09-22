@@ -91,7 +91,7 @@ const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.11.8"') && identify.includes('IDENTIFY_VERSION = "0.11.8"') && html.includes("Pocket Mint v0.11.8"), "v0.11.8 reference-assisted identification version"],
+  [app.includes('APP_VERSION = "0.11.9"') && identify.includes('IDENTIFY_VERSION = "0.11.9"') && html.includes("Pocket Mint v0.11.9"), "v0.11.9 catalogue-filter version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -140,7 +140,7 @@ const checks = [
   [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-v0.11.8") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.11.9") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
@@ -154,6 +154,7 @@ const checks = [
   [catalogue.coins.some(coin => coin.id === "AU1-2002-OUTBACK") && catalogue.coins.some(coin => coin.id === "AU1-2010-GIRL-GUIDING") && catalogue.coins.filter(coin => coin.series_id === "anzac_centennial").length === 5, "requested Outback, Girl Guiding and full ANZAC run are present"],
   [catalogue.coins.every(coin => coin.test_scope !== "collector_exemplar") && !html.includes("Collector exemplars"), "collector-only entries are excluded from the active catalogue"],
   [html.includes('<select id="scopeFilter" aria-label="Filter by issue group"><option value="">All circulating $1 coins</option>') && html.includes('<option value="circulation_partner">Partner-program releases</option>') && app.includes('scope === "core_circulation"'), "browse defaults to all $1 coins with useful issue-group filters"],
+  [html.includes('id="seriesFilter"') && html.includes('id="typeFilter"') && app.includes('coin.series_id === series') && app.includes('coin.issue_type === type') && app.includes('Great Aussie Coin Hunt 3'), "Browse supports labelled year, series, issue-type, issue-group and collection dropdowns"],
   [catalogue.coins.filter(coin => coin.series_id === "gach1").length === 26 && catalogue.coins.filter(coin => coin.series_id === "gach2").length === 27 && catalogue.coins.filter(coin => coin.series_id === "gach3").length === 20, "all Great Aussie Coin Hunt designs are present"],
   [catalogue.coins.filter(coin => coin.series_id === "matildas").length === 4 && catalogue.coins.filter(coin => coin.series_id === "afl2023").length === 22 && catalogue.coins.filter(coin => coin.series_id === "aussie_big_things").length === 11, "Matildas, AFL and Aussie Big Things variants are present"],
   [catalogueText === rootCatalogueText, "root and public catalogue copies match"],
