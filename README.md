@@ -1,4 +1,12 @@
-# Pocket Mint v0.11.5
+# Pocket Mint v0.11.6
+
+## v0.11.6 complete core circulating $1 catalogue
+
+- expands the catalogue from 35 to 58 verified or announced circulating Australian $1 records
+- adds every standard Five Kangaroos circulation year listed by the Royal Australian Mint from 1984 onward
+- adds the 2016 50th Anniversary of Decimal Currency circulating obverse variant
+- distinguishes the Ian Rank-Broadley and Jody Clark 2019 issues in the shared year selector
+- keeps the 28 Five Kangaroos issues grouped into one browse entry instead of flooding the catalogue
 
 ## v0.11.5 safer year and kangaroo identification
 
@@ -174,7 +182,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.5 service worker can refresh its offline cache. The earlier circulating samples use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.6 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 

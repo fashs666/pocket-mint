@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.5";
+const APP_VERSION = "0.11.6";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -20,6 +20,11 @@ function designVariants(coin) {
     .sort((a, b) => Number(b.year) - Number(a.year));
 }
 
+function variantIssueLabel(coin, variants = designVariants(coin)) {
+  const repeatedYear=variants.filter(item=>String(item.year)===String(coin.year)).length>1;
+  return repeatedYear&&coin.variant_label?`${coin.year} · ${coin.variant_label}`:String(coin.year);
+}
+
 function groupCatalogueCoins(coins) {
   const groups = new Map();
   for (const coin of coins) {
@@ -32,8 +37,9 @@ function groupCatalogueCoins(coins) {
 function issueYearLabel(coin) {
   const variants = designVariants(coin);
   if (variants.length === 1) return String(coin.year);
-  const years = variants.map(item => Number(item.year)).sort((a, b) => a - b);
-  return `${years[0]}–${years.at(-1)} · ${years.length} years`;
+  const years = [...new Set(variants.map(item => Number(item.year)))].sort((a, b) => a - b);
+  const countLabel=years.length===variants.length?`${years.length} years`:`${variants.length} issues`;
+  return `${years[0]}–${years.at(-1)} · ${countLabel}`;
 }
 
 let toastTimer = null;
@@ -160,6 +166,7 @@ function seriesHtml(coin) {
 }
 
 function referenceLabel(coin) {
+  if (coin.reference_image_kind === "obverse") return "Mint obverse reference";
   if (coin.reference_image_kind === "series") return "Series reference";
   if (coin.reference_image_kind === "product") return "Official product image";
   return "Mint reference";
@@ -187,7 +194,7 @@ function card(coin, mode = "browse") {
   const controls = mode === "collection"
     ? `<div class="coinControls"><button data-action="minus" aria-label="Decrease quantity">−</button><span class="qty">${record.quantity}</span><button data-action="plus" aria-label="Increase quantity">+</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`
     : multiYear
-      ? `<div class="coinControls"><span class="ownedMark">${ownedYears ? `✓ ${ownedYears} year${ownedYears === 1 ? "" : "s"} owned` : `${variants.length} issue years`}</span><button data-action="plus" class="addCoin">Choose year</button></div>`
+      ? `<div class="coinControls"><span class="ownedMark">${ownedYears ? `✓ ${ownedYears} issue${ownedYears === 1 ? "" : "s"} owned` : `${variants.length} issues`}</span><button data-action="plus" class="addCoin">Choose issue</button></div>`
     : `<div class="coinControls">${owned ? '<span class="ownedMark">✓ Owned</span>' : `<button data-action="plus" class="addCoin">${multiYear ? "Choose year" : "Add"}</button>`}<button data-action="wish" class="heart ${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
   const yearLabel = catalogueMode ? (document.getElementById("yearFilter")?.value ? String(coin.year) : issueYearLabel(coin)) : String(coin.year);
   element.innerHTML = `<button class="coinMain" type="button">${coinImageHtml(coin)}<span class="coinCopy"><span class="meta">$1 · ${esc(yearLabel)}</span><h3>${esc(coin.title)}</h3>${record.quantity > 1 ? `<span class="quantityBadge">×${record.quantity}</span>` : ""}</span></button>${controls}`;
@@ -428,10 +435,10 @@ function bindSeriesLinks() {
 function detailHtml(coin, record) {
   const variants = designVariants(coin);
   const multiYear = variants.length > 1;
-  const yearControl = multiYear ? `<label for="dYear">Issue year</label><select id="dYear">${variants.map(item => `<option value="${esc(item.id)}" ${item.id === coin.id ? "selected" : ""}>${esc(item.year)}</option>`).join("")}</select><p class="yearHelp">Choose a year to view its details and update that year in My Mint.</p>` : "";
+  const yearControl = multiYear ? `<label for="dYear">Issue year</label><select id="dYear">${variants.map(item => `<option value="${esc(item.id)}" ${item.id === coin.id ? "selected" : ""}>${esc(variantIssueLabel(item,variants))}</option>`).join("")}</select><p class="yearHelp">Choose an issue to view its details and update that exact coin in My Mint.</p>` : "";
   const date = record.date_added ? `<p class="autoDate">Date Added: <strong>${esc(record.date_added)}</strong> <span>(automatic)</span></p>` : '<p class="autoDate muted">Date Added will be recorded automatically when this coin first becomes owned.</p>';
-  const imageNote = coin.reference_image_kind === "series" ? "This official image shows the series packaging; an exact individual reverse is not available in the current source." : "Use this official catalogue image to compare the design with your coin.";
-  return `<div class="eyebrow">${esc(coin.id)}</div><h2>${multiYear ? esc(coin.title) : `${coin.year} ${esc(coin.title)}`}</h2><p class="muted">${multiYear ? `${variants.length} catalogue years · ` : ""}${human(coin.coin_class)} · ${human(coin.issue_type)}</p>${yearControl}<section class="referencePanel"><div><div class="eyebrow">${esc(referenceLabel(coin).toUpperCase())}</div>${coinImageHtml(coin, {preferPersonal: false, className: "detailArtwork"})}</div><p>${esc(imageNote)}</p></section><div class="detailGrid"><div><span>Year</span><b>${esc(coin.year)}</b></div><div><span>Denomination</span><b>$1</b></div><div><span>Mintage</span><b>${coin.mintage ? Number(coin.mintage).toLocaleString() : esc(coin.mintage_status || "—")}</b></div><div><span>Composition</span><b>${esc(coin.composition || "—")}</b></div><div><span>Size</span><b>${coin.mass_grams ?? "—"} g · ${coin.diameter_mm ?? "—"} mm</b></div><div><span>Effigy</span><b>${esc(coin.obverse_effigy || "—")}</b></div></div>${seriesHtml(coin)}<div class="editBlock"><h3>My Mint record · ${esc(coin.year)}</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}"><label>Condition</label><select id="dCondition"><option value="">Not set</option>${["Poor","Fair","Good","Very Good","Fine","Very Fine","Extremely Fine","About Uncirculated","Uncirculated"].map(value => `<option ${record.condition === value ? "selected" : ""}>${value}</option>`).join("")}</select>${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Your photos</label><p class="photoHelp">Add your own photos any time. They will become the thumbnail in My Mint while this reference stays available here.</p><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></div>`;
+  const imageNote = coin.reference_image_kind === "series" ? "This official image shows the series packaging; an exact individual reverse is not available in the current source." : coin.reference_image_kind === "obverse" ? "This official image shows the special portrait-side design used for this circulating issue." : "Use this official catalogue image to compare the design with your coin.";
+  return `<div class="eyebrow">${esc(coin.id)}</div><h2>${multiYear ? esc(coin.title) : `${coin.year} ${esc(coin.title)}`}</h2><p class="muted">${multiYear ? `${variants.length} catalogue issues · ` : ""}${human(coin.coin_class)} · ${human(coin.issue_type)}</p>${yearControl}<section class="referencePanel"><div><div class="eyebrow">${esc(referenceLabel(coin).toUpperCase())}</div>${coinImageHtml(coin, {preferPersonal: false, className: "detailArtwork"})}</div><p>${esc(imageNote)}</p></section><div class="detailGrid"><div><span>Year</span><b>${esc(variantIssueLabel(coin,variants))}</b></div><div><span>Denomination</span><b>$1</b></div><div><span>Mintage</span><b>${coin.mintage ? Number(coin.mintage).toLocaleString() : esc(coin.mintage_status || "—")}</b></div><div><span>Composition</span><b>${esc(coin.composition || "—")}</b></div><div><span>Size</span><b>${coin.mass_grams ?? "—"} g · ${coin.diameter_mm ?? "—"} mm</b></div><div><span>Effigy</span><b>${esc(coin.obverse_effigy || "—")}</b></div></div>${seriesHtml(coin)}<div class="editBlock"><h3>My Mint record · ${esc(variantIssueLabel(coin,variants))}</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}"><label>Condition</label><select id="dCondition"><option value="">Not set</option>${["Poor","Fair","Good","Very Good","Fine","Very Fine","Extremely Fine","About Uncirculated","Uncirculated"].map(value => `<option ${record.condition === value ? "selected" : ""}>${value}</option>`).join("")}</select>${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Your photos</label><p class="photoHelp">Add your own photos any time. They will become the thumbnail in My Mint while this reference stays available here.</p><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></div>`;
 }
 
 function renderCoin(coin) {

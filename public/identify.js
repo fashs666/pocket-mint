@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.11.5";
+const IDENTIFY_VERSION = "0.11.6";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 
 function setIdentifyStep(step) {
@@ -284,8 +284,9 @@ function renderIdentifyResults() {
     const variants=designVariants(item.coin),multiYear=variants.length>1;
     const label=visual?`${item.confidence}% visual match`:item.confidence>=75?`${item.confidence}% clue match`:"Possible";
     const exactYear=identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:"";
-    const selected=variants.find(variant=>String(variant.year)===String(exactYear));
-    const yearPicker=multiYear?`<label class="matchYear"><span>Issue year</span><select data-identify-year>${selected?"":'<option value="">Choose year</option>'}${variants.map(variant=>`<option value="${esc(variant.id)}" ${selected?.id===variant.id?"selected":""}>${esc(variant.year)}</option>`).join("")}</select></label>`:"";
+    const yearMatches=variants.filter(variant=>String(variant.year)===String(exactYear));
+    const selected=yearMatches.length===1?yearMatches[0]:null;
+    const yearPicker=multiYear?`<label class="matchYear"><span>Issue year</span><select data-identify-year>${selected?"":'<option value="">Choose issue</option>'}${variants.map(variant=>`<option value="${esc(variant.id)}" ${selected?.id===variant.id?"selected":""}>${esc(variantIssueLabel(variant,variants))}</option>`).join("")}</select></label>`:"";
     return `<article class="matchCard"><div class="matchLayout">${coinImageHtml(item.coin,{preferPersonal:false,className:"matchArtwork"})}<div><div class="matchTop"><div><div class="eyebrow">${index===0?"BEST MATCH":`CANDIDATE ${index+1}`}</div><h3>${multiYear?esc(item.coin.title):`${item.coin.year} ${esc(item.coin.title)}`}</h3><div class="meta">${esc(item.coin.denomination_display||"$1")} · ${multiYear?`${variants.length} issue years`:esc(human(item.coin.issue_type))}</div></div><span class="confidence ${item.confidence<75?"possible":""}">${label}</span></div><p class="matchReasons">Matched: ${esc(item.reasons.length?item.reasons.join(" · "):"visual appearance")}</p>${yearPicker}<div class="matchActions"><button type="button" data-identify-open="${esc(item.coin.id)}">View details</button><button type="button" class="confirmMatch" data-identify-confirm="${esc(selected?.id||item.coin.id)}" ${multiYear&&!selected?"disabled":""}>Confirm + add</button></div></div></div></article>`;
   }).join("");
   root.querySelectorAll("[data-identify-open]").forEach(button=>button.onclick=()=>openCoin(catalogue.find(coin=>coin.id===button.dataset.identifyOpen)));

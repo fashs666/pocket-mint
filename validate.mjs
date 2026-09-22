@@ -59,7 +59,7 @@ const misleadingRoosAssessment=assessMatches(misleadingRoosMatches,visualCase({y
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.11.5"') && identify.includes('IDENTIFY_VERSION = "0.11.5"') && html.includes("Pocket Mint v0.11.5"), "v0.11.5 safer-identification version"],
+  [app.includes('APP_VERSION = "0.11.6"') && identify.includes('IDENTIFY_VERSION = "0.11.6"') && html.includes("Pocket Mint v0.11.6"), "v0.11.6 complete-circulation-catalogue version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -101,27 +101,29 @@ const checks = [
   [sixRoosClues.length === 1 && sixRoosClues[0]?.coin.id === "AU1-2026-SIX-ROOS", "six-kangaroo help answer excludes Five Kangaroos"],
   [genericRoosClues.every(item => item.confidence < 75), "generic kangaroo wording cannot create a confident match"],
   [emptyClues.length === 0, "empty clues cannot create false high-confidence kangaroo matches"],
-  [app.includes("groupCatalogueCoins") && app.includes('id="dYear"') && identify.includes("data-identify-year"), "multi-year designs use one catalogue card with year selection"],
+  [app.includes("groupCatalogueCoins") && app.includes('id="dYear"') && app.includes("variantIssueLabel") && identify.includes("data-identify-year"), "multi-year and same-year variants use one catalogue card with exact issue selection"],
   [identify.includes('identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:""') && identify.includes('document.getElementById("identifyKangarooCount").value=""'), "visual multi-year results and kangaroo help never preselect an unverified answer"],
   [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-v0.11.5") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.11.6") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
   [manifest.icons?.some(icon => icon.sizes === "192x192") && manifest.icons?.some(icon => icon.sizes === "512x512"), "manifest icons"],
   [Array.isArray(catalogue.coins) && catalogue.coins.length > 0, "non-empty catalogue"],
   [new Set(catalogue.coins.map(coin => coin.id)).size === catalogue.coins.length, "unique catalogue IDs"],
-  [catalogue.meta.catalogue_version === "0.5.0" && catalogue.coins.some(coin => coin.id === "AU1-2025-ROOS-KC3"), "catalogue version and 2025 Five Kangaroos record"],
-  [catalogue.coins.filter(coin => coin.test_scope === "circulation_sample").length === 25 && catalogue.coins.filter(coin => coin.test_scope === "circulation_core").length === 10, "expanded earlier circulating sample preserves complete core totals"],
+  [catalogue.meta.catalogue_version === "0.6.0" && catalogue.coins.length === 58 && catalogue.coins.some(coin => coin.id === "AU1-2025-ROOS-KC3"), "complete core-circulation catalogue version and record total"],
+  [catalogue.coins.filter(coin => coin.title === "Five Kangaroos").length === 28 && catalogue.coins.some(coin => coin.id === "AU1-1984-ROOS-AM") && catalogue.coins.filter(coin => coin.year === 2019 && coin.title === "Five Kangaroos").length === 2, "all standard Five Kangaroos issues and both 2019 effigies"],
+  [catalogue.coins.some(coin => coin.id === "AU1-2016-DECIMAL-50" && coin.mintage === 560000), "2016 decimal-currency circulation variant"],
+  [catalogue.coins.filter(coin => coin.test_scope === "circulation_sample").length === 48 && catalogue.coins.filter(coin => coin.test_scope === "circulation_core").length === 10, "historical and recent circulating totals"],
   [catalogue.coins.some(coin => coin.id === "AU1-2002-OUTBACK") && catalogue.coins.some(coin => coin.id === "AU1-2010-GIRL-GUIDING") && catalogue.coins.filter(coin => coin.series_id === "anzac_centennial").length === 5, "requested Outback, Girl Guiding and full ANZAC run are present"],
   [catalogue.coins.every(coin => coin.test_scope !== "collector_exemplar") && !html.includes("Collector exemplars"), "collector-only entries are excluded from the active catalogue"],
   [html.includes('<select id="scopeFilter" aria-label="Filter by issue group"><option value="">All circulating coins</option>'), "browse defaults to all circulating coins"],
   [catalogueText === rootCatalogueText, "root and public catalogue copies match"],
   [new Set(catalogue.coins.filter(coin => coin.series_id).map(coin => coin.series_id)).size > 0, "series data available"],
   [catalogue.coins.every(coin => coin.reference_image), "every catalogue record has reference artwork"],
-  [catalogue.coins.every(coin => ["reverse", "series", "product"].includes(coin.reference_image_kind)), "reference artwork is truthfully labelled"]
+  [catalogue.coins.every(coin => ["obverse", "reverse", "series", "product"].includes(coin.reference_image_kind)), "reference artwork is truthfully labelled"]
 ];
 
 let failed = false;
