@@ -1,4 +1,11 @@
-# Pocket Mint v0.11.7
+# Pocket Mint v0.11.8
+
+## v0.11.8 reference-assisted identification
+
+- compares ambiguous photo matches against up to three official reverse-side catalogue images
+- only trusts the reference comparison at 80% confidence or above and falls back safely if an image cannot be loaded
+- adds automated identification coverage for all 13 partner-program series in the catalogue
+- verifies the complete ambiguous Bluey-versus-Bingo reference-comparison flow
 
 ## v0.11.7 expanded circulating $1 catalogue
 
@@ -184,7 +191,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.7 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.11.8 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 

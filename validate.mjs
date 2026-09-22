@@ -56,10 +56,42 @@ const donationVisual=await identifyMock("DESIGN=Donation Dollar; TYPE=commemorat
 const sixRoosVisual=await identifyMock("DESIGN=unknown; TYPE=standard; WORDS=DOLLAR; SUBJECT=kangaroos; KANGAROOS=6; CONFIDENCE=80");
 const misleadingRoosMatches=rankCatalogue(catalogue.coins,visualCase({year:"2023",portrait:"King Charles III",design_type:"standard",words:["DOLLAR kangaroos"],kangaroo_count:5}));
 const misleadingRoosAssessment=assessMatches(misleadingRoosMatches,visualCase({year:"2023",portrait:"King Charles III",design_type:"standard",words:["DOLLAR kangaroos"],kangaroo_count:5}),catalogue.coins);
+const partnerSeriesCases=[
+  ["afl2023","AU1-2023-AFL2023-COLLINGWOOD","AFL — Collingwood"],
+  ["aussie_big_things","AU1-2023-AUSSIE_BIG_THINGS-BANANA","Aussie Big Things — The Big Banana"],
+  ["australian_dinosaurs","AU1-2022-AUSTRALIAN_DINOSAURS-AUSTRALOVENATOR","Australian Dinosaurs — Australovenator"],
+  ["bluey_dollarbucks","AU1-2024-BLUEY_DOLLARBUCKS-BLUEY","Bluey Dollarbucks — Bluey"],
+  ["gach1","AU1-2019-GACH1-O","Great Aussie Coin Hunt 1 — O for Outback"],
+  ["gach2","AU1-2021-GACH2-A","Great Aussie Coin Hunt 2 — A for Akubra"],
+  ["gach3","AU1-2022-GACH3-T","Great Aussie Coin Hunt 3 — T for Tasmanian Devil"],
+  ["gc2018","AU1-2018-GC2018-DIVING","Gold Coast 2018 — Diving"],
+  ["matildas","AU1-2023-MATILDAS-KEEPER","Matildas — Keeper"],
+  ["mr_squiggle","AU1-2019-MR_SQUIGGLE-ROCKET","Mr Squiggle on a Rocket"],
+  ["possum_magic","AU1-2017-POSSUM_MAGIC-INVISIBLE","Possum Magic — Hush Invisible"],
+  ["tokyo2020","AU1-2020-TOKYO2020-COURAGE","Tokyo 2020 Olympic Team — Courage"],
+  ["wiggles30","AU1-2021-WIGGLES30-ORIGINAL","30 Years of The Wiggles — Anthony, Jeff, Murray & Greg"]
+];
+const partnerSeriesResults=partnerSeriesCases.map(([series,id,title])=>{
+  const observation=parseObservations("",`DESIGN=${title}; TYPE=commemorative; WORDS=${title}; SUBJECT=series artwork; KANGAROOS=unknown; CONFIDENCE=95`,catalogue.coins);
+  return {series,id,match:rankCatalogue(catalogue.coins,observation)[0]?.id};
+});
+let referenceVisionCalls=0;
+const referenceCompareResponse=await workerDefault.fetch(new Request("https://example.test/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse:null,reverse:"data:image/jpeg;base64,AA=="})}),{
+  AI:{run:async(_model,input)=>{
+    referenceVisionCalls+=1;
+    if(referenceVisionCalls===1) return {response:"DESIGN=unknown; TYPE=commemorative; WORDS=Bluey Dollarbucks; SUBJECT=cartoon dog; KANGAROOS=unknown; CONFIDENCE=78"};
+    const images=input.messages[1].content.filter(part=>part.type==="image_url");
+    if(images.length!==3) throw new Error("expected photographed coin and two official references");
+    return {response:"MATCH=AU1-2024-BLUEY_DOLLARBUCKS-BLUEY; CONFIDENCE=97; REASON=character and pose match"};
+  }},
+  REFERENCE_FETCH:async()=>new Response(Uint8Array.from([255,216,255,217]),{headers:{"content-type":"image/jpeg"}}),
+  ASSETS:{fetch:async()=>new Response(catalogueText,{headers:{"content-type":"application/json"}})}
+});
+const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.11.7"') && identify.includes('IDENTIFY_VERSION = "0.11.7"') && html.includes("Pocket Mint v0.11.7"), "v0.11.7 expanded-circulating-catalogue version"],
+  [app.includes('APP_VERSION = "0.11.8"') && identify.includes('IDENTIFY_VERSION = "0.11.8"') && html.includes("Pocket Mint v0.11.8"), "v0.11.8 reference-assisted identification version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -95,6 +127,8 @@ const checks = [
   [countedSixRoosMatches.length === 1 && countedSixRoosMatches[0]?.id === "AU1-2026-SIX-ROOS", "visible count of six selects Mob of Six Roos"],
   [invalidTypeObservation.design_type === "unknown" && invalidTypeObservation.kangaroo_count === null, "invalid model fields are normalised"],
   [olderYearObservation.year === "1986" && olderYearObservation.design === "International Year of Peace", "older four-digit years and common designs are recognised"],
+  [partnerSeriesResults.length === 13 && partnerSeriesResults.every(result=>result.match===result.id), "one automated identification case covers every partner-program series"],
+  [referenceVisionCalls === 2 && referenceComparePayload.matches?.[0]?.id === "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY" && referenceComparePayload.matches[0].confidence === .97 && !referenceComparePayload.uncertain && referenceComparePayload.matches[0].evidence.includes("official reference image comparison"), "official reference images resolve an ambiguous visual shortlist"],
   [donation2020Clues.length === 1 && donation2020Clues[0]?.coin.id === "AU1-2020-DONATION", "recognised Donation Dollar plus 2020 yields one exact result"],
   [donation2021Clues.length === 1 && donation2021Clues[0]?.coin.id === "AU1-2021-DONATION", "recognised Donation Dollar plus 2021 yields one exact result"],
   [manualDonation2021Clues.length === 1 && manualDonation2021Clues[0]?.coin.id === "AU1-2021-DONATION", "typed Donation Dollar plus 2021 yields one exact result"],
@@ -106,7 +140,7 @@ const checks = [
   [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-v0.11.7") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.11.8") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

@@ -160,6 +160,81 @@ async function runVision(env,image,prompt,maxTokens) {
   });
 }
 
+function bytesToBase64(bytes) {
+  let binary="";
+  for(let offset=0;offset<bytes.length;offset+=0x8000) binary+=String.fromCharCode(...bytes.subarray(offset,offset+0x8000));
+  return btoa(binary);
+}
+
+async function loadReferenceImage(coin,request,env) {
+  if(!coin?.reference_image||coin.reference_image_kind!=="reverse") return null;
+  const remote=/^https?:\/\//i.test(coin.reference_image);
+  const response=remote
+    ? await (env.REFERENCE_FETCH||fetch)(coin.reference_image)
+    : await env.ASSETS.fetch(new URL(`/${coin.reference_image.replace(/^\/+/,"")}`,request.url));
+  if(!response.ok) return null;
+  const type=(response.headers.get("content-type")||"").split(";")[0].toLowerCase();
+  if(!["image/jpeg","image/png","image/webp"].includes(type)) return null;
+  const bytes=new Uint8Array(await response.arrayBuffer());
+  if(!bytes.length||bytes.length>1_500_000) return null;
+  return `data:${type};base64,${bytesToBase64(bytes)}`;
+}
+
+function parseReferenceMatch(answer,allowedIds) {
+  const text=String(answer||"").trim();
+  const id=text.match(/\bMATCH\s*=\s*([^;\n]+)/i)?.[1]?.trim()||"";
+  const confidence=Number(text.match(/\bCONFIDENCE\s*=\s*(\d+(?:\.\d+)?)/i)?.[1]||0);
+  const reason=text.match(/\bREASON\s*=\s*([^;\n]+)/i)?.[1]?.trim()||"";
+  if(!allowedIds.has(id)||!Number.isFinite(confidence)) return null;
+  return {id,confidence:Math.max(0,Math.min(100,confidence)),reason};
+}
+
+async function compareCandidateReferences(request,env,userImage,matches,candidates) {
+  if(matches.length<2) return null;
+  const matchCoins=matches.map(match=>candidates.find(coin=>coin.id===match.id)).filter(Boolean);
+  const distinctReferences=new Set(matchCoins.map(coin=>coin.reference_image).filter(Boolean));
+  if(distinctReferences.size<2) return null;
+  const references=[];
+  for(const coin of matchCoins.slice(0,3)) {
+    try {
+      const image=await loadReferenceImage(coin,request,env);
+      if(image) references.push({coin,image});
+    } catch(error) {
+      console.warn("Reference image unavailable",coin.id,error);
+    }
+  }
+  if(references.length<2) return null;
+  const content=[
+    {type:"text",text:"Image 1 is the photographed reverse of an Australian one-dollar coin. The later images are official reverse-side catalogue references. Compare the central artwork, lettering, colour placement and layout. Ignore lighting, rotation, wear, scale and background. Choose a reference only when the visible design supports it; otherwise use unknown. Reply exactly: MATCH=candidate id or unknown; CONFIDENCE=0-100; REASON=brief visible comparison."},
+    {type:"text",text:"Image 1: photographed coin"},
+    {type:"image_url",image_url:{url:userImage}}
+  ];
+  references.forEach(({coin,image},index)=>{
+    content.push({type:"text",text:`Image ${index+2}: ${coin.id} — ${coin.title}`});
+    content.push({type:"image_url",image_url:{url:image}});
+  });
+  const output=await env.AI.run(MODEL,{
+    messages:[
+      {role:"system",content:"Act as a careful visual comparator. Do not infer from year or popularity. Follow the output format exactly."},
+      {role:"user",content}
+    ],
+    temperature:0,
+    max_tokens:100,
+    stream:false
+  });
+  return parseReferenceMatch(answerText(output),new Set(references.map(item=>item.coin.id)));
+}
+
+function applyReferenceMatch(matches,referenceMatch) {
+  if(!referenceMatch||referenceMatch.confidence<80) return matches;
+  const selected=matches.find(match=>match.id===referenceMatch.id);
+  if(!selected) return matches;
+  const evidence=[...selected.evidence,"official reference image comparison"];
+  if(referenceMatch.reason) evidence.push(referenceMatch.reason);
+  const updated={...selected,confidence:Math.max(selected.confidence,Math.min(.99,referenceMatch.confidence/100)),evidence};
+  return [updated,...matches.filter(match=>match.id!==selected.id)];
+}
+
 async function identify(request,env) {
   if(!env.AI) return json({error:"Pocket Mint’s vision service is not configured yet."},503);
   const length=Number(request.headers.get("content-length")||0);
@@ -181,9 +256,16 @@ async function identify(request,env) {
       runVision(env,body.reverse,reversePrompt,180)
     ]);
     const observed=parseObservations(answerText(obverseOutput),answerText(reverseOutput),candidates);
-    const matches=rankCatalogue(candidates,observed);
+    let matches=rankCatalogue(candidates,observed);
+    let reference_match=null;
+    try {
+      reference_match=await compareCandidateReferences(request,env,body.reverse,matches,candidates);
+      matches=applyReferenceMatch(matches,reference_match);
+    } catch(error) {
+      console.warn("Reference comparison skipped",error);
+    }
     const {uncertain,reason,needs_year}=assessMatches(matches,observed,candidates);
-    return json({matches,uncertain,reason,needs_year,observed});
+    return json({matches,uncertain,reason,needs_year,observed,reference_match});
   } catch(error) {
     console.error("Coin identification failed",error);
     return json({error:"Visual analysis could not complete. Please try again or use the clue screen."},503);
@@ -201,4 +283,4 @@ export default {
   }
 };
 
-export {normalize,identifyDesign,parseObservations,rankCatalogue,assessMatches};
+export {normalize,identifyDesign,parseObservations,rankCatalogue,assessMatches,parseReferenceMatch,applyReferenceMatch};
