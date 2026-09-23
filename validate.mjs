@@ -48,6 +48,11 @@ const designOnlyResponse = await workerDefault.fetch(new Request("https://exampl
   ASSETS:{fetch:async()=>new Response(catalogueText,{headers:{"content-type":"application/json"}})}
 });
 const designOnlyPayload = await designOnlyResponse.json();
+const quotaResponse=await workerDefault.fetch(new Request("https://example.test/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse:null,reverse:"data:image/jpeg;base64,AA=="})}),{
+  AI:{run:async()=>{throw new Error("4006: you have used up your daily free allocation of 10,000 neurons");}},
+  ASSETS:{fetch:async()=>new Response(catalogueText,{headers:{"content-type":"application/json"}})}
+});
+const quotaPayload=await quotaResponse.json();
 const identifyMock=async responseText=>{
   const response=await workerDefault.fetch(new Request("https://example.test/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse:null,reverse:"data:image/jpeg;base64,AA=="})}),{
     AI:{run:async()=>({response:responseText})},
@@ -95,7 +100,7 @@ const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.12.1"') && identify.includes('IDENTIFY_VERSION = "0.12.1"') && html.includes("Pocket Mint v0.12.1"), "v0.12.1 vision and catalogue version"],
+  [app.includes('APP_VERSION = "0.12.2"') && identify.includes('IDENTIFY_VERSION = "0.12.2"') && html.includes("Pocket Mint v0.12.2"), "v0.12.2 vision and catalogue version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -118,6 +123,7 @@ const checks = [
   [identify.includes("analysePhotos") && identify.includes("/api/identify") && identify.includes("confirmIdentification"), "visual-first analysis and confirm flow"],
   [identify.includes("saveIdentificationTest") && html.includes('id="identificationTestLog"'), "identification test capture and review"],
   [worker.includes("body.obverse?") && identify.includes("Analyse design side") && designOnlyResponse.status === 200 && designOnlyPayload.matches?.[0]?.id === "AU1-2020-QANTAS", "design-side-only identification"],
+  [quotaResponse.status===429 && quotaPayload.diagnostic_code==="VISION-DAILY-LIMIT" && !quotaPayload.provider_error, "daily AI limit receives a safe, specific response"],
   [donationVisual.status === 200 && !donationVisual.payload.uncertain && donationVisual.payload.needs_year && donationVisual.payload.matches?.length === 2 && donationVisual.payload.matches.every(match=>match.id.includes("DONATION")), "design-side Donation Dollar goes directly to grouped matches"],
   [sixRoosVisual.status === 200 && !sixRoosVisual.payload.uncertain && sixRoosVisual.payload.matches[0]?.id === "AU1-2026-SIX-ROOS", "visual kangaroo count can resolve without a manual Step 2 question"],
   [misleadingRoosMatches[0]?.id === "AU1-2023-ROOS-KC3" && !misleadingRoosAssessment.uncertain, "visually supported standard issue can resolve without a manual kangaroo question"],
@@ -144,7 +150,7 @@ const checks = [
   [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("llama-3.2-11b-vision-instruct") && worker.includes("env.ASSETS.fetch"), "primary and fallback vision models plus static assets binding"],
-  [sw.includes("pocket-mint-v0.12.1") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.12.2") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

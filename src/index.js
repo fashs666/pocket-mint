@@ -160,6 +160,8 @@ async function runVision(env,image,prompt,maxTokens) {
   try {
     return await env.AI.run(MODEL,input);
   } catch(primaryError) {
+    if(/4006|daily free allocation/i.test(String(primaryError))) throw primaryError;
+    if(env.ENABLE_VISION_FALLBACK!=="true") throw primaryError;
     console.warn("Primary vision model failed; trying documented fallback",{error:String(primaryError)});
     try {
       return await env.AI.run(VISION_FALLBACK_MODEL,input);
@@ -281,7 +283,8 @@ async function identify(request,env) {
     return json({matches,uncertain,reason,needs_year,observed,reference_match,request_id:requestId});
   } catch(error) {
     console.error("Coin identification failed",{request_id:requestId,error:String(error),stack:error?.stack});
-    return json({error:"Visual analysis could not complete. Please try again or use the clue screen. Reference: VISION-01.",diagnostic_code:"VISION-01",request_id:requestId,provider_error:String(error).slice(0,800)},503);
+    if(/4006|daily free allocation/i.test(String(error))) return json({error:"Pocket Mint has reached today’s visual-analysis limit. Please try again after the daily reset or use the clue screen for now.",diagnostic_code:"VISION-DAILY-LIMIT",request_id:requestId},429);
+    return json({error:"Visual analysis could not complete. Please try again or use the clue screen. Reference: VISION-01.",diagnostic_code:"VISION-01",request_id:requestId},503);
   }
 }
 
