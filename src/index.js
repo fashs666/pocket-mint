@@ -124,18 +124,15 @@ function rankCatalogue(candidates,observed) {
 function assessMatches(matches,observed,candidates) {
   const first=matches[0],second=matches[1];
   const gap=first&&second?first.confidence-second.confidence:1;
-  const kangarooFamily=Boolean(observed.kangaroo_count||/kangaroo|roos/i.test([observed.design,observed.words?.join(" ")].filter(Boolean).join(" ")));
   const sameDesignCount=observed.design&&!observed.design.startsWith("series:")?candidates.filter(coin=>coin.title===observed.design).length:0;
   const needsYear=Boolean(observed.design&&sameDesignCount>1&&!candidates.some(coin=>coin.title===observed.design&&String(coin.year)===observed.year));
   const unresolvedSeries=Boolean(observed.design?.startsWith("series:"));
   const sameRecognisedDesign=Boolean(needsYear&&matches.length&&matches.every(match=>candidates.find(coin=>coin.id===match.id)?.title===observed.design));
-  const uncertain=!first||unresolvedSeries||kangarooFamily||(!sameRecognisedDesign&&first.confidence<.75)||(!sameRecognisedDesign&&gap<.1);
+  const uncertain=!first||unresolvedSeries||(!sameRecognisedDesign&&first.confidence<.75)||(!sameRecognisedDesign&&gap<.1);
   const reason=uncertain
     ? unresolvedSeries
       ? "I recognised the coin series, but need help choosing the exact design."
-      : kangarooFamily
-          ? "I can see a kangaroo design, but the photo count is not reliable enough. Please confirm whether there are five or six kangaroos."
-          : "The photo did not produce one clearly stronger catalogue match."
+      : "The photo did not produce one clearly stronger catalogue match."
     : needsYear
       ? "The reverse design is clear. Choose the issue year when adding it to My Mint."
       : "The visible design and supporting details produced a clear catalogue match.";
@@ -152,8 +149,9 @@ async function runVision(env,image,prompt,maxTokens) {
   return env.AI.run(MODEL,{
     messages:[
       {role:"system",content:"Follow the requested output format exactly and report only details visibly supported by the image."},
-      {role:"user",content:[{type:"text",text:prompt},{type:"image_url",image_url:{url:image}}]}
+      {role:"user",content:prompt}
     ],
+    image,
     temperature:0,
     max_tokens:maxTokens,
     stream:false
@@ -236,6 +234,7 @@ function applyReferenceMatch(matches,referenceMatch) {
 }
 
 async function identify(request,env) {
+  const requestId=crypto.randomUUID();
   if(!env.AI) return json({error:"Pocket Mint’s vision service is not configured yet."},503);
   const length=Number(request.headers.get("content-length")||0);
   if(length>10_000_000) return json({error:"The prepared images are too large."},413);
@@ -251,6 +250,7 @@ async function identify(request,env) {
   const obversePrompt="This is the portrait side of an Australian one-dollar coin. Read only the four digits physically stamped at the bottom of this exact coin and identify Queen Elizabeth II or King Charles III. Do not infer the year from the portrait, coin design, likely issue, or catalogue. If every digit is not sharply legible, use YEAR=unknown even if one year seems likely. Reply exactly: YEAR=value; PORTRAIT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100. Use unknown when unreadable.";
   const reversePrompt=`This is the reverse design of an Australian one-dollar coin. Compare the artwork and lettering to these catalogue choices: ${titleOptions}. Count kangaroos carefully and report KANGAROOS=5, KANGAROOS=6 or KANGAROOS=unknown; never estimate a count when the whole design is not clear. Do not choose Five Kangaroos or Mob of Six Roos from a rough impression alone. Matildas is a valid series even when the exact player design is unclear. For Dollar Discovery, report its A, U or S mark as "letter A", "letter U" or "letter S" in WORDS only when legible. Select an exact title only when visible artwork or lettering supports it; otherwise use unknown. TYPE must be exactly standard, commemorative or unknown. Read distinctive visible words and describe the central subject. Reply exactly: DESIGN=value; TYPE=value; WORDS=value; SUBJECT=value; KANGAROOS=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100.`;
   try {
+    console.log("Coin identification started",{request_id:requestId,has_obverse:Boolean(body.obverse)});
     const [obverseOutput,reverseOutput]=await Promise.all([
       body.obverse?runVision(env,body.obverse,obversePrompt,120):Promise.resolve(null),
       runVision(env,body.reverse,reversePrompt,180)
@@ -259,16 +259,18 @@ async function identify(request,env) {
     let matches=rankCatalogue(candidates,observed);
     let reference_match=null;
     try {
+      if(env.ENABLE_REFERENCE_COMPARISON!=="true") throw new Error("Reference comparison disabled");
       reference_match=await compareCandidateReferences(request,env,body.reverse,matches,candidates);
       matches=applyReferenceMatch(matches,reference_match);
     } catch(error) {
-      console.warn("Reference comparison skipped",error);
+      if(env.ENABLE_REFERENCE_COMPARISON==="true") console.warn("Reference comparison skipped",{request_id:requestId,error:String(error)});
     }
     const {uncertain,reason,needs_year}=assessMatches(matches,observed,candidates);
-    return json({matches,uncertain,reason,needs_year,observed,reference_match});
+    console.log("Coin identification completed",{request_id:requestId,match_count:matches.length,uncertain});
+    return json({matches,uncertain,reason,needs_year,observed,reference_match,request_id:requestId});
   } catch(error) {
-    console.error("Coin identification failed",error);
-    return json({error:"Visual analysis could not complete. Please try again or use the clue screen."},503);
+    console.error("Coin identification failed",{request_id:requestId,error:String(error),stack:error?.stack});
+    return json({error:"Visual analysis could not complete. Please try again or use the clue screen. Reference: VISION-01.",diagnostic_code:"VISION-01",request_id:requestId},503);
   }
 }
 

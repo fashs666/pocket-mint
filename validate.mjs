@@ -41,7 +41,10 @@ const sixRoosClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portr
 const genericRoosClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portrait:"",type:"",words:"DOLLAR kangaroos",mark:"",scope:"circulation_core",design:"",kangaroo_count:""});
 const emptyClues=identifyCore.rankClueCatalogue(catalogue.coins,{year:"",portrait:"",type:"",words:"",mark:"",scope:"circulation_core",design:"",kangaroo_count:""});
 const designOnlyResponse = await workerDefault.fetch(new Request("https://example.test/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse:null,reverse:"data:image/jpeg;base64,AA=="})}),{
-  AI:{run:async()=>({response:"DESIGN=100 Years of Qantas; TYPE=commemorative; WORDS=Qantas airplane; SUBJECT=aircraft; CONFIDENCE=100"})},
+  AI:{run:async(_model,input)=>{
+    if(input.image!=="data:image/jpeg;base64,AA=="||typeof input.messages?.[1]?.content!=="string")throw new Error("expected direct image input");
+    return {response:"DESIGN=100 Years of Qantas; TYPE=commemorative; WORDS=Qantas airplane; SUBJECT=aircraft; CONFIDENCE=100"};
+  }},
   ASSETS:{fetch:async()=>new Response(catalogueText,{headers:{"content-type":"application/json"}})}
 });
 const designOnlyPayload = await designOnlyResponse.json();
@@ -85,13 +88,14 @@ const referenceCompareResponse=await workerDefault.fetch(new Request("https://ex
     return {response:"MATCH=AU1-2024-BLUEY_DOLLARBUCKS-BLUEY; CONFIDENCE=97; REASON=character and pose match"};
   }},
   REFERENCE_FETCH:async()=>new Response(Uint8Array.from([255,216,255,217]),{headers:{"content-type":"image/jpeg"}}),
+  ENABLE_REFERENCE_COMPARISON:"true",
   ASSETS:{fetch:async()=>new Response(catalogueText,{headers:{"content-type":"application/json"}})}
 });
 const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.11.9"') && identify.includes('IDENTIFY_VERSION = "0.11.9"') && html.includes("Pocket Mint v0.11.9"), "v0.11.9 catalogue-filter version"],
+  [app.includes('APP_VERSION = "0.12.0"') && identify.includes('IDENTIFY_VERSION = "0.12.0"') && html.includes("Pocket Mint v0.12.0"), "v0.12.0 vision and catalogue version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -115,11 +119,11 @@ const checks = [
   [identify.includes("saveIdentificationTest") && html.includes('id="identificationTestLog"'), "identification test capture and review"],
   [worker.includes("body.obverse?") && identify.includes("Analyse design side") && designOnlyResponse.status === 200 && designOnlyPayload.matches?.[0]?.id === "AU1-2020-QANTAS", "design-side-only identification"],
   [donationVisual.status === 200 && !donationVisual.payload.uncertain && donationVisual.payload.needs_year && donationVisual.payload.matches?.length === 2 && donationVisual.payload.matches.every(match=>match.id.includes("DONATION")), "design-side Donation Dollar goes directly to grouped matches"],
-  [sixRoosVisual.status === 200 && sixRoosVisual.payload.uncertain && sixRoosVisual.payload.reason.includes("five or six"), "visual kangaroo count requests focused confirmation"],
-  [misleadingRoosMatches[0]?.id === "AU1-2023-ROOS-KC3" && misleadingRoosAssessment.uncertain, "confident-looking 2023 five-kangaroo reading cannot bypass confirmation"],
+  [sixRoosVisual.status === 200 && !sixRoosVisual.payload.uncertain && sixRoosVisual.payload.matches[0]?.id === "AU1-2026-SIX-ROOS", "visual kangaroo count can resolve without a manual Step 2 question"],
+  [misleadingRoosMatches[0]?.id === "AU1-2023-ROOS-KC3" && !misleadingRoosAssessment.uncertain, "visually supported standard issue can resolve without a manual kangaroo question"],
   [qantasMatches.length === 1 && qantasMatches[0]?.id === "AU1-2020-QANTAS", "decisive Qantas result suppresses weak extras"],
   [outbackMatches.length === 1 && outbackMatches[0]?.id === "AU1-2002-OUTBACK" && !assessMatches(outbackMatches,visualCase({year:"2002",design:"Year of the Outback"}),catalogue.coins).uncertain, "Year of the Outback produces a decisive visual match"],
-  [sixRoosMatches[0]?.id === "AU1-2026-SIX-ROOS" && assessMatches(sixRoosMatches,visualCase({year:"2026",portrait:"King Charles III",design:"Mob of Six Roos"}),catalogue.coins).uncertain, "six-roos visual evidence still requires a count confirmation"],
+  [sixRoosMatches[0]?.id === "AU1-2026-SIX-ROOS" && !assessMatches(sixRoosMatches,visualCase({year:"2026",portrait:"King Charles III",design:"Mob of Six Roos"}),catalogue.coins).uncertain, "six-roos visual evidence does not force the clue screen"],
   [discoveryMatches[0]?.id === "AU1-2019-DISCOVERY-S" && discoveryMatches.length === 1, "2019 letter S resolves without wrong-letter extras"],
   [discoveryLetterOnlyMatches[0]?.id === "AU1-2019-DISCOVERY-U", "visible letter U resolves even without an exact model title"],
   [anzacMatches[0]?.id === "AU1-2014-ANZAC" && !assessMatches(anzacMatches,visualCase({year:"2014",design:"ANZAC Centenary"}),catalogue.coins).uncertain, "ANZAC year selects the exact issue"],
@@ -136,27 +140,29 @@ const checks = [
   [genericRoosClues.every(item => item.confidence < 75), "generic kangaroo wording cannot create a confident match"],
   [emptyClues.length === 0, "empty clues cannot create false high-confidence kangaroo matches"],
   [app.includes("groupCatalogueCoins") && app.includes('id="dYear"') && app.includes("variantIssueLabel") && identify.includes("data-identify-year"), "multi-year and same-year variants use one catalogue card with exact issue selection"],
-  [identify.includes('identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:""') && identify.includes('document.getElementById("identifyKangarooCount").value=""'), "visual multi-year results and kangaroo help never preselect an unverified answer"],
+  [identify.includes('identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:""') && !html.includes("How many kangaroos?") && !identify.includes("identifyKangarooCount"), "visual multi-year results do not preselect a year and Step 2 has no kangaroo-count question"],
   [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("env.ASSETS.fetch"), "vision Worker and static assets binding"],
-  [sw.includes("pocket-mint-v0.11.9") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.12.0") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
   [manifest.icons?.some(icon => icon.sizes === "192x192") && manifest.icons?.some(icon => icon.sizes === "512x512"), "manifest icons"],
   [Array.isArray(catalogue.coins) && catalogue.coins.length > 0, "non-empty catalogue"],
   [new Set(catalogue.coins.map(coin => coin.id)).size === catalogue.coins.length, "unique catalogue IDs"],
-  [catalogue.meta.catalogue_version === "0.7.0" && catalogue.coins.length === 192 && catalogue.coins.some(coin => coin.id === "AU1-2025-ROOS-KC3"), "expanded circulating-dollar catalogue version and record total"],
+  [catalogue.meta.catalogue_version === "0.8.0" && catalogue.coins.length === 219 && catalogue.coins.some(coin => coin.id === "AU1-2025-ROOS-KC3"), "expanded catalogue version and record total"],
   [catalogue.coins.filter(coin => coin.title === "Five Kangaroos").length === 28 && catalogue.coins.some(coin => coin.id === "AU1-1984-ROOS-AM") && catalogue.coins.filter(coin => coin.year === 2019 && coin.title === "Five Kangaroos").length === 2, "all standard Five Kangaroos issues and both 2019 effigies"],
   [catalogue.coins.some(coin => coin.id === "AU1-2016-DECIMAL-50" && coin.mintage === 560000), "2016 decimal-currency circulation variant"],
-  [catalogue.coins.filter(coin => coin.test_scope === "circulation_sample").length === 48 && catalogue.coins.filter(coin => coin.test_scope === "circulation_core").length === 10 && catalogue.coins.filter(coin => coin.test_scope === "circulation_partner").length === 134, "historical, recent and partner-program circulating totals"],
+  [catalogue.coins.filter(coin => coin.test_scope === "circulation_sample").length === 48 && catalogue.coins.filter(coin => coin.test_scope === "circulation_core").length === 10 && catalogue.coins.filter(coin => coin.test_scope === "circulation_partner").length === 161, "historical, recent and partner-program circulating totals"],
   [catalogue.coins.some(coin => coin.id === "AU1-2002-OUTBACK") && catalogue.coins.some(coin => coin.id === "AU1-2010-GIRL-GUIDING") && catalogue.coins.filter(coin => coin.series_id === "anzac_centennial").length === 5, "requested Outback, Girl Guiding and full ANZAC run are present"],
   [catalogue.coins.every(coin => coin.test_scope !== "collector_exemplar") && !html.includes("Collector exemplars"), "collector-only entries are excluded from the active catalogue"],
   [html.includes('<select id="scopeFilter" aria-label="Filter by issue group"><option value="">All circulating $1 coins</option>') && html.includes('<option value="circulation_partner">Partner-program releases</option>') && app.includes('scope === "core_circulation"'), "browse defaults to all $1 coins with useful issue-group filters"],
   [html.includes('id="seriesFilter"') && html.includes('id="typeFilter"') && app.includes('coin.series_id === series') && app.includes('coin.issue_type === type') && app.includes('Great Aussie Coin Hunt 3'), "Browse supports labelled year, series, issue-type, issue-group and collection dropdowns"],
-  [catalogue.coins.filter(coin => coin.series_id === "gach1").length === 26 && catalogue.coins.filter(coin => coin.series_id === "gach2").length === 27 && catalogue.coins.filter(coin => coin.series_id === "gach3").length === 20, "all Great Aussie Coin Hunt designs are present"],
-  [catalogue.coins.filter(coin => coin.series_id === "matildas").length === 4 && catalogue.coins.filter(coin => coin.series_id === "afl2023").length === 22 && catalogue.coins.filter(coin => coin.series_id === "aussie_big_things").length === 11, "Matildas, AFL and Aussie Big Things variants are present"],
+  [catalogue.coins.filter(coin => coin.series_id === "gach1").length === 26 && catalogue.coins.filter(coin => coin.series_id === "gach2").length === 27 && catalogue.coins.filter(coin => coin.series_id === "gach3").length === 27, "all Great Aussie Coin Hunt designs and the GACH3 coloured X are present"],
+  [catalogue.coins.filter(coin => coin.series_id === "matildas").length === 4 && catalogue.coins.filter(coin => coin.series_id === "afl2023").length === 22 && catalogue.coins.filter(coin => coin.series_id === "aussie_big_things").length === 11 && catalogue.coins.filter(coin => coin.series_id === "aussie_big_things_2").length === 10, "Matildas, AFL and both Aussie Big Things sets are present"],
+  [catalogue.coins.filter(coin => coin.series_id === "bluey_dollarbucks").length === 11 && catalogue.coins.some(coin=>coin.id==="AU1-2025-BLUEY-CHRISTMAS"), "Bluey Dollarbucks variants and Bluey Christmas are present"],
+  [html.includes('id="clearCatalogueFilters"') && app.includes('document.getElementById("clearCatalogueFilters").onclick') && html.includes('id="catalogueResultCount"'), "Browse has result count and Clear filters control"],
   [catalogueText === rootCatalogueText, "root and public catalogue copies match"],
   [new Set(catalogue.coins.filter(coin => coin.series_id).map(coin => coin.series_id)).size > 0, "series data available"],
   [catalogue.coins.every(coin => coin.reference_image), "every catalogue record has reference artwork"],

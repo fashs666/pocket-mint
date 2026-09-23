@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.11.9";
+const IDENTIFY_VERSION = "0.12.0";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 
 function setIdentifyStep(step) {
@@ -150,17 +150,12 @@ async function analysePhotos() {
 }
 
 function prefillClues(observed) {
-  const kangarooFamily=Boolean(observed.kangaroo_count||/kangaroo|roos/i.test([observed.design,...(Array.isArray(observed.words)?observed.words:[observed.words].filter(Boolean))].join(" ")));
-  if (!kangarooFamily&&observed.year&&[...document.getElementById("identifyYear").options].some(option=>option.value===String(observed.year))) document.getElementById("identifyYear").value=String(observed.year);
+  if (observed.year&&[...document.getElementById("identifyYear").options].some(option=>option.value===String(observed.year))) document.getElementById("identifyYear").value=String(observed.year);
   if (/charles/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="charles";
   if (/elizabeth/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="elizabeth";
   if (observed.design_type==="standard") document.getElementById("identifyType").value="standard";
   else if (observed.design_type==="commemorative") document.getElementById("identifyType").value="commemorative";
   if (observed.words) document.getElementById("identifyWords").value=Array.isArray(observed.words)?observed.words.join(" "):observed.words;
-  const count=Number(observed.kangaroo_count)||(/mob of six|six (?:roos|kangaroos)/i.test(observed.design||"")?6:/five (?:roos|kangaroos)/i.test(observed.design||"")?5:0);
-  document.getElementById("identifyKangarooCount").value="";
-  const observedWords=Array.isArray(observed.words)?observed.words:[observed.words].filter(Boolean);
-  document.getElementById("kangarooCountField").hidden=!(/kangaroo|roos/i.test([observed.design,...observedWords].join(" "))||[5,6].includes(count));
 }
 
 function identifyHaystack(coin) { return [coin.title,coin.series_id,coin.notes,coin.obverse_effigy,coin.privy_mark,coin.mintmark,coin.issue_type].filter(Boolean).join(" ").toLowerCase(); }
@@ -204,7 +199,7 @@ function scoreIdentifyCoin(coin,clues) {
   return {coin,score,confidence:Math.max(0,Math.min(96,confidence)),reasons,identityScore,exactDesign};
 }
 
-function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value,design:identifyState.lastObserved?.design||"",kangaroo_count:document.getElementById("identifyKangarooCount").value}; }
+function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value,design:identifyState.lastObserved?.design||"",kangaroo_count:""}; }
 
 function rankClueCatalogue(coins,clues) {
   const hasStrongClue=Boolean(clues.year||clues.portrait||clues.words||clues.mark||clues.design||clues.kangaroo_count);
@@ -305,8 +300,7 @@ async function confirmIdentification(id) {
 
 function resetIdentification() {
   clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;
-  ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark","identifyKangarooCount"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("kangarooCountField").hidden=true;
+  ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
   document.getElementById("identifyFallbackNotice").hidden=true;updateAnalyseButton();resetTestFeedback();setIdentifyStep(1);
 }
@@ -345,9 +339,6 @@ function wireIdentification(years=[]) {
   document.getElementById("identifyBackPhotos").onclick=()=>setIdentifyStep(1);
   document.getElementById("identifyBackClues").onclick=()=>{identifyState.usedHelpStep=true;if(!identifyState.fallbackReason)identifyState.fallbackReason="Tester changed or added clues";setIdentifyStep(2);};
   document.getElementById("identifyFind").onclick=runIdentification;
-  const updateKangarooQuestion=()=>{document.getElementById("kangarooCountField").hidden=!(document.getElementById("identifyType").value==="standard"||/kangaroo|roos/i.test(document.getElementById("identifyWords").value));};
-  document.getElementById("identifyType").onchange=updateKangarooQuestion;
-  document.getElementById("identifyWords").oninput=updateKangarooQuestion;
   document.getElementById("identifyReset").onclick=resetIdentification;
   document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
   document.getElementById("saveIdentificationTest").onclick=saveIdentificationTest;

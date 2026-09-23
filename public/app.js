@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.11.9";
+const APP_VERSION = "0.12.0";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -228,7 +228,12 @@ function fillList(id, coins, empty, mode = "browse") {
   if (!coins.length) list.innerHTML = `<div class="empty">${empty}</div>`;
 }
 
-function renderCatalogue() { fillList("catalogueList", groupCatalogueCoins(filteredCatalogue()), "No coins match these filters.", "catalogue"); }
+function renderCatalogue() {
+  const coins=groupCatalogueCoins(filteredCatalogue());
+  fillList("catalogueList",coins,"No coins match these filters.","catalogue");
+  const count=document.getElementById("catalogueResultCount");
+  if(count)count.textContent=`${coins.length} design${coins.length===1?"":"s"}`;
+}
 
 function stats(items) { return items.map(([number, label]) => `<div class="stat"><b>${number}</b><span>${label}</span></div>`).join(""); }
 
@@ -606,6 +611,11 @@ function wire() {
   const updateCatalogue=()=>{document.getElementById("findCatalogueNotice").hidden=true;renderCatalogue();};
   ["yearFilter", "seriesFilter", "typeFilter", "scopeFilter", "stateFilter"].forEach(id => document.getElementById(id).onchange = updateCatalogue);
   document.getElementById("catalogueSearch").oninput = updateCatalogue;
+  document.getElementById("clearCatalogueFilters").onclick=()=>{
+    document.getElementById("catalogueSearch").value="";
+    ["yearFilter","seriesFilter","typeFilter","scopeFilter","stateFilter"].forEach(id=>document.getElementById(id).value="");
+    updateCatalogue();
+  };
   document.getElementById("collectionSearch").oninput = renderMint;
   document.getElementById("wishlistSearch").oninput = renderWishlist;
   document.querySelectorAll("[data-nav]").forEach(button => button.onclick = () => navigate(button.dataset.nav));
@@ -704,7 +714,7 @@ async function init() {
   const years=[...new Set(catalogue.map(coin => coin.year))].sort((a,b)=>b-a);
   const yearSelect = document.getElementById("yearFilter");
   years.forEach(year => yearSelect.add(new Option(year, year)));
-  const seriesNames={afl2023:"AFL 2023",anzac_centennial:"ANZAC Centennial",aussie_big_things:"Aussie Big Things",australian_dinosaurs:"Australian Dinosaurs",bluey_dollarbucks:"Bluey Dollarbucks",decimal_currency_50:"50 Years of Decimal Currency",dollar_discovery:"Dollar Discovery",donation:"Donation Dollar",gach1:"Great Aussie Coin Hunt 1",gach2:"Great Aussie Coin Hunt 2",gach3:"Great Aussie Coin Hunt 3",gc2018:"Gold Coast 2018",matildas:"Matildas",mr_squiggle:"Mr Squiggle",possum_magic:"Possum Magic",std_roos:"Kangaroo Dollar",tokyo2020:"Tokyo 2020",wiggles30:"30 Years of The Wiggles"};
+  const seriesNames={afl2023:"AFL 2023",anzac_centennial:"ANZAC Centennial",aussie_big_things:"Aussie Big Things",aussie_big_things_2:"Aussie Big Things 2",australian_dinosaurs:"Australian Dinosaurs",bluey:"Bluey",bluey_dollarbucks:"Bluey Dollarbucks",decimal_currency_50:"50 Years of Decimal Currency",dollar_discovery:"Dollar Discovery",donation:"Donation Dollar",gach1:"Great Aussie Coin Hunt 1",gach2:"Great Aussie Coin Hunt 2",gach3:"Great Aussie Coin Hunt 3",gc2018:"Gold Coast 2018",matildas:"Matildas",mr_squiggle:"Mr Squiggle",possum_magic:"Possum Magic",std_roos:"Kangaroo Dollar",tokyo2020:"Tokyo 2020",wiggles30:"30 Years of The Wiggles"};
   const seriesSelect=document.getElementById("seriesFilter");
   [...new Set(catalogue.map(coin=>coin.series_id).filter(Boolean))].sort((a,b)=>(seriesNames[a]||a).localeCompare(seriesNames[b]||b)).forEach(series=>seriesSelect.add(new Option(seriesNames[series]||series.replaceAll("_"," "),series)));
   wire();
