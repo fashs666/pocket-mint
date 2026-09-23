@@ -281,7 +281,7 @@ async function identify(request,env) {
     return json({matches,uncertain,reason,needs_year,observed,reference_match,request_id:requestId});
   } catch(error) {
     console.error("Coin identification failed",{request_id:requestId,error:String(error),stack:error?.stack});
-    return json({error:"Visual analysis could not complete. Please try again or use the clue screen. Reference: VISION-01.",diagnostic_code:"VISION-01",request_id:requestId},503);
+    return json({error:"Visual analysis could not complete. Please try again or use the clue screen. Reference: VISION-01.",diagnostic_code:"VISION-01",request_id:requestId,provider_error:String(error).slice(0,800)},503);
   }
 }
 
