@@ -1,4 +1,8 @@
-# Pocket Mint v0.12.0
+# Pocket Mint v0.12.1
+
+## v0.12.1 vision runtime fallback
+
+- retries a failed Llama 4 image request with Cloudflare's documented Llama 3.2 Vision model
 
 ## v0.12.0 vision repair and partner-series completion
 
@@ -206,7 +210,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.12.0 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.12.1 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 

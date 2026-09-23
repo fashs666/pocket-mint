@@ -1,4 +1,5 @@
 const MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
+const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 
 function json(data,status=200) {
   return new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff"}});
@@ -146,7 +147,7 @@ function answerText(output) {
 }
 
 async function runVision(env,image,prompt,maxTokens) {
-  return env.AI.run(MODEL,{
+  const input={
     messages:[
       {role:"system",content:"Follow the requested output format exactly and report only details visibly supported by the image."},
       {role:"user",content:prompt}
@@ -155,7 +156,17 @@ async function runVision(env,image,prompt,maxTokens) {
     temperature:0,
     max_tokens:maxTokens,
     stream:false
-  });
+  };
+  try {
+    return await env.AI.run(MODEL,input);
+  } catch(primaryError) {
+    console.warn("Primary vision model failed; trying documented fallback",{error:String(primaryError)});
+    try {
+      return await env.AI.run(VISION_FALLBACK_MODEL,input);
+    } catch(fallbackError) {
+      throw new Error(`Both vision models failed: primary=${String(primaryError)}; fallback=${String(fallbackError)}`);
+    }
+  }
 }
 
 function bytesToBase64(bytes) {
