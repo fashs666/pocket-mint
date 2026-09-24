@@ -7,6 +7,8 @@
 - adds a visible “Use phone camera” fallback when the full-screen guided camera is unavailable
 - preserves the fixed-size circular guide for devices that support the guided camera
 
+Phone check: refresh the installed app, then try the guided shutter, **Use phone camera**, and **Choose photo**. Each route should return to Step 1 with the selected coin preview still visible.
+
 ## v0.13.1 live visual-input repair
 
 - sends Llama 4 coin photos through its required multimodal message format
