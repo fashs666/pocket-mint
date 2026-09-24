@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.13.3";
+const IDENTIFY_VERSION = "0.13.4";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1,coinCameraTap=null;
 
@@ -396,28 +396,54 @@ async function setCoinCameraZoom(value) {
   try { await coinCameraTrack.applyConstraints({advanced:[{zoom:next}]}); } catch { /* Some cameras advertise zoom before accepting it. */ }
 }
 
+async function setCoinCameraFocusDistance(value) {
+  if(!coinCameraTrack?.getCapabilities)return;
+  const capabilities=coinCameraTrack.getCapabilities(),range=capabilities.focusDistance,modes=capabilities.focusMode||[];
+  if(!range||!modes.includes("manual"))return;
+  const next=Math.max(range.min,Math.min(range.max,Number(value)));
+  const output=document.getElementById("coinCameraFocusValue");
+  try {
+    await coinCameraTrack.applyConstraints({advanced:[{focusMode:"manual",focusDistance:next}]});
+    output.value=next.toFixed(range.step&&range.step<.1?2:1);
+  } catch { output.value="—"; }
+}
+
+function showCoinFocusResult(clientX,clientY,success) {
+  const ring=document.getElementById("coinCameraFocusRing");
+  ring.style.left=`${clientX}px`;ring.style.top=`${clientY}px`;ring.classList.remove("show","fail");
+  if(!success)ring.classList.add("fail");
+  void ring.offsetWidth;ring.classList.add("show");
+}
+
 async function focusCoinCamera(clientX,clientY) {
   if(!coinCameraTrack)return;
-  const video=document.getElementById("coinCameraVideo"),rect=video.getBoundingClientRect(),ring=document.getElementById("coinCameraFocusRing");
-  const x=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width)),y=Math.max(0,Math.min(1,(clientY-rect.top)/rect.height));
-  ring.style.left=`${clientX}px`;ring.style.top=`${clientY}px`;ring.classList.remove("show");void ring.offsetWidth;ring.classList.add("show");
+  const video=document.getElementById("coinCameraVideo"),rect=video.getBoundingClientRect(),status=document.getElementById("coinCameraStatus");
+  const scale=Math.max(rect.width/video.videoWidth,rect.height/video.videoHeight);
+  const displayedWidth=video.videoWidth*scale,displayedHeight=video.videoHeight*scale;
+  const x=Math.max(0,Math.min(video.videoWidth,((clientX-rect.left)+(displayedWidth-rect.width)/2)/scale));
+  const y=Math.max(0,Math.min(video.videoHeight,((clientY-rect.top)+(displayedHeight-rect.height)/2)/scale));
+  const supported=navigator.mediaDevices?.getSupportedConstraints?.().pointsOfInterest;
   const modes=coinCameraTrack.getCapabilities?.().focusMode||[];
+  if(!supported||(!modes.includes("single-shot")&&!modes.includes("continuous"))){showCoinFocusResult(clientX,clientY,false);status.textContent=document.getElementById("coinCameraFocusRow").hidden?"This browser cannot control focus. Use phone camera for native tap focus.":"Tap focus is unavailable here. Use the Focus slider below.";return;}
   const constraint={pointsOfInterest:[{x,y}]};
   if(modes.includes("single-shot"))constraint.focusMode="single-shot";
   else if(modes.includes("continuous"))constraint.focusMode="continuous";
-  try { await coinCameraTrack.applyConstraints({advanced:[constraint]}); }
+  try { await coinCameraTrack.applyConstraints({advanced:[constraint]});showCoinFocusResult(clientX,clientY,true);status.textContent="Focus applied. Hold still, then take the photo."; }
   catch {
+    showCoinFocusResult(clientX,clientY,false);status.textContent="Tap focus was rejected by this camera. Use the Focus slider or phone camera.";
     if(modes.includes("continuous"))try { await coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}); } catch { /* Native autofocus remains active. */ }
   }
 }
 
 function setupCoinCameraControls() {
-  const video=document.getElementById("coinCameraVideo"),slider=document.getElementById("coinCameraZoom"),zoomRow=document.getElementById("coinCameraZoomRow");
+  const video=document.getElementById("coinCameraVideo"),slider=document.getElementById("coinCameraZoom"),zoomRow=document.getElementById("coinCameraZoomRow"),focusSlider=document.getElementById("coinCameraFocus"),focusRow=document.getElementById("coinCameraFocusRow");
   coinCameraTrack=coinCameraStream?.getVideoTracks?.()[0]||null;
-  const capabilities=coinCameraTrack?.getCapabilities?.()||{},settings=coinCameraTrack?.getSettings?.()||{},zoom=capabilities.zoom;
+  const capabilities=coinCameraTrack?.getCapabilities?.()||{},settings=coinCameraTrack?.getSettings?.()||{},zoom=capabilities.zoom,focusDistance=capabilities.focusDistance,focusModes=capabilities.focusMode||[];
   zoomRow.hidden=!zoom;
   if(zoom){slider.min=zoom.min;slider.max=zoom.max;slider.step=zoom.step||.1;coinCameraZoomValue=settings.zoom||zoom.min;slider.value=coinCameraZoomValue;document.getElementById("coinCameraZoomValue").value=`${coinCameraZoomValue.toFixed(1)}×`;slider.oninput=()=>setCoinCameraZoom(slider.value);}
-  if((capabilities.focusMode||[]).includes("continuous"))coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
+  focusRow.hidden=!(focusDistance&&focusModes.includes("manual"));
+  if(!focusRow.hidden){focusSlider.min=focusDistance.min;focusSlider.max=focusDistance.max;focusSlider.step=focusDistance.step||.01;focusSlider.value=settings.focusDistance??focusDistance.min;document.getElementById("coinCameraFocusValue").value="Auto";focusSlider.oninput=()=>setCoinCameraFocusDistance(focusSlider.value);}
+  if(focusModes.includes("continuous"))coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
   video.ontouchstart=event=>{if(event.touches.length===2){event.preventDefault();coinCameraPinchStart=cameraTouchDistance(event.touches);coinCameraPinchZoom=coinCameraZoomValue;coinCameraTap=null;}else if(event.touches.length===1){coinCameraTap={x:event.touches[0].clientX,y:event.touches[0].clientY,time:Date.now()};}};
   video.ontouchmove=event=>{if(event.touches.length===2&&coinCameraPinchStart){event.preventDefault();setCoinCameraZoom(coinCameraPinchZoom*cameraTouchDistance(event.touches)/coinCameraPinchStart);}else if(coinCameraTap&&event.touches.length===1&&Math.hypot(event.touches[0].clientX-coinCameraTap.x,event.touches[0].clientY-coinCameraTap.y)>12)coinCameraTap=null;};
   video.ontouchend=()=>{if(coinCameraTap&&Date.now()-coinCameraTap.time<600)focusCoinCamera(coinCameraTap.x,coinCameraTap.y);coinCameraPinchStart=0;coinCameraTap=null;};

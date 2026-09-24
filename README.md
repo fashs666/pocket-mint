@@ -1,4 +1,11 @@
-# Pocket Mint v0.13.3
+# Pocket Mint v0.13.4
+
+## v0.13.4 verified camera focus
+
+- maps screen taps into the camera sensor’s pixel coordinates before requesting focus
+- only shows a green focus confirmation after the camera accepts the constraint
+- reports unsupported or rejected tap-focus requests instead of showing a false success ring
+- provides a manual near/far focus slider when the phone exposes focus distance controls
 
 ## v0.13.3 guided-camera controls
 
@@ -250,7 +257,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.3 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.4 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 
