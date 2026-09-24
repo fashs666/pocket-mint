@@ -160,9 +160,11 @@ async function runVision(env,image,prompt,maxTokens) {
   const input={
     messages:[
       {role:"system",content:"Follow the requested output format exactly and report only details visibly supported by the image."},
-      {role:"user",content:prompt}
+      {role:"user",content:[
+        {type:"text",text:prompt},
+        {type:"image_url",image_url:{url:image}}
+      ]}
     ],
-    image,
     temperature:0,
     max_tokens:maxTokens,
     stream:false
@@ -174,7 +176,16 @@ async function runVision(env,image,prompt,maxTokens) {
     if(env.ENABLE_VISION_FALLBACK!=="true") throw primaryError;
     console.warn("Primary vision model failed; trying documented fallback",{error:String(primaryError)});
     try {
-      return await env.AI.run(VISION_FALLBACK_MODEL,input);
+      return await env.AI.run(VISION_FALLBACK_MODEL,{
+        messages:[
+          {role:"system",content:"Follow the requested output format exactly and report only details visibly supported by the image."},
+          {role:"user",content:prompt}
+        ],
+        image,
+        temperature:0,
+        max_tokens:maxTokens,
+        stream:false
+      });
     } catch(fallbackError) {
       throw new Error(`Both vision models failed: primary=${String(primaryError)}; fallback=${String(fallbackError)}`);
     }

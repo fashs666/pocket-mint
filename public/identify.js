@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.13.0";
+const IDENTIFY_VERSION = "0.13.1";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 let coinCameraStream=null,coinCameraSide="reverse";
 
@@ -384,6 +384,8 @@ async function openCoinCamera(side) {
   coinCameraSide=side;
   const camera=document.getElementById("coinCamera"),video=document.getElementById("coinCameraVideo"),status=document.getElementById("coinCameraStatus");
   document.getElementById("coinCameraTitle").textContent=side==="obverse"?"Portrait side":"Design side";
+  const guideSize=Math.round(Math.min(window.innerWidth*.76,window.innerHeight*.48,380));
+  camera.style.setProperty("--coin-guide-size",`${Math.max(240,guideSize)}px`);
   status.textContent="Opening camera…";camera.hidden=false;document.body.classList.add("cameraOpen");
   try {
     coinCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1920}},audio:false});
@@ -429,8 +431,6 @@ function wireIdentification(years=[]) {
   years.forEach(year=>yearSelect.add(new Option(year,year)));
   const coinOptions=document.getElementById("identificationCoinOptions");
   coinOptions.replaceChildren(...catalogue.map(coin=>new Option(identifyCoinLabel(coin))));
-  const photoInputs=[document.getElementById("identifyObverse"),document.getElementById("identifyReverse")];
-  if(typeof installPlatform==="function"&&installPlatform()==="apple")photoInputs.forEach(input=>input.removeAttribute("capture"));
   document.querySelectorAll("[data-camera-side]").forEach(button=>button.onclick=()=>openCoinCamera(button.dataset.cameraSide));
   document.getElementById("coinCameraClose").onclick=closeCoinCamera;
   document.getElementById("coinCameraShutter").onclick=captureGuidedCoin;
