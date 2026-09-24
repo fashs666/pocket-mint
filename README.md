@@ -1,4 +1,11 @@
-# Pocket Mint v0.13.2
+# Pocket Mint v0.13.3
+
+## v0.13.3 guided-camera controls
+
+- adds hardware camera zoom with a slider when the phone reports zoom support
+- supports two-finger pinch zoom without resizing the circular coin guide
+- adds tap-to-focus with continuous autofocus fallback and a visible focus ring
+- keeps the native phone-camera and photo-picker fallbacks from v0.13.2
 
 ## v0.13.2 iPhone camera-input repair
 
@@ -6,8 +13,6 @@
 - separates the ordinary photo chooser from a native rear-camera input
 - adds a visible “Use phone camera” fallback when the full-screen guided camera is unavailable
 - preserves the fixed-size circular guide for devices that support the guided camera
-
-Phone check: refresh the installed app, then try the guided shutter, **Use phone camera**, and **Choose photo**. Each route should return to Step 1 with the selected coin preview still visible.
 
 ## v0.13.1 live visual-input repair
 
@@ -243,7 +248,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.2 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.3 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 

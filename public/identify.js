@@ -1,6 +1,6 @@
-const IDENTIFY_VERSION = "0.13.2";
+const IDENTIFY_VERSION = "0.13.3";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
-let coinCameraStream=null,coinCameraSide="reverse";
+let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1,coinCameraTap=null;
 
 function setIdentifyStep(step) {
   document.querySelectorAll("[data-identify-step]").forEach(item => item.classList.toggle("on", Number(item.dataset.identifyStep) === step));
@@ -372,12 +372,56 @@ function openFullCatalogueFromIdentification() {
 
 function closeCoinCamera() {
   if(coinCameraStream)coinCameraStream.getTracks().forEach(track=>track.stop());
-  coinCameraStream=null;
+  coinCameraStream=null;coinCameraTrack=null;coinCameraPinchStart=0;coinCameraTap=null;
   const camera=document.getElementById("coinCamera");
   if(!camera)return;
   camera.hidden=true;camera.classList.remove("ready","fallback");document.body.classList.remove("cameraOpen");
   const video=document.getElementById("coinCameraVideo");
   if(video)video.srcObject=null;
+}
+
+function cameraTouchDistance(touches) {
+  if(touches.length<2)return 0;
+  return Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);
+}
+
+async function setCoinCameraZoom(value) {
+  if(!coinCameraTrack?.getCapabilities)return;
+  const zoom=coinCameraTrack.getCapabilities().zoom;
+  if(!zoom)return;
+  const next=Math.max(zoom.min,Math.min(zoom.max,Number(value)));
+  coinCameraZoomValue=next;
+  const slider=document.getElementById("coinCameraZoom"),output=document.getElementById("coinCameraZoomValue");
+  slider.value=String(next);output.value=`${next.toFixed(next<2?1:0)}×`;
+  try { await coinCameraTrack.applyConstraints({advanced:[{zoom:next}]}); } catch { /* Some cameras advertise zoom before accepting it. */ }
+}
+
+async function focusCoinCamera(clientX,clientY) {
+  if(!coinCameraTrack)return;
+  const video=document.getElementById("coinCameraVideo"),rect=video.getBoundingClientRect(),ring=document.getElementById("coinCameraFocusRing");
+  const x=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width)),y=Math.max(0,Math.min(1,(clientY-rect.top)/rect.height));
+  ring.style.left=`${clientX}px`;ring.style.top=`${clientY}px`;ring.classList.remove("show");void ring.offsetWidth;ring.classList.add("show");
+  const modes=coinCameraTrack.getCapabilities?.().focusMode||[];
+  const constraint={pointsOfInterest:[{x,y}]};
+  if(modes.includes("single-shot"))constraint.focusMode="single-shot";
+  else if(modes.includes("continuous"))constraint.focusMode="continuous";
+  try { await coinCameraTrack.applyConstraints({advanced:[constraint]}); }
+  catch {
+    if(modes.includes("continuous"))try { await coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}); } catch { /* Native autofocus remains active. */ }
+  }
+}
+
+function setupCoinCameraControls() {
+  const video=document.getElementById("coinCameraVideo"),slider=document.getElementById("coinCameraZoom"),zoomRow=document.getElementById("coinCameraZoomRow");
+  coinCameraTrack=coinCameraStream?.getVideoTracks?.()[0]||null;
+  const capabilities=coinCameraTrack?.getCapabilities?.()||{},settings=coinCameraTrack?.getSettings?.()||{},zoom=capabilities.zoom;
+  zoomRow.hidden=!zoom;
+  if(zoom){slider.min=zoom.min;slider.max=zoom.max;slider.step=zoom.step||.1;coinCameraZoomValue=settings.zoom||zoom.min;slider.value=coinCameraZoomValue;document.getElementById("coinCameraZoomValue").value=`${coinCameraZoomValue.toFixed(1)}×`;slider.oninput=()=>setCoinCameraZoom(slider.value);}
+  if((capabilities.focusMode||[]).includes("continuous"))coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
+  video.ontouchstart=event=>{if(event.touches.length===2){event.preventDefault();coinCameraPinchStart=cameraTouchDistance(event.touches);coinCameraPinchZoom=coinCameraZoomValue;coinCameraTap=null;}else if(event.touches.length===1){coinCameraTap={x:event.touches[0].clientX,y:event.touches[0].clientY,time:Date.now()};}};
+  video.ontouchmove=event=>{if(event.touches.length===2&&coinCameraPinchStart){event.preventDefault();setCoinCameraZoom(coinCameraPinchZoom*cameraTouchDistance(event.touches)/coinCameraPinchStart);}else if(coinCameraTap&&event.touches.length===1&&Math.hypot(event.touches[0].clientX-coinCameraTap.x,event.touches[0].clientY-coinCameraTap.y)>12)coinCameraTap=null;};
+  video.ontouchend=()=>{if(coinCameraTap&&Date.now()-coinCameraTap.time<600)focusCoinCamera(coinCameraTap.x,coinCameraTap.y);coinCameraPinchStart=0;coinCameraTap=null;};
+  video.onclick=event=>focusCoinCamera(event.clientX,event.clientY);
 }
 
 async function openCoinCamera(side) {
@@ -392,11 +436,11 @@ async function openCoinCamera(side) {
     video.srcObject=coinCameraStream;
     await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
     await video.play();
+    setupCoinCameraControls();
     camera.classList.add("ready");status.textContent="Hold still and keep the full rim inside the circle.";
   } catch(error) {
     if(coinCameraStream)coinCameraStream.getTracks().forEach(track=>track.stop());
-    coinCameraStream=null;video.srcObject=null;
-    camera.classList.add("fallback");
+    coinCameraStream=null;coinCameraTrack=null;video.srcObject=null;camera.classList.add("fallback");
     status.textContent="The guided camera could not open. Use the phone camera below instead.";
   }
 }
@@ -404,14 +448,9 @@ async function openCoinCamera(side) {
 async function readIdentifyInput(input,side) {
   const file=input.files?.[0];
   if(!file)return;
-  try {
-    await loadIdentifyPhoto(side,file);
-  } catch(error) {
-    setAnalyseStatus("That photo could not be loaded. Please take it again or choose another photo.",true);
-  } finally {
-    // iOS camera files can become unreadable when the input is cleared before async decoding finishes.
-    input.value="";
-  }
+  try { await loadIdentifyPhoto(side,file); }
+  catch { setAnalyseStatus("That photo could not be loaded. Please take it again or choose another photo.",true); }
+  finally { input.value=""; }
 }
 
 function openNativeCoinCamera(side) {
