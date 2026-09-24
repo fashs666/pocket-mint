@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.13.1";
+const IDENTIFY_VERSION = "0.13.2";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 let coinCameraStream=null,coinCameraSide="reverse";
 
@@ -375,7 +375,7 @@ function closeCoinCamera() {
   coinCameraStream=null;
   const camera=document.getElementById("coinCamera");
   if(!camera)return;
-  camera.hidden=true;camera.classList.remove("ready");document.body.classList.remove("cameraOpen");
+  camera.hidden=true;camera.classList.remove("ready","fallback");document.body.classList.remove("cameraOpen");
   const video=document.getElementById("coinCameraVideo");
   if(video)video.srcObject=null;
 }
@@ -394,9 +394,29 @@ async function openCoinCamera(side) {
     await video.play();
     camera.classList.add("ready");status.textContent="Hold still and keep the full rim inside the circle.";
   } catch(error) {
-    closeCoinCamera();
-    setAnalyseStatus("The guided camera could not open. Choose a photo from your phone instead.",true);
+    if(coinCameraStream)coinCameraStream.getTracks().forEach(track=>track.stop());
+    coinCameraStream=null;video.srcObject=null;
+    camera.classList.add("fallback");
+    status.textContent="The guided camera could not open. Use the phone camera below instead.";
   }
+}
+
+async function readIdentifyInput(input,side) {
+  const file=input.files?.[0];
+  if(!file)return;
+  try {
+    await loadIdentifyPhoto(side,file);
+  } catch(error) {
+    setAnalyseStatus("That photo could not be loaded. Please take it again or choose another photo.",true);
+  } finally {
+    // iOS camera files can become unreadable when the input is cleared before async decoding finishes.
+    input.value="";
+  }
+}
+
+function openNativeCoinCamera(side) {
+  closeCoinCamera();
+  document.getElementById(side==="obverse"?"identifyObverseCamera":"identifyReverseCamera").click();
 }
 
 async function captureGuidedCoin() {
@@ -434,10 +454,13 @@ function wireIdentification(years=[]) {
   document.querySelectorAll("[data-camera-side]").forEach(button=>button.onclick=()=>openCoinCamera(button.dataset.cameraSide));
   document.getElementById("coinCameraClose").onclick=closeCoinCamera;
   document.getElementById("coinCameraShutter").onclick=captureGuidedCoin;
+  document.getElementById("coinCameraNative").onclick=()=>openNativeCoinCamera(coinCameraSide);
   document.getElementById("coinCameraChoose").onclick=()=>{const side=coinCameraSide;closeCoinCamera();document.getElementById(side==="obverse"?"identifyObverse":"identifyReverse").click();};
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!document.getElementById("coinCamera").hidden)closeCoinCamera();});
-  document.getElementById("identifyObverse").onchange=async event=>{const file=event.target.files[0];event.target.value="";await loadIdentifyPhoto("obverse",file);};
-  document.getElementById("identifyReverse").onchange=async event=>{const file=event.target.files[0];event.target.value="";await loadIdentifyPhoto("reverse",file);};
+  document.getElementById("identifyObverse").onchange=event=>readIdentifyInput(event.target,"obverse");
+  document.getElementById("identifyReverse").onchange=event=>readIdentifyInput(event.target,"reverse");
+  document.getElementById("identifyObverseCamera").onchange=event=>readIdentifyInput(event.target,"obverse");
+  document.getElementById("identifyReverseCamera").onchange=event=>readIdentifyInput(event.target,"reverse");
   document.getElementById("identifyAnalyse").onclick=analysePhotos;
   document.getElementById("identifyNeedHelp").onclick=()=>{identifyState.usedHelpStep=true;identifyState.fallbackReason="Visual analysis skipped by tester";setIdentifyStep(2);};
   document.getElementById("identifyBackPhotos").onclick=()=>setIdentifyStep(1);
