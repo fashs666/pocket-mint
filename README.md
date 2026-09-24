@@ -7,6 +7,8 @@
 - adds tap-to-focus with continuous autofocus fallback and a visible focus ring
 - keeps the native phone-camera and photo-picker fallbacks from v0.13.2
 
+Phone check: open the guided camera, pinch or move the zoom slider while confirming the circle stays fixed, then tap the coin and confirm the focus ring appears before taking the photo.
+
 ## v0.13.2 iPhone camera-input repair
 
 - keeps selected iPhone camera files alive until Pocket Mint has finished decoding and preparing them
