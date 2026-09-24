@@ -7,6 +7,8 @@
 - reports unsupported or rejected tap-focus requests instead of showing a false success ring
 - provides a manual near/far focus slider when the phone exposes focus distance controls
 
+Phone check: a green ring must be accompanied by “Focus applied”; a red ring means the browser rejected focus control and the manual slider or native phone camera should be used.
+
 ## v0.13.3 guided-camera controls
 
 - adds hardware camera zoom with a slider when the phone reports zoom support
