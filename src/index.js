@@ -23,6 +23,14 @@ function usefulWords(value) {
   return normalize(value).split(" ").filter(word=>word.length>1&&!ignored.has(word));
 }
 
+function isIdentificationCandidate(coin) {
+  return !/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(coin?.title||""));
+}
+
+function isStandardKangarooObservation(observed) {
+  return observed?.design_type==="standard"||Boolean(observed?.kangaroo_count)||/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(observed?.design||""));
+}
+
 function identifyDesign(value,candidates) {
   const answer=normalize(value);
   const titles=[...new Set(candidates.map(coin=>coin.title))];
@@ -65,6 +73,8 @@ function parseObservations(obverseAnswer,reverseAnswer,candidates) {
 }
 
 function rankCatalogue(candidates,observed) {
+  if(isStandardKangarooObservation(observed)) return [];
+  candidates=candidates.filter(isIdentificationCandidate);
   const visualWords=usefulWords([observed.words.join(" "),observed.design_type].join(" "));
   const discoveryMark=observed.words.join(" ").match(/\bletter\s+([asu])\b/i)?.[1]?.toUpperCase()||null;
   const titleCounts=new Map();
@@ -257,7 +267,7 @@ async function identify(request,env) {
   if(!validImage(body.reverse)||(body.obverse!=null&&!validImage(body.obverse))) return json({error:"A valid design-side image is required."},400);
   const catalogueResponse=await env.ASSETS.fetch(new URL("/catalogue.json",request.url));
   const catalogue=await catalogueResponse.json();
-  const candidates=catalogue.coins||[];
+  const candidates=(catalogue.coins||[]).filter(isIdentificationCandidate);
   const designChoices=[...new Set(candidates.map(coin=>coin.title))];
   const titleOptions=designChoices.join(" | ");
   const obversePrompt="This is the portrait side of an Australian one-dollar coin. Read only the four digits physically stamped at the bottom of this exact coin and identify Queen Elizabeth II or King Charles III. Do not infer the year from the portrait, coin design, likely issue, or catalogue. If every digit is not sharply legible, use YEAR=unknown even if one year seems likely. Reply exactly: YEAR=value; PORTRAIT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100. Use unknown when unreadable.";
@@ -299,4 +309,4 @@ export default {
   }
 };
 
-export {normalize,identifyDesign,parseObservations,rankCatalogue,assessMatches,parseReferenceMatch,applyReferenceMatch};
+export {normalize,identifyDesign,parseObservations,rankCatalogue,assessMatches,parseReferenceMatch,applyReferenceMatch,isIdentificationCandidate,isStandardKangarooObservation};

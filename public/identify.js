@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.12.2";
+const IDENTIFY_VERSION = "0.12.3";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 
 function setIdentifyStep(step) {
@@ -153,9 +153,9 @@ function prefillClues(observed) {
   if (observed.year&&[...document.getElementById("identifyYear").options].some(option=>option.value===String(observed.year))) document.getElementById("identifyYear").value=String(observed.year);
   if (/charles/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="charles";
   if (/elizabeth/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="elizabeth";
-  if (observed.design_type==="standard") document.getElementById("identifyType").value="standard";
-  else if (observed.design_type==="commemorative") document.getElementById("identifyType").value="commemorative";
-  if (observed.words) document.getElementById("identifyWords").value=Array.isArray(observed.words)?observed.words.join(" "):observed.words;
+  if (observed.design_type==="commemorative") document.getElementById("identifyType").value="commemorative";
+  const words=Array.isArray(observed.words)?observed.words.join(" "):String(observed.words||"");
+  if (identifyTerms(words).length) document.getElementById("identifyWords").value=words;
 }
 
 function identifyHaystack(coin) { return [coin.title,coin.series_id,coin.notes,coin.obverse_effigy,coin.privy_mark,coin.mintmark,coin.issue_type].filter(Boolean).join(" ").toLowerCase(); }
@@ -183,7 +183,6 @@ function scoreIdentifyCoin(coin,clues) {
   if (clues.year) { possible+=25; if (String(coin.year)===clues.year) {score+=25;reasons.push(`year ${coin.year}`);} }
   if (clues.portrait) { possible+=8;if ((coin.obverse_effigy||"").toLowerCase().includes(clues.portrait)) {score+=8;reasons.push(clues.portrait==="charles"?"King Charles III portrait":"Queen Elizabeth II portrait");} }
   if (clues.type) { possible+=6;const typeMatch=clues.type==="standard"?(coin.issue_type==="standard"||/kangaroo|roos/i.test(coin.title)):coin.issue_type==="commemorative"||coin.issue_type==="series";if(typeMatch){score+=6;reasons.push(clues.type==="standard"?"kangaroo design":"special design");} }
-  if (clues.scope) { possible+=2;if (clues.scope==="circulation_core"?coin.coin_class==="circulating":coin.test_scope===clues.scope) {score+=2;reasons.push(clues.scope==="circulation_core"?"circulation issue":"collector issue");} }
   if (clues.mark) { possible+=6;if ((clues.mark==="mintmark"&&coin.mintmark)||(clues.mark==="privy"&&coin.privy_mark)) {score+=6;reasons.push(`${clues.mark} recorded`);} }
   if (clues.kangaroo_count) {
     possible+=80;
@@ -202,7 +201,9 @@ function scoreIdentifyCoin(coin,clues) {
 function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value,design:identifyState.lastObserved?.design||"",kangaroo_count:""}; }
 
 function rankClueCatalogue(coins,clues) {
-  const hasStrongClue=Boolean(clues.year||clues.portrait||clues.words||clues.mark||clues.design||clues.kangaroo_count);
+  if(clues.type==="standard"||clues.kangaroo_count||/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(clues.design||"")))return [];
+  coins=coins.filter(coin=>!/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(coin.title||"")));
+  const hasStrongClue=Boolean(clues.year||clues.portrait||identifyTerms(clues.words).length||clues.mark||clues.design||clues.kangaroo_count);
   if(!hasStrongClue)return [];
   let ranked=coins.map(coin=>scoreIdentifyCoin(coin,clues));
   ranked.sort((a,b)=>b.identityScore-a.identityScore||b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
