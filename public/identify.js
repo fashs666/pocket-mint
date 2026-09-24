@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.13.4";
+const IDENTIFY_VERSION = "0.13.5";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1,coinCameraTap=null;
 
@@ -397,15 +397,34 @@ async function setCoinCameraZoom(value) {
 }
 
 async function setCoinCameraFocusDistance(value) {
-  if(!coinCameraTrack?.getCapabilities)return;
+  if(!coinCameraTrack?.getCapabilities)return false;
   const capabilities=coinCameraTrack.getCapabilities(),range=capabilities.focusDistance,modes=capabilities.focusMode||[];
-  if(!range||!modes.includes("manual"))return;
+  if(!range||!modes.includes("manual"))return false;
   const next=Math.max(range.min,Math.min(range.max,Number(value)));
-  const output=document.getElementById("coinCameraFocusValue");
+  const output=document.getElementById("coinCameraFocusValue"),status=document.getElementById("coinCameraStatus");
   try {
-    await coinCameraTrack.applyConstraints({advanced:[{focusMode:"manual",focusDistance:next}]});
-    output.value=next.toFixed(range.step&&range.step<.1?2:1);
-  } catch { output.value="—"; }
+    const before=coinCameraTrack.getSettings?.()||{};
+    const constraints={focusMode:"manual",focusDistance:next};
+    if(capabilities.zoom&&Number.isFinite(Number(before.zoom)))constraints.zoom=Number(before.zoom);
+    await coinCameraTrack.applyConstraints(constraints);
+    await new Promise(resolve=>setTimeout(resolve,80));
+    const applied=coinCameraTrack.getSettings?.()||{};
+    const actual=Number(applied.focusDistance);
+    const tolerance=Math.max(Number(range.step)||0,.03);
+    const verified=applied.focusMode==="manual"&&Number.isFinite(actual)&&Math.abs(actual-next)<=tolerance;
+    if(!verified){
+      output.value="—";
+      status.textContent="This camera reports manual focus, but Android did not apply the requested distance. Autofocus is still active.";
+      return false;
+    }
+    output.value=`${actual.toFixed(range.step&&range.step<.1?2:1)} m`;
+    status.textContent="Manual focus applied. Move the slider until the coin detail is sharp.";
+    return true;
+  } catch {
+    output.value="—";
+    status.textContent="Manual focus was rejected by this camera. Autofocus is still active.";
+    return false;
+  }
 }
 
 function showCoinFocusResult(clientX,clientY,success) {
@@ -418,20 +437,33 @@ function showCoinFocusResult(clientX,clientY,success) {
 async function focusCoinCamera(clientX,clientY) {
   if(!coinCameraTrack)return;
   const video=document.getElementById("coinCameraVideo"),rect=video.getBoundingClientRect(),status=document.getElementById("coinCameraStatus");
+  if(!video.videoWidth||!video.videoHeight||!rect.width||!rect.height)return;
   const scale=Math.max(rect.width/video.videoWidth,rect.height/video.videoHeight);
   const displayedWidth=video.videoWidth*scale,displayedHeight=video.videoHeight*scale;
-  const x=Math.max(0,Math.min(video.videoWidth,((clientX-rect.left)+(displayedWidth-rect.width)/2)/scale));
-  const y=Math.max(0,Math.min(video.videoHeight,((clientY-rect.top)+(displayedHeight-rect.height)/2)/scale));
+  const sourceX=((clientX-rect.left)+(displayedWidth-rect.width)/2)/scale;
+  const sourceY=((clientY-rect.top)+(displayedHeight-rect.height)/2)/scale;
+  const x=Math.max(0,Math.min(1,sourceX/video.videoWidth));
+  const y=Math.max(0,Math.min(1,sourceY/video.videoHeight));
   const supported=navigator.mediaDevices?.getSupportedConstraints?.().pointsOfInterest;
-  const modes=coinCameraTrack.getCapabilities?.().focusMode||[];
+  const capabilities=coinCameraTrack.getCapabilities?.()||{},modes=capabilities.focusMode||[];
   if(!supported||(!modes.includes("single-shot")&&!modes.includes("continuous"))){showCoinFocusResult(clientX,clientY,false);status.textContent=document.getElementById("coinCameraFocusRow").hidden?"This browser cannot control focus. Use phone camera for native tap focus.":"Tap focus is unavailable here. Use the Focus slider below.";return;}
-  const constraint={pointsOfInterest:[{x,y}]};
-  if(modes.includes("single-shot"))constraint.focusMode="single-shot";
-  else if(modes.includes("continuous"))constraint.focusMode="continuous";
-  try { await coinCameraTrack.applyConstraints({advanced:[constraint]});showCoinFocusResult(clientX,clientY,true);status.textContent="Focus applied. Hold still, then take the photo."; }
-  catch {
-    showCoinFocusResult(clientX,clientY,false);status.textContent="Tap focus was rejected by this camera. Use the Focus slider or phone camera.";
-    if(modes.includes("continuous"))try { await coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}); } catch { /* Native autofocus remains active. */ }
+  const focusMode=modes.includes("single-shot")?"single-shot":"continuous";
+  try {
+    const before=coinCameraTrack.getSettings?.()||{};
+    const constraints={pointsOfInterest:[{x,y}],focusMode};
+    if(capabilities.zoom&&Number.isFinite(Number(before.zoom)))constraints.zoom=Number(before.zoom);
+    await coinCameraTrack.applyConstraints(constraints);
+    await new Promise(resolve=>setTimeout(resolve,180));
+    const applied=coinCameraTrack.getSettings?.()||{};
+    const point=Array.isArray(applied.pointsOfInterest)?applied.pointsOfInterest[0]:null;
+    const pointVerified=point&&Math.abs(Number(point.x)-x)<.08&&Math.abs(Number(point.y)-y)<.08;
+    const modeVerified=!applied.focusMode||applied.focusMode===focusMode;
+    if(applied.pointsOfInterest&&(!pointVerified||!modeVerified))throw new Error("focus setting not applied");
+    showCoinFocusResult(clientX,clientY,true);
+    status.textContent=focusMode==="single-shot"?"Focusing here… hold still for a moment.":"Focus point applied. Hold still, then take the photo.";
+  } catch {
+    showCoinFocusResult(clientX,clientY,false);status.textContent="Tap focus was rejected by this camera. Autofocus is still active.";
+    if(modes.includes("continuous"))try { await coinCameraTrack.applyConstraints({focusMode:"continuous"}); } catch { /* Native autofocus remains active. */ }
   }
 }
 
@@ -443,7 +475,7 @@ function setupCoinCameraControls() {
   if(zoom){slider.min=zoom.min;slider.max=zoom.max;slider.step=zoom.step||.1;coinCameraZoomValue=settings.zoom||zoom.min;slider.value=coinCameraZoomValue;document.getElementById("coinCameraZoomValue").value=`${coinCameraZoomValue.toFixed(1)}×`;slider.oninput=()=>setCoinCameraZoom(slider.value);}
   focusRow.hidden=!(focusDistance&&focusModes.includes("manual"));
   if(!focusRow.hidden){focusSlider.min=focusDistance.min;focusSlider.max=focusDistance.max;focusSlider.step=focusDistance.step||.01;focusSlider.value=settings.focusDistance??focusDistance.min;document.getElementById("coinCameraFocusValue").value="Auto";focusSlider.oninput=()=>setCoinCameraFocusDistance(focusSlider.value);}
-  if(focusModes.includes("continuous"))coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
+  if(focusModes.includes("continuous"))coinCameraTrack.applyConstraints({focusMode:"continuous"}).catch(()=>{});
   video.ontouchstart=event=>{if(event.touches.length===2){event.preventDefault();coinCameraPinchStart=cameraTouchDistance(event.touches);coinCameraPinchZoom=coinCameraZoomValue;coinCameraTap=null;}else if(event.touches.length===1){coinCameraTap={x:event.touches[0].clientX,y:event.touches[0].clientY,time:Date.now()};}};
   video.ontouchmove=event=>{if(event.touches.length===2&&coinCameraPinchStart){event.preventDefault();setCoinCameraZoom(coinCameraPinchZoom*cameraTouchDistance(event.touches)/coinCameraPinchStart);}else if(coinCameraTap&&event.touches.length===1&&Math.hypot(event.touches[0].clientX-coinCameraTap.x,event.touches[0].clientY-coinCameraTap.y)>12)coinCameraTap=null;};
   video.ontouchend=()=>{if(coinCameraTap&&Date.now()-coinCameraTap.time<600)focusCoinCamera(coinCameraTap.x,coinCameraTap.y);coinCameraPinchStart=0;coinCameraTap=null;};
