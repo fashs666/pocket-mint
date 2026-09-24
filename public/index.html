@@ -59,13 +59,13 @@
         <div class="findPanelHead"><div><div class="eyebrow">VISUAL IDENTIFICATION</div><h3>Photograph your coin</h3></div><button id="identifyReset" class="smallBtn" type="button">Start over</button></div>
         <div class="identifySteps" aria-label="Identification progress"><span class="on" data-identify-step="1">1 · Photos</span><span data-identify-step="2">2 · Help</span><span data-identify-step="3">3 · Matches</span></div>
         <section id="identifyPhotos" class="identifyPanel">
-          <p class="identifyIntro">Start with the design side, photographed straight-on with the whole coin visible. Add the portrait side when you want Pocket Mint to read the year and effigy too.</p>
+          <p class="identifyIntro">Start with the design side. Centre the coin inside the guide and keep the phone straight above it. The portrait side is optional and is only checked when it can resolve an uncertain design or year.</p>
           <div class="captureGrid">
-            <label class="captureCard optionalCapture" id="obverseCapture"><input id="identifyObverse" type="file" accept="image/*" capture="environment"><span class="capturePreview"><b>＋</b><strong>Portrait side</strong><small>Optional · year and portrait</small></span></label>
-            <label class="captureCard" id="reverseCapture"><input id="identifyReverse" type="file" accept="image/*" capture="environment"><span class="capturePreview"><b>＋</b><strong>Design side</strong><small>Required · artwork and words</small></span></label>
+            <article class="captureCard optionalCapture" id="obverseCapture"><button class="capturePreview" type="button" data-camera-side="obverse"><b>＋</b><strong>Portrait side</strong><small>Optional · year and portrait</small></button><label class="captureLibrary">Choose photo<input id="identifyObverse" type="file" accept="image/*" capture="environment"></label></article>
+            <article class="captureCard" id="reverseCapture"><button class="capturePreview" type="button" data-camera-side="reverse"><b>＋</b><strong>Design side</strong><small>Required · artwork and words</small></button><label class="captureLibrary">Choose photo<input id="identifyReverse" type="file" accept="image/*" capture="environment"></label></article>
           </div>
           <div id="photoQuality" class="qualitySummary" aria-live="polite"></div>
-          <p class="photoPrivacy">When you tap Analyse, reduced copies are securely sent to Pocket Mint’s Cloudflare vision service. Confirmed originals remain in this device’s local collection.</p>
+          <p class="photoPrivacy">When you tap Analyse, reduced copies are securely sent to Pocket Mint’s Cloudflare vision service. When you confirm a match, the cleaned coin images stay in this device’s local collection.</p>
           <button id="identifyAnalyse" class="primaryWide" type="button" disabled>Add the design side to analyse</button>
           <div id="identifyAnalyseStatus" class="analyseStatus" aria-live="polite"></div>
           <button id="identifyNeedHelp" class="textButton" type="button">Skip visual analysis and enter clues</button>
@@ -130,7 +130,7 @@
 
     <section id="collectionView" class="view"><div class="sectionHead"><h2 id="collectionTitle">Collection</h2></div><div class="segmented collectionTabs"><button data-mintfilter="owned" class="on">All</button><button data-mintfilter="favourite">Favourites</button><button data-mintfilter="duplicates">Duplicates</button></div><input id="collectionSearch" class="search" type="search" placeholder="Search collection" aria-label="Search collection"><div class="listMeta"><span id="collectionCount">0 coins</span><button type="button" class="textButton">Sort</button></div><div id="myMintList" class="coinList coinGrid"></div></section>
 
-    <section id="myMintView" class="view"><div class="sectionHead"><h2>My Mint</h2></div><h3 class="menuHeading">Your collection</h3><div class="menuCard"><button data-open-collection="owned"><span>▤</span><b>Collection</b><i>›</i></button><button data-nav="wishlistView"><span>♡</span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span>☆</span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span>▣</span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span>▥</span><b>Stats</b><i>›</i></button><button disabled><span>⇄</span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span>⚙</span><b>Settings</b><i>›</i></button><button data-static-page="Help &amp; feedback"><span>?</span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span>ⓘ</span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.12.3</p></section>
+    <section id="myMintView" class="view"><div class="sectionHead"><h2>My Mint</h2></div><h3 class="menuHeading">Your collection</h3><div class="menuCard"><button data-open-collection="owned"><span>▤</span><b>Collection</b><i>›</i></button><button data-nav="wishlistView"><span>♡</span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span>☆</span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span>▣</span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span>▥</span><b>Stats</b><i>›</i></button><button disabled><span>⇄</span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span>⚙</span><b>Settings</b><i>›</i></button><button data-static-page="Help &amp; feedback"><span>?</span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span>ⓘ</span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.13.0</p></section>
 
     <section id="settingsView" class="view">
       <div class="sectionHead"><div><div class="eyebrow">PERSONALISE &amp; PORTABILITY</div><h2>Settings</h2></div></div>
@@ -191,6 +191,13 @@
   </main>
   <nav class="bottomNav" aria-label="Primary navigation"><button data-nav="homeView" class="active"><span>⌂</span>Home</button><button data-nav="findView"><span>⌕</span>Find</button><button data-nav="myMintView"><span>◎</span>My Mint</button></nav>
   <div id="toastRegion" class="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  <div id="coinCamera" class="coinCamera" role="dialog" aria-modal="true" aria-labelledby="coinCameraTitle" hidden>
+    <video id="coinCameraVideo" autoplay muted playsinline></video>
+    <div class="cameraShade" aria-hidden="true"><div id="coinCameraGuide" class="coinCameraGuide"></div></div>
+    <div class="cameraTop"><button id="coinCameraClose" type="button" aria-label="Close camera">×</button><div><strong id="coinCameraTitle">Design side</strong><small>Fill the circle with the coin</small></div></div>
+    <div class="cameraBottom"><p id="coinCameraStatus" aria-live="polite">Hold still and keep the full rim inside the circle.</p><button id="coinCameraShutter" class="cameraShutter" type="button" aria-label="Take coin photo"><span></span></button><button id="coinCameraChoose" class="cameraChoose" type="button">Choose a photo instead</button></div>
+    <canvas id="coinCameraCanvas" hidden></canvas>
+  </div>
   <dialog id="coinDialog"><div class="dialogInner"><button id="closeDialog" class="close" type="button" aria-label="Close coin details">×</button><div id="dialogContent"></div></div></dialog>
   <script src="app.js"></script>
   <script src="progress.js"></script>

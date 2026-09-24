@@ -100,7 +100,7 @@ const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.12.3"') && identify.includes('IDENTIFY_VERSION = "0.12.3"') && html.includes("Pocket Mint v0.12.3"), "v0.12.3 identification guardrail version"],
+  [app.includes('APP_VERSION = "0.13.0"') && identify.includes('IDENTIFY_VERSION = "0.13.0"') && html.includes("Pocket Mint v0.13.0"), "v0.13.0 guided capture version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -147,10 +147,13 @@ const checks = [
   [emptyClues.length === 0, "empty clues cannot create false high-confidence kangaroo matches"],
   [app.includes("groupCatalogueCoins") && app.includes('id="dYear"') && app.includes("variantIssueLabel") && identify.includes("data-identify-year"), "multi-year and same-year variants use one catalogue card with exact issue selection"],
   [identify.includes('identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:""') && !html.includes("How many kangaroos?") && !identify.includes("identifyKangarooCount"), "visual multi-year results do not preselect a year and Step 2 has no kangaroo-count question"],
-  [identify.includes("prepareIdentifyPhoto") && identify.includes("resizeWidth: 1600") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
+  [identify.includes("prepareIdentifyPhoto") && identify.includes("decodeIdentifyPhoto") && identify.includes('removeAttribute("capture")'), "iPhone-safe photo preparation and picker handling"],
+  [html.includes('id="coinCameraGuide"') && identify.includes("getUserMedia") && identify.includes("captureGuidedCoin"), "guided circular camera capture"],
+  [identify.includes("createCircularSpecimen") && identify.includes("specimenFile") && app.includes('createCircularSpecimen(file)'), "transparent specimen images are saved to My Mint"],
+  [identify.includes("data.uncertain||data.needs_year") && identify.includes("requestAnalysis(null)"), "portrait side is analysed only after an uncertain design or unresolved year"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("llama-3.2-11b-vision-instruct") && worker.includes("env.ASSETS.fetch"), "primary and fallback vision models plus static assets binding"],
-  [sw.includes("pocket-mint-v0.12.3") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.13.0") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

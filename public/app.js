@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.12.3";
+const APP_VERSION = "0.13.0";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -505,7 +505,13 @@ function renderPhotos(id) {
   }
 }
 
-function resizeImage(file) {
+async function resizeImage(file) {
+  if(typeof createCircularSpecimen==="function") {
+    const specimen=await createCircularSpecimen(file);
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();reader.onerror=reject;reader.onload=()=>resolve(reader.result);reader.readAsDataURL(specimen);
+    });
+  }
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = reject;
@@ -518,7 +524,7 @@ function resizeImage(file) {
         canvas.width = Math.round(image.width * scale);
         canvas.height = Math.round(image.height * scale);
         canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.8));
+        resolve(canvas.toDataURL("image/webp", 0.88));
       };
       image.src = reader.result;
     };

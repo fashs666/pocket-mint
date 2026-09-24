@@ -1,5 +1,6 @@
-const IDENTIFY_VERSION = "0.12.3";
+const IDENTIFY_VERSION = "0.13.0";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
+let coinCameraStream=null,coinCameraSide="reverse";
 
 function setIdentifyStep(step) {
   document.querySelectorAll("[data-identify-step]").forEach(item => item.classList.toggle("on", Number(item.dataset.identifyStep) === step));
@@ -20,12 +21,12 @@ function clearIdentifyPhoto(side) {
 }
 
 async function inspectIdentifyPhoto(file) {
-  const bitmap = await createImageBitmap(file);
+  const bitmap = await decodeIdentifyPhoto(file);
   const width=bitmap.width,height=bitmap.height;
   const size = 96, canvas = document.createElement("canvas");
   canvas.width = size; canvas.height = size;
   const context = canvas.getContext("2d",{willReadFrequently:true});
-  context.drawImage(bitmap,0,0,size,size); bitmap.close();
+  context.drawImage(bitmap,0,0,size,size); bitmap.close?.();
   const pixels = context.getImageData(0,0,size,size).data;
   let brightness = 0, edges = 0, samples = 0;
   const lum = new Float32Array(size*size);
@@ -40,20 +41,55 @@ async function inspectIdentifyPhoto(file) {
   return {warnings,width,height,bytes:file.size,type:file.type||"unknown"};
 }
 
-async function prepareIdentifyPhoto(file) {
-  let bitmap;
-  try {
-    bitmap = await createImageBitmap(file, {resizeWidth: 1600, resizeQuality: "high"});
-  } catch {
-    bitmap = await createImageBitmap(file);
+async function decodeIdentifyPhoto(file) {
+  if (typeof createImageBitmap === "function") {
+    try { return await createImageBitmap(file); }
+    catch { /* Fall through to the image-element decoder for older iPhones. */ }
   }
-  const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+  const url=URL.createObjectURL(file);
+  try {
+    const image=new Image();
+    image.src=url;
+    if(image.decode)await image.decode();
+    else await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;});
+    return image;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function canvasBlob(canvas,type="image/webp",quality=.9) {
+  return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error("Photo conversion failed")),type,quality));
+}
+
+async function createCircularSpecimen(file) {
+  const image=await decodeIdentifyPhoto(file);
+  const sourceSize=Math.min(image.width,image.height);
+  const sourceX=(image.width-sourceSize)/2,sourceY=(image.height-sourceSize)/2;
+  const size=768,canvas=document.createElement("canvas");
+  canvas.width=size;canvas.height=size;
+  const context=canvas.getContext("2d");
+  context.clearRect(0,0,size,size);
+  context.save();
+  context.beginPath();context.arc(size/2,size/2,size*.485,0,Math.PI*2);context.clip();
+  context.drawImage(image,sourceX,sourceY,sourceSize,sourceSize,0,0,size,size);
+  context.restore();image.close?.();
+  let blob;
+  try { blob=await canvasBlob(canvas,"image/webp",.9); }
+  catch { blob=await canvasBlob(canvas,"image/png"); }
+  const extension=blob.type==="image/png"?"png":"webp";
+  return new File([blob],`coin-${Date.now()}.${extension}`,{type:blob.type||`image/${extension}`,lastModified:Date.now()});
+}
+
+async function prepareIdentifyPhoto(file) {
+  const bitmap=await decodeIdentifyPhoto(file);
+  const scale = Math.min(1, 1024 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
   canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  const blob = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Photo preparation failed")), "image/jpeg", .86));
+  const context=canvas.getContext("2d");
+  context.fillStyle="#f3f2ed";context.fillRect(0,0,canvas.width,canvas.height);
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+  const blob = await canvasBlob(canvas,"image/jpeg",.88);
   return new File([blob], file.name?.replace(/\.[^.]+$/, ".jpg") || "coin-photo.jpg", {type: "image/jpeg", lastModified: Date.now()});
 }
 
@@ -63,14 +99,14 @@ async function loadIdentifyPhoto(side,file) {
   clearIdentifyPhoto(side);
   const preview=document.querySelector(`#${side}Capture .capturePreview`);
   preview.innerHTML=`<b class="photoSpinner">◌</b><strong>Preparing photo…</strong><small>Keep Pocket Mint open</small>`;
-  let prepared=file;
-  try { prepared=await prepareIdentifyPhoto(file); }
-  catch { /* Keep the original when this browser cannot resize it. */ }
-  const url=URL.createObjectURL(prepared);
-  try { identifyState[side]={file:prepared,url,quality:await inspectIdentifyPhoto(prepared)}; }
-  catch { identifyState[side]={file:prepared,url,quality:{warnings:["quality could not be checked on this device"]}}; }
+  let specimen=file,prepared=file;
+  try { specimen=await createCircularSpecimen(file);prepared=await prepareIdentifyPhoto(specimen); }
+  catch { try { prepared=await prepareIdentifyPhoto(file); } catch { /* Keep the original when this browser cannot resize it. */ } }
+  const url=URL.createObjectURL(specimen);
+  try { identifyState[side]={file:prepared,specimenFile:specimen,url,quality:await inspectIdentifyPhoto(prepared)}; }
+  catch { identifyState[side]={file:prepared,specimenFile:specimen,url,quality:{warnings:["quality could not be checked on this device"]}}; }
   preview.classList.add("hasPhoto"); preview.style.backgroundImage=`url("${url}")`;
-  preview.innerHTML=`<strong>${side === "obverse" ? "Portrait side" : "Design side"}</strong><small>Tap to retake</small>`;
+  preview.innerHTML=`<strong>${side === "obverse" ? "Portrait side" : "Design side"}</strong><small>Tap for guided retake</small>`;
   renderPhotoQuality();updateAnalyseButton();
 }
 
@@ -88,22 +124,22 @@ function renderPhotoQuality() {
 function updateAnalyseButton() {
   const button=document.getElementById("identifyAnalyse"),hasDesign=Boolean(identifyState.reverse),hasPortrait=Boolean(identifyState.obverse);
   button.disabled=!hasDesign;
-  button.textContent=!hasDesign?"Add the design side to analyse":hasPortrait?"Analyse both photos":"Analyse design side";
+  button.textContent=!hasDesign?"Add the design side to analyse":hasPortrait?"Analyse design · use portrait if needed":"Analyse design side";
 }
 
 async function drawContained(context,file,x,y,width,height) {
-  const bitmap=await createImageBitmap(file);
+  const bitmap=await decodeIdentifyPhoto(file);
   const scale=Math.min(width/bitmap.width,height/bitmap.height);
   const drawWidth=bitmap.width*scale,drawHeight=bitmap.height*scale;
   context.drawImage(bitmap,x+(width-drawWidth)/2,y+(height-drawHeight)/2,drawWidth,drawHeight);
-  bitmap.close();
+  bitmap.close?.();
 }
 
 async function makeAnalysisImage(file) {
-  const canvas=document.createElement("canvas"); canvas.width=1024; canvas.height=1024;
+  const canvas=document.createElement("canvas"); canvas.width=768; canvas.height=768;
   const context=canvas.getContext("2d");
-  context.fillStyle="#17211d"; context.fillRect(0,0,canvas.width,canvas.height);
-  await drawContained(context,file,0,0,1024,1024);
+  context.fillStyle="#f3f2ed"; context.fillRect(0,0,canvas.width,canvas.height);
+  await drawContained(context,file,0,0,canvas.width,canvas.height);
   return canvas.toDataURL("image/jpeg",.88);
 }
 
@@ -116,12 +152,20 @@ async function analysePhotos() {
   if (!identifyState.reverse) return;
   identifyState.visualAttempted=true;
   const button=document.getElementById("identifyAnalyse");
-  button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus(identifyState.obverse?"Preparing both sides for visual analysis…":"Preparing the design side for visual analysis…");
+  button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus("Checking the design side first…");
   try {
-    const [obverse,reverse]=await Promise.all([identifyState.obverse?makeAnalysisImage(identifyState.obverse.file):Promise.resolve(null),makeAnalysisImage(identifyState.reverse.file)]);
-    const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse,reverse})});
-    const data=await response.json();
-    if (!response.ok) throw new Error(data.error||"Visual analysis is unavailable");
+    const reverse=await makeAnalysisImage(identifyState.reverse.file);
+    const requestAnalysis=async obverse=>{
+      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse,reverse})});
+      const result=await response.json();
+      if(!response.ok)throw new Error(result.error||"Visual analysis is unavailable");
+      return result;
+    };
+    let data=await requestAnalysis(null);
+    if(identifyState.obverse&&(data.uncertain||data.needs_year)){
+      setAnalyseStatus(data.needs_year?"Design recognised — checking the portrait side for the year…":"The design is uncertain — checking the portrait side for another clue…");
+      data=await requestAnalysis(await makeAnalysisImage(identifyState.obverse.file));
+    }
     identifyState.lastObserved=data.observed||null;
     const matches=(data.matches||[]).map(match=>({coin:catalogue.find(coin=>coin.id===match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
     if (matches.length&&!data.uncertain) {
@@ -293,13 +337,14 @@ function renderIdentifyResults() {
 async function confirmIdentification(id) {
   const coin=catalogue.find(item=>item.id===id); if(!coin)return;
   const record=state.get(id)||baseRec(id); await saveRec(id,{quantity:(record.quantity||0)+1});
-  for(const side of ["obverse","reverse"])if(identifyState[side]?.file)await addPhoto(id,identifyState[side].file);
+  for(const side of ["obverse","reverse"])if(identifyState[side]?.file)await addPhoto(id,identifyState[side].specimenFile||identifyState[side].file);
   const photoCount=[identifyState.obverse,identifyState.reverse].filter(Boolean).length;
   await loadLocal();renderAll();resetIdentification();mintFilter="owned";navigate("collectionView");
   showToast("Added to My Mint",`${coin.year} ${coin.title}${photoCount?` · ${photoCount} photo${photoCount===1?"":"s"} saved`:""}`);
 }
 
 function resetIdentification() {
+  closeCoinCamera();
   clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;
   ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
@@ -325,6 +370,59 @@ function openFullCatalogueFromIdentification() {
   scrollTo(0,0);
 }
 
+function closeCoinCamera() {
+  if(coinCameraStream)coinCameraStream.getTracks().forEach(track=>track.stop());
+  coinCameraStream=null;
+  const camera=document.getElementById("coinCamera");
+  if(!camera)return;
+  camera.hidden=true;camera.classList.remove("ready");document.body.classList.remove("cameraOpen");
+  const video=document.getElementById("coinCameraVideo");
+  if(video)video.srcObject=null;
+}
+
+async function openCoinCamera(side) {
+  coinCameraSide=side;
+  const camera=document.getElementById("coinCamera"),video=document.getElementById("coinCameraVideo"),status=document.getElementById("coinCameraStatus");
+  document.getElementById("coinCameraTitle").textContent=side==="obverse"?"Portrait side":"Design side";
+  status.textContent="Opening camera…";camera.hidden=false;document.body.classList.add("cameraOpen");
+  try {
+    coinCameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1920}},audio:false});
+    video.srcObject=coinCameraStream;
+    await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
+    await video.play();
+    camera.classList.add("ready");status.textContent="Hold still and keep the full rim inside the circle.";
+  } catch(error) {
+    closeCoinCamera();
+    setAnalyseStatus("The guided camera could not open. Choose a photo from your phone instead.",true);
+  }
+}
+
+async function captureGuidedCoin() {
+  const video=document.getElementById("coinCameraVideo"),guide=document.getElementById("coinCameraGuide"),shutter=document.getElementById("coinCameraShutter"),status=document.getElementById("coinCameraStatus");
+  if(!video.videoWidth||!video.videoHeight)return;
+  shutter.disabled=true;status.textContent="Cleaning up the coin image…";
+  try {
+    const videoRect=video.getBoundingClientRect(),guideRect=guide.getBoundingClientRect();
+    const scale=Math.max(videoRect.width/video.videoWidth,videoRect.height/video.videoHeight);
+    const displayedWidth=video.videoWidth*scale,displayedHeight=video.videoHeight*scale;
+    const cropSize=Math.min(guideRect.width/scale,video.videoWidth,video.videoHeight);
+    const cropX=((guideRect.left-videoRect.left)+(displayedWidth-videoRect.width)/2)/scale;
+    const cropY=((guideRect.top-videoRect.top)+(displayedHeight-videoRect.height)/2)/scale;
+    const size=768,canvas=document.getElementById("coinCameraCanvas"),context=canvas.getContext("2d");
+    canvas.width=size;canvas.height=size;context.clearRect(0,0,size,size);
+    context.save();context.beginPath();context.arc(size/2,size/2,size*.485,0,Math.PI*2);context.clip();
+    context.drawImage(video,Math.max(0,cropX),Math.max(0,cropY),cropSize,cropSize,0,0,size,size);context.restore();
+    let blob;
+    try { blob=await canvasBlob(canvas,"image/webp",.92); }
+    catch { blob=await canvasBlob(canvas,"image/png"); }
+    const extension=blob.type==="image/png"?"png":"webp";
+    const file=new File([blob],`guided-${coinCameraSide}-${Date.now()}.${extension}`,{type:blob.type||`image/${extension}`,lastModified:Date.now()});
+    const side=coinCameraSide;closeCoinCamera();await loadIdentifyPhoto(side,file);
+  } catch(error) {
+    status.textContent="That photo could not be prepared. Please try again.";
+  } finally { shutter.disabled=false; }
+}
+
 function wireIdentification(years=[]) {
   const yearSelect=document.getElementById("identifyYear");
   yearSelect.replaceChildren(new Option("Not sure",""));
@@ -333,6 +431,11 @@ function wireIdentification(years=[]) {
   coinOptions.replaceChildren(...catalogue.map(coin=>new Option(identifyCoinLabel(coin))));
   const photoInputs=[document.getElementById("identifyObverse"),document.getElementById("identifyReverse")];
   if(typeof installPlatform==="function"&&installPlatform()==="apple")photoInputs.forEach(input=>input.removeAttribute("capture"));
+  document.querySelectorAll("[data-camera-side]").forEach(button=>button.onclick=()=>openCoinCamera(button.dataset.cameraSide));
+  document.getElementById("coinCameraClose").onclick=closeCoinCamera;
+  document.getElementById("coinCameraShutter").onclick=captureGuidedCoin;
+  document.getElementById("coinCameraChoose").onclick=()=>{const side=coinCameraSide;closeCoinCamera();document.getElementById(side==="obverse"?"identifyObverse":"identifyReverse").click();};
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!document.getElementById("coinCamera").hidden)closeCoinCamera();});
   document.getElementById("identifyObverse").onchange=async event=>{const file=event.target.files[0];event.target.value="";await loadIdentifyPhoto("obverse",file);};
   document.getElementById("identifyReverse").onchange=async event=>{const file=event.target.files[0];event.target.value="";await loadIdentifyPhoto("reverse",file);};
   document.getElementById("identifyAnalyse").onclick=analysePhotos;

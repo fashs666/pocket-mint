@@ -6,15 +6,17 @@
 .identifyPanel { background:#fff; border:1px solid #dce3dc; border-radius:19px; padding:17px; }
 .identifyIntro { color:#657269; font-size:.88rem; line-height:1.45; }
 .captureGrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.captureCard { display:block; min-width:0; aspect-ratio:1; border:2px dashed #b8c5bb; border-radius:16px; overflow:hidden; background:#f2f5f2; cursor:pointer; }
+.captureCard { display:block; position:relative; min-width:0; aspect-ratio:1; border:2px dashed #b8c5bb; border-radius:16px; overflow:hidden; background:#f2f5f2; }
 .captureCard input { position:absolute; opacity:0; pointer-events:none; }
-.capturePreview { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; text-align:center; background-size:cover; background-position:center; position:relative; }
+.capturePreview { width:100%; height:100%; border:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 10px 42px; text-align:center; background-color:transparent; background-size:contain; background-repeat:no-repeat; background-position:center; position:relative; cursor:pointer; }
 .capturePreview.hasPhoto::before { content:""; position:absolute; inset:0; background:linear-gradient(transparent 35%,rgba(0,0,0,.72)); }
 .capturePreview b { font-size:2rem; font-weight:400; }
 .capturePreview strong,.capturePreview small { display:block; position:relative; }
 .capturePreview.hasPhoto strong,.capturePreview.hasPhoto small { color:#fff; align-self:flex-start; text-align:left; margin-left:4px; }
 .capturePreview.hasPhoto strong { margin-top:auto; }
 .capturePreview small { color:#718078; margin-top:4px; font-size:.7rem; }
+.captureLibrary { position:absolute; z-index:2; left:8px; right:8px; bottom:7px; border-radius:8px; padding:7px 5px; background:rgba(255,255,255,.92); color:#31513f; text-align:center; font-size:.66rem; font-weight:850; cursor:pointer; box-shadow:0 1px 4px rgba(24,33,29,.12); }
+.capturePreview.hasPhoto + .captureLibrary { background:rgba(24,33,29,.86); color:#fff; }
 .photoSpinner { animation:photoSpin .9s linear infinite; }
 @keyframes photoSpin { to { transform:rotate(360deg); } }
 .qualitySummary { display:grid; gap:6px; margin-top:11px; }
@@ -84,6 +86,23 @@
 .testLogDetails { padding:0 12px 12px; font-size:.75rem; }
 .testLogDetails pre { max-height:160px; overflow:auto; padding:9px; border-radius:8px; background:#f2f5f2; white-space:pre-wrap; }
 .settingsActions { display:flex; flex-wrap:wrap; gap:8px; }
+.coinCamera[hidden] { display:none; }
+.coinCamera { position:fixed; z-index:1000; inset:0; overflow:hidden; background:#050806; color:#fff; }
+.coinCamera video { width:100%; height:100%; object-fit:cover; }
+.cameraShade { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
+.coinCameraGuide { width:min(82vw,430px); aspect-ratio:1; border:3px solid rgba(255,255,255,.9); border-radius:50%; box-shadow:0 0 0 120vmax rgba(3,7,5,.7),0 0 0 7px rgba(255,255,255,.12); transition:border-color .18s,box-shadow .18s; }
+.coinCamera.ready .coinCameraGuide { border-color:#d7f2df; box-shadow:0 0 0 120vmax rgba(3,7,5,.68),0 0 0 7px rgba(120,214,151,.24); }
+.cameraTop { position:absolute; z-index:2; top:max(16px,env(safe-area-inset-top)); left:16px; right:16px; display:grid; grid-template-columns:46px 1fr 46px; align-items:center; text-align:center; }
+.cameraTop button { width:46px; height:46px; border:0; border-radius:50%; background:rgba(10,18,13,.7); color:#fff; font-size:1.8rem; }
+.cameraTop strong,.cameraTop small { display:block; }
+.cameraTop small { margin-top:2px; color:#d6dfd9; font-size:.72rem; }
+.cameraBottom { position:absolute; z-index:2; left:0; right:0; bottom:max(18px,env(safe-area-inset-bottom)); display:grid; justify-items:center; gap:12px; padding:0 18px; }
+.cameraBottom p { margin:0; max-width:330px; min-height:2.5em; text-align:center; font-size:.78rem; color:#e3e9e5; }
+.cameraShutter { width:72px; height:72px; padding:5px; border:3px solid #fff; border-radius:50%; background:transparent; }
+.cameraShutter span { display:block; width:100%; height:100%; border-radius:50%; background:#fff; }
+.cameraShutter:disabled { opacity:.55; }
+.cameraChoose { border:0; border-radius:999px; padding:10px 15px; background:rgba(10,18,13,.72); color:#fff; font-weight:750; }
+body.cameraOpen { overflow:hidden; }
 .bottomNav { grid-template-columns:repeat(4,1fr); }
 .bottomNav button { font-size:.7rem; }
 @media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92}.matchLayout{grid-template-columns:82px minmax(0,1fr);gap:10px}.matchArtwork{width:82px}.matchTop{display:block}.confidence{display:inline-block;margin-top:7px}.matchActions{grid-template-columns:1fr} }
