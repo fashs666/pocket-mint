@@ -7,6 +7,8 @@
 - keeps the fixed-circle browser camera as an explicitly optional framing tool
 - removes browser focus controls that reported success without reliably moving the lens
 
+Phone check: tapping Design side or Portrait side should open the device camera directly; the fixed-circle browser camera is only opened by its separate optional button.
+
 ## v0.13.4 verified camera focus
 
 - maps screen taps into the camera sensor’s pixel coordinates before requesting focus
