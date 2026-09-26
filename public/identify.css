@@ -92,10 +92,6 @@
 .cameraShade { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
 .coinCameraGuide { width:var(--coin-guide-size,min(76vmin,380px)); aspect-ratio:1; border:3px solid rgba(255,255,255,.9); border-radius:50%; box-shadow:0 0 0 120vmax rgba(3,7,5,.7),0 0 0 7px rgba(255,255,255,.12); transition:border-color .18s,box-shadow .18s; }
 .coinCamera.ready .coinCameraGuide { border-color:#d7f2df; box-shadow:0 0 0 120vmax rgba(3,7,5,.68),0 0 0 7px rgba(120,214,151,.24); }
-.cameraFocusRing { position:absolute; z-index:2; width:58px; height:58px; margin:-29px 0 0 -29px; border:2px solid #d7f2df; border-radius:50%; opacity:0; pointer-events:none; transform:scale(1.35); }
-.cameraFocusRing.fail { border-color:#ffb49f; }
-.cameraFocusRing.show { animation:cameraFocus .7s ease-out; }
-@keyframes cameraFocus { 0%{opacity:0;transform:scale(1.45)} 25%{opacity:1} 100%{opacity:0;transform:scale(.8)} }
 .cameraTop { position:absolute; z-index:2; top:max(16px,env(safe-area-inset-top)); left:16px; right:16px; display:grid; grid-template-columns:46px 1fr 46px; align-items:center; text-align:center; }
 .cameraTop button { width:46px; height:46px; border:0; border-radius:50%; background:rgba(10,18,13,.7); color:#fff; font-size:1.8rem; }
 .cameraTop strong,.cameraTop small { display:block; }
@@ -112,6 +108,7 @@
 .cameraChoose { border:0; border-radius:999px; padding:10px 15px; background:rgba(10,18,13,.72); color:#fff; font-weight:750; }
 .cameraAlternatives { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
 .coinCamera.fallback .cameraShutter,.coinCamera.fallback .cameraControl { display:none; }
+.guidedCameraButton { display:block; margin:10px auto 0; }
 body.cameraOpen { overflow:hidden; }
 .bottomNav { grid-template-columns:repeat(4,1fr); }
 .bottomNav button { font-size:.7rem; }

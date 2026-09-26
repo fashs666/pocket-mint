@@ -101,7 +101,7 @@ const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https:\/\/www\.ramint\.gov\.au\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.13.4"') && identify.includes('IDENTIFY_VERSION = "0.13.4"') && html.includes("Pocket Mint v0.13.4"), "v0.13.4 verified camera focus version"],
+  [app.includes('APP_VERSION = "0.13.6"') && identify.includes('IDENTIFY_VERSION = "0.13.6"') && html.includes("Pocket Mint v0.13.6"), "v0.13.6 native-camera focus version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -150,12 +150,12 @@ const checks = [
   [identify.includes('identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:""') && !html.includes("How many kangaroos?") && !identify.includes("identifyKangarooCount"), "visual multi-year results do not preselect a year and Step 2 has no kangaroo-count question"],
   [identify.includes("prepareIdentifyPhoto") && identify.includes("decodeIdentifyPhoto") && html.includes('id="identifyReverseCamera" type="file" accept="image/*" capture="environment"') && identify.includes("readIdentifyInput"), "iPhone-safe photo preparation with separate native-camera input"],
   [worker.includes('type:"image_url"') && worker.includes("image_url:{url:image}"), "Llama 4 receives the photo inside its multimodal message"],
-  [html.includes('id="coinCameraGuide"') && html.includes('id="coinCameraZoom"') && html.includes('id="coinCameraFocus"') && identify.includes("setCoinCameraFocusDistance") && identify.includes("displayedWidth") && identify.includes("getSupportedConstraints") && identify.includes("openNativeCoinCamera"), "guided camera maps tap focus to sensor pixels with manual and native fallbacks"],
+  [html.includes('id="coinCameraGuide"') && html.includes('id="coinCameraZoom"') && html.includes('data-native-camera-side="reverse"') && html.includes('id="identifyGuidedCamera"') && identify.includes("openNativeCoinCamera") && !identify.includes("focusCoinCamera") && !html.includes('id="coinCameraFocus"'), "native phone camera is the default focus-capable capture with guided framing optional"],
   [identify.includes("createCircularSpecimen") && identify.includes("specimenFile") && app.includes('createCircularSpecimen(file)'), "transparent specimen images are saved to My Mint"],
   [identify.includes("data.uncertain||data.needs_year") && identify.includes("requestAnalysis(null)"), "portrait side is analysed only after an uncertain design or unresolved year"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("llama-3.2-11b-vision-instruct") && worker.includes("env.ASSETS.fetch"), "primary and fallback vision models plus static assets binding"],
-  [sw.includes("pocket-mint-v0.13.4") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.13.6") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

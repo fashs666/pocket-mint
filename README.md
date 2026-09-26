@@ -1,4 +1,11 @@
-# Pocket Mint v0.13.4
+# Pocket Mint v0.13.6
+
+## v0.13.6 native-camera focus
+
+- makes the phone’s native camera the default when tapping either coin side
+- restores reliable native autofocus, tap focus, lens selection and zoom
+- keeps the fixed-circle browser camera as an explicitly optional framing tool
+- removes browser focus controls that reported success without reliably moving the lens
 
 ## v0.13.4 verified camera focus
 
@@ -259,7 +266,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.4 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.6 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
 
 ## Phase 0 phone checks
 
