@@ -113,6 +113,12 @@ body:has(#homeView.active) .badge.offline { color: #f3c28d; }
 #homeView .pm-home-hero-heading p { color: #50485c; margin: 0; font-size: .9rem; }
 .pm-home-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
 .pm-home-stats .pm-stat-card { display: flex; align-items: center; gap: 10px; min-width: 0; text-align: left; }
+.pm-home-stats button.pm-stat-card { width: 100%; min-height: 66px; color: var(--pm-ink); cursor: pointer; font: inherit; }
+.pm-home-collection-link { gap: 8px; min-height: 44px; cursor: pointer; }
+.pm-home-collection-link:is(:hover, :focus-visible) { box-shadow: 0 0 12px rgba(237, 133, 217, .45); }
+.pm-home-stats button.pm-stat-card:is(:hover, :focus-visible) { border-color: #b779c6; box-shadow: 0 0 0 2px rgba(237, 133, 217, .38), 0 0 16px rgba(237, 133, 217, .24); }
+.pm-stat-copy { min-width: 0; flex: 1; }
+.pm-stat-arrow { color: #684071; font-size: 1.35rem; }
 .pm-stat-icon { display: grid; place-items: center; width: 35px; height: 35px; flex: 0 0 auto; border-radius: 50%; background: #2b345b; color: var(--pm-cyan); font-size: 1.1rem; }
 .pm-stat-card:nth-child(2) .pm-stat-icon { color: var(--pm-pink); }
 .pm-stat-card:nth-child(3) .pm-stat-icon { color: #f1d98b; }
@@ -158,3 +164,80 @@ body:has(#homeView.active) .badge.offline { color: #f3c28d; }
   .pm-home-completion .pm-progress-ring { width: 77px; }
   .pm-home-completion .pm-progress-ring::before { width: 57px; }
 }
+
+/* Shared night sky and illustrated surfaces for the existing routes. */
+body {
+  background-color: var(--pm-night);
+  background-image:
+    radial-gradient(circle at 82% 5%, rgba(83, 69, 154, .34), transparent 24rem),
+    radial-gradient(circle at 8% 41%, rgba(37, 84, 120, .24), transparent 27rem),
+    radial-gradient(circle at 12% 115px, rgba(246, 218, 151, .75) 1px, transparent 2px),
+    radial-gradient(circle at 75% 205px, rgba(211, 192, 255, .6) 1px, transparent 2px),
+    radial-gradient(circle at 88% 455px, rgba(246, 218, 151, .6) 1px, transparent 2px);
+  background-size: auto, auto, 235px 365px, 311px 403px, 391px 523px;
+  color: var(--pm-on-dark);
+}
+.topbar { background: rgba(9, 13, 32, .95); border-color: rgba(98, 223, 237, .55); box-shadow: 0 3px 15px rgba(98, 223, 237, .13); }
+.brand { color: var(--pm-on-dark); min-height: 44px; }
+.brand h1 { color: #ffcbf4; text-shadow: 0 0 9px rgba(237, 133, 217, .6); letter-spacing: -.035em; }
+.iconButton { background: var(--pm-night-raised); border-color: var(--pm-gold); color: var(--pm-on-dark); min-width: 44px; min-height: 44px; }
+.badge { background: var(--pm-night-raised); color: var(--pm-mint); }
+.badge.offline { color: #f3c28d; }
+.view:not(#homeView) .sectionHead { position: relative; padding: 6px 40px 12px 0; border-bottom: 1px solid rgba(201, 167, 98, .32); }
+.view:not(#homeView) .sectionHead h2 { color: var(--pm-on-dark); text-shadow: 0 0 12px rgba(237, 133, 217, .3); }
+.view:not(#homeView) .sectionHead::after { content: '☾'; position: absolute; right: 5px; top: 0; color: #ffe2a2; font-size: 1.45rem; text-shadow: 0 0 12px rgba(255, 207, 104, .58); pointer-events: none; }
+.view:not(#homeView) .menuHeading, .view:not(#homeView) .findPanelHead h3 { color: var(--pm-on-dark); }
+.view:not(#homeView) .listMeta, .view:not(#homeView) .versionNote, .view:not(#homeView) .catalogueFilters label > span, .view:not(#homeView) .filterActions span { color: var(--pm-muted-dark); }
+
+/* These selectors style existing functional components without replacing them. */
+.view:not(#homeView) :is(.card, .coin, .identifyPanel, .matchCard, .menuCard, .statsGrid .stat) {
+  background: var(--pm-cream);
+  color: var(--pm-ink);
+  border: 1px solid var(--pm-gold);
+  border-radius: 24px 27px 23px 26px / 26px 23px 28px 24px;
+  box-shadow: inset 0 0 0 2px rgba(255, 251, 237, .5), var(--pm-shadow);
+}
+.view:not(#homeView) .coin h3, .view:not(#homeView) .statsCard h3 { color: var(--pm-ink); }
+.view:not(#homeView) .coinCopy .meta, .view:not(#homeView) .meta { color: #51465f; }
+.view:not(#homeView) .coinControls { border-color: rgba(119, 81, 38, .23); }
+.view:not(#homeView) .coinControls button { color: var(--pm-ink); background: #fff8e8; border-color: #c9ac7b; min-height: 44px; min-width: 44px; }
+.view:not(#homeView) .coinControls .heart.on { background: #f8d8ed; color: #733168; }
+.view:not(#homeView) .coinControls .star.on { background: #f7e7b9; color: #654600; }
+.view:not(#homeView) .tag { background: var(--pm-cream-deep); color: var(--pm-ink); }
+.view:not(#homeView) .menuCard { overflow: hidden; }
+.view:not(#homeView) .menuCard button { background: transparent; color: var(--pm-ink); border-color: rgba(134, 91, 42, .24); }
+.view:not(#homeView) .menuCard button > span { color: #523265; }
+.view:not(#homeView) .menuCard button:is(:hover, :focus-visible) { background: #fff3dc; }
+.view:not(#homeView) .statsGrid .stat { background: var(--pm-cream-deep); }
+.view:not(#homeView) .stat span, .view:not(#homeView) .statSeries span { color: #51465f; }
+.view:not(#homeView) .progress { background: #d8c8af; }
+.view:not(#homeView) .progress i { background: #308b9b; }
+.view:not(#homeView) .empty { padding: 24px; background: var(--pm-cream); border: 1px solid var(--pm-gold); border-radius: 23px; color: #51465f; }
+.view:not(#homeView) .listMeta button { color: #aaf7ff; }
+
+/* Glowing selection against dark navigation, with a calm cream content layer. */
+.view:not(#homeView) .findTabs, .view:not(#homeView) .segmented { background: #171635 !important; border: 1px solid rgba(169, 139, 236, .65); border-radius: 18px !important; padding: 5px !important; }
+.view:not(#homeView) .findTabs button, .view:not(#homeView) .segmented button { color: #f0dbf6; min-height: 44px; }
+.view:not(#homeView) .findTabs button.on, .view:not(#homeView) .segmented button.on { background: #132e48 !important; border-radius: 13px !important; color: #b4f6ff !important; box-shadow: inset 0 0 0 1px var(--pm-cyan), 0 0 13px rgba(98, 223, 237, .65) !important; text-shadow: 0 0 8px rgba(98, 223, 237, .55); }
+.view:not(#homeView) :is(.catalogueFilters, .findPanelHead) { color: var(--pm-on-dark); }
+.view:not(#homeView) .catalogueFilters { padding: 15px; background: var(--pm-night-raised); border: 1px solid rgba(201, 167, 98, .48); border-radius: 22px; }
+.view:not(#homeView) :is(.search, select, textarea, input[type=date], input[type=number]) { color: var(--pm-ink); background: #fff9ee; border-color: #bda879; }
+.view:not(#homeView) .filterActions button, .view:not(#homeView) .smallBtn { color: var(--pm-ink); background: var(--pm-cream); border-color: var(--pm-gold); min-height: 44px; }
+.view:not(#homeView) .identifySteps span { color: #efe7f5; background: #292446; }
+.view:not(#homeView) .identifySteps span.on { color: #151a35; background: var(--pm-cyan); box-shadow: 0 0 11px rgba(98, 223, 237, .55); }
+.view:not(#homeView) .identifyPanel :is(.identifyIntro, .photoPrivacy, .analyseStatus, .textButton) { color: #51465f; }
+.view:not(#homeView) .captureCard { background: #ede6d7; border-color: #b39876; }
+.view:not(#homeView) .matchCard { background: var(--pm-cream-deep); }
+.view:not(#homeView) .matchActions button { background: #fff8e8; color: var(--pm-ink); border-color: var(--pm-gold); min-height: 44px; }
+.view:not(#homeView) .matchActions .confirmMatch, .view:not(#homeView) .primaryWide:not(:disabled), .view:not(#homeView) .identifyButtons .primary { color: #fff5df; background: #25203f; border: 1px solid var(--pm-pink); box-shadow: 0 0 12px rgba(237, 133, 217, .4); }
+.view:not(#homeView) .settings :is(.appIconChoice, .installGrid .secondary) { background: #fff8e8; color: var(--pm-ink); border-color: var(--pm-gold); }
+.view:not(#homeView) .settings .appIconChoice.selected { border-color: #a247a8; box-shadow: 0 0 0 2px rgba(237, 133, 217, .4); }
+.view:not(#homeView) .settings .appIconChoice.selected i { background: #643270; }
+.view:not(#homeView) .settings .muted, .view:not(#homeView) .settings .appIconChoice small { color: #51465f; }
+.view:not(#homeView) .settings button:not(.appIconChoice) { min-height: 44px; }
+.view:not(#homeView) :is(button, input, select, textarea):focus-visible, .brand:focus-visible, .iconButton:focus-visible { outline: 3px solid var(--pm-cyan); outline-offset: 3px; }
+dialog { background: var(--pm-cream); border: 1px solid var(--pm-gold); box-shadow: 0 24px 80px rgba(0, 0, 0, .48), 0 0 22px rgba(237, 133, 217, .2); color: var(--pm-ink); }
+dialog::backdrop { background: rgba(4, 6, 19, .8); }
+dialog .detailGrid div, dialog .autoDate, dialog .seriesCoin { background: var(--pm-cream-deep); border-color: rgba(134, 91, 42, .32); }
+dialog :is(button, input, select):focus-visible { outline: 3px solid var(--pm-cyan); outline-offset: 3px; }
+@media (max-width: 390px) { .view:not(#homeView) .coinControls button { min-width: 40px; } }

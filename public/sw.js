@@ -1,4 +1,4 @@
-const CACHE = "pocket-mint-v0.13.10";
+const CACHE = "pocket-mint-v0.13.11";
 const STATIC = ["./", "./index.html", "./styles.css", "./progress.css", "./identify.css", "./pm-visual.css", "./pm-wordmark.webp", "./app.js", "./progress.js", "./identify.js", "./catalogue.json", "./manifest.webmanifest", "./manifest-seal.webmanifest", "./manifest-spiral.webmanifest", "./manifest-character.webmanifest", "./icon-192.png", "./icon-512.png", "./icons/seal-192.png", "./icons/seal-512.png", "./icons/spiral-192.png", "./icons/spiral-512.png", "./icons/character-192.png", "./icons/character-512.png"];
 
 self.addEventListener("install", event => {
