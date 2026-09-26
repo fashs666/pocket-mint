@@ -1,4 +1,13 @@
-# Pocket Mint v0.13.7
+# Pocket Mint v0.13.8
+
+## v0.13.8 visual foundation and Home first pass
+
+- Adds shared dark, cream, gold and accent tokens, reusable card/button/chip/progress/empty-state styles, and dark three-tab navigation.
+- Restyles Home around real owned, wishlist, favourite and duplicate-extra counts, catalogue progress, a series progress ring and recent coins.
+- Adds brighter cyan and magenta neon to Home's header, primary action and selected navigation; character artwork is reserved for a later pass.
+- Keeps collection, identification, catalogue, offline storage and route behaviour in the existing modules. Find, Coin Detail and My Mint page interiors await their own migration.
+- The new stylesheet is precached with the updated service worker cache.
+
 
 ## v0.13.7 guided camera and missing circulation coins
 
