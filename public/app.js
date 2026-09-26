@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.13.10";
+const APP_VERSION = "0.13.11";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -258,8 +258,8 @@ function renderHome() {
   const wishlist = records.filter(record => record.wishlist).length;
   const favourites = records.filter(record => record.favourite).length;
   const duplicates = records.reduce((total, record) => total + Math.max(0, (record.quantity || 0) - 1), 0);
-  document.getElementById("homeStats").innerHTML = [[owned, "Owned", "◎"], [wishlist, "Wishlist", "♡"], [favourites, "Favourites", "☆"], [duplicates, "Duplicate extras", "♧"]]
-    .map(([count, label, icon]) => `<div class="pm-stat-card"><span class="pm-stat-icon" aria-hidden="true">${icon}</span><div><b>${count}</b><span>${label}</span></div></div>`).join("");
+  document.getElementById("homeStats").innerHTML = [[owned, "Owned", "◎", "owned"], [wishlist, "Wishlist", "♡", "wishlist"], [favourites, "Favourites", "☆", "favourite"], [duplicates, "Duplicate extras", "♧", "duplicates"]]
+    .map(([count, label, icon, destination]) => `<button type="button" class="pm-stat-card" data-home-destination="${destination}" aria-label="${label}: ${count}. Open ${label === "Owned" ? "collection" : label.toLowerCase()}"><span class="pm-stat-icon" aria-hidden="true">${icon}</span><span class="pm-stat-copy"><b>${count}</b><span>${label}</span></span><span class="pm-stat-arrow" aria-hidden="true">›</span></button>`).join("");
   const progress = document.getElementById("homeProgress");
   progress.style.setProperty("--pm-progress", `${percent}%`);
   progress.querySelector("strong").textContent = `${percent}%`;
@@ -641,6 +641,13 @@ function wire() {
     renderMint();
     navigate("collectionView");
   });
+  document.getElementById("homeStats").onclick = event => {
+    const button = event.target.closest("[data-home-destination]");
+    if (!button) return;
+    const destination = button.dataset.homeDestination;
+    if (destination === "wishlist") navigate("wishlistView");
+    else document.querySelector(`[data-open-collection="${destination}"]`).click();
+  };
   document.querySelectorAll("[data-static-page]").forEach(button => button.onclick = () => alert(`${button.dataset.staticPage} is preserved as a destination for a later content pass.`));
   document.querySelectorAll("[data-find-tab]").forEach(button => button.onclick = () => {
     if(button.dataset.findTab==="catalogue") document.getElementById("findCatalogueNotice").hidden=true;
