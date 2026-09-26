@@ -101,7 +101,7 @@ const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https?:\/\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.13.11"') && identify.includes('IDENTIFY_VERSION = "0.13.11"') && html.includes("Pocket Mint v0.13.11"), "v0.13.11 shared visual system version"],
+  [app.includes('APP_VERSION = "0.13.12"') && identify.includes('IDENTIFY_VERSION = "0.13.12"') && html.includes("Pocket Mint v0.13.12"), "v0.13.12 coin detail visual version"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -155,7 +155,7 @@ const checks = [
   [identify.includes("data.uncertain||data.needs_year") && identify.includes("requestAnalysis(null)"), "portrait side is analysed only after an uncertain design or unresolved year"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("llama-3.2-11b-vision-instruct") && worker.includes("env.ASSETS.fetch"), "primary and fallback vision models plus static assets binding"],
-  [sw.includes("pocket-mint-v0.13.11") && sw.includes("./pm-visual.css") && sw.includes("./pm-wordmark.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, visual system, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.13.12") && sw.includes("./pm-visual.css") && sw.includes("./pm-wordmark.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, visual system, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
