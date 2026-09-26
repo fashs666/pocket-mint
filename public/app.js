@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.13.7";
+const APP_VERSION = "0.13.8";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -255,13 +255,21 @@ function renderHome() {
   const records = [...state.values()];
   const owned = records.filter(record => record.quantity > 0).length;
   const percent = catalogue.length ? Math.round(owned / catalogue.length * 100) : 0;
-  document.getElementById("homeStats").innerHTML = stats([[owned, "Collected"], [catalogue.length, "Catalogue"], [`${percent}%`, "Complete"]]);
-  document.querySelector("#homeProgress i").style.width = `${percent}%`;
+  const wishlist = records.filter(record => record.wishlist).length;
+  const favourites = records.filter(record => record.favourite).length;
+  const duplicates = records.reduce((total, record) => total + Math.max(0, (record.quantity || 0) - 1), 0);
+  document.getElementById("homeStats").innerHTML = [[owned, "Owned", "◎"], [wishlist, "Wishlist", "♡"], [favourites, "Favourites", "☆"], [duplicates, "Duplicate extras", "♧"]]
+    .map(([count, label, icon]) => `<div class="pm-stat-card"><span class="pm-stat-icon" aria-hidden="true">${icon}</span><div><b>${count}</b><span>${label}</span></div></div>`).join("");
+  const progress = document.getElementById("homeProgress");
+  progress.style.setProperty("--pm-progress", `${percent}%`);
+  progress.querySelector("strong").textContent = `${percent}%`;
+  progress.setAttribute("aria-label", `Catalogue progress: ${owned} of ${catalogue.length} coins, ${percent} percent`);
+  document.getElementById("homeProgressText").textContent = owned ? `${owned} of ${catalogue.length} catalogue issues collected` : "Start your collection to see it grow.";
   renderHomeSeries();
   const recent = catalogue.filter(coin => state.get(coin.id)?.quantity > 0).sort((a, b) => String(state.get(b.id).date_added).localeCompare(String(state.get(a.id).date_added))).slice(0, 3);
   const recentRoot = document.getElementById("recentCoins");
   recentRoot.replaceChildren(...recent.map(coin => card(coin, "browse")));
-  if (!recent.length) recentRoot.innerHTML = '<div class="empty card">Coins you add will appear here.</div>';
+  if (!recent.length) recentRoot.innerHTML = '<div class="pm-cream-card pm-empty-state"><p>Coins you add will appear here.</p><span class="pm-chip">Your story starts with one coin ✦</span></div>';
   document.getElementById("catVersion").textContent = `Catalogue ${catMeta.catalogue_version || ""}`;
 }
 
@@ -270,9 +278,9 @@ function renderHomeSeries() {
   catalogue.forEach(coin => { if (coin.series_id) (groups.get(coin.series_id) || groups.set(coin.series_id, []).get(coin.series_id)).push(coin); });
   const series = [...groups.entries()].filter(([, coins]) => coins.length > 1).map(([id, coins]) => ({id, coins, owned: coins.filter(coin => state.get(coin.id)?.quantity > 0).length})).sort((a, b) => Number(b.owned > 0) - Number(a.owned > 0) || b.owned - a.owned)[0];
   const root = document.getElementById("homeSeries");
-  if (!series) return root.innerHTML = '<div class="empty card">Series progress will appear here.</div>';
+  if (!series?.owned) return root.innerHTML = '<div class="pm-cream-card pm-empty-state"><p>Collect a coin from a series to see its progress here.</p><span class="pm-chip">Find a series to begin ✦</span></div>';
   const percent = Math.round(series.owned / series.coins.length * 100);
-  root.innerHTML = `<button class="seriesContinue" type="button" data-series-id="${esc(series.id)}"><span><b>${esc(human(series.id))}</b><small>${series.owned} of ${series.coins.length} collected</small><span class="progress"><i style="width:${percent}%"></i></span></span><span aria-hidden="true">›</span></button>`;
+  root.innerHTML = `<button class="seriesContinue pm-cream-card pm-cream-card--small" type="button" data-series-id="${esc(series.id)}"><span class="pm-progress-ring pm-series-ring" style="--pm-progress:${percent}%" aria-hidden="true"><strong>${percent}%</strong></span><span class="pm-series-copy"><b>${esc(human(series.id))}</b><small>${series.owned} of ${series.coins.length} collected</small></span><span aria-hidden="true">›</span></button>`;
   root.querySelector("button").onclick = () => { document.getElementById("catalogueSearch").value = series.id; showFindTab("catalogue"); navigate("findView"); renderCatalogue(); };
 }
 
