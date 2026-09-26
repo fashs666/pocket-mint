@@ -1,4 +1,10 @@
-# Pocket Mint v0.13.9
+# Pocket Mint v0.13.10
+
+## v0.13.10 reference-style wordmark
+
+- Replace the hollow CSS rendering with a compact transparent Pocket Mint wordmark asset based on the supplied visual reference.
+- Precache the wordmark for offline Home use.
+
 
 ## v0.13.9 Home wordmark
 

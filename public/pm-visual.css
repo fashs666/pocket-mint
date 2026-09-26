@@ -101,13 +101,12 @@ body:has(#homeView.active) .badge { background: var(--pm-night-raised); color: v
 body:has(#homeView.active) .badge.offline { color: #f3c28d; }
 #homeView { max-width: 760px; margin-inline: auto; padding-bottom: 22px; }
 .pm-home-intro { position: relative; display: flex; flex-direction: column; align-items: center; padding: 4px 3px 21px; text-align: center; }
-.pm-home-logo { display: flex; flex-direction: column; align-items: center; margin: 0 0 5px; font-family: "Arial Rounded MT Bold", "Trebuchet MS", ui-rounded, system-ui, sans-serif; font-size: clamp(3.35rem, 13vw, 6rem); font-weight: 1000; letter-spacing: -.075em; line-height: .83; -webkit-text-stroke: .043em #070913; paint-order: stroke fill; filter: drop-shadow(0 0 11px rgba(236, 105, 216, .43)); }
-.pm-home-logo span { display: block; padding: .08em .2em .12em; background-clip: text; -webkit-background-clip: text; color: transparent; }
-.pm-home-logo span:first-child { background-image: linear-gradient(110deg, #ff75df 5%, #f8a3cd 46%, #ffd27a 95%); transform: rotate(-2deg); text-shadow: 2px 4px 0 rgba(4, 6, 19, .3); }
-.pm-home-logo span:last-child { background-image: linear-gradient(105deg, #ffde80 3%, #91e4ba 56%, #6ee7ed 96%); transform: translateX(.13em) rotate(1deg); text-shadow: 2px 4px 0 rgba(4, 6, 19, .3); }
+.pm-home-logo { width: min(84%, 480px); margin: -19px 0 -13px; line-height: 0; }
+.pm-home-logo img { display: block; width: 100%; height: auto; filter: drop-shadow(0 0 8px rgba(236, 105, 216, .25)); }
 .pm-home-intro::after { content: "☾"; position: absolute; right: clamp(2px, 10%, 88px); top: 4px; color: #ffe2a2; font-size: clamp(1.35rem, 4vw, 2rem); text-shadow: 0 0 13px rgba(255, 207, 104, .7); }
 .pm-home-kicker { display: inline-block; margin-top: 3px; padding: 5px 13px; border: 1px solid var(--pm-gold); border-radius: 44% 52% 47% 53% / 52% 44% 56% 48%; background: var(--pm-cream); color: var(--pm-ink); font-size: .68rem; font-weight: 850; letter-spacing: .1em; }
 .pm-home-intro p { margin: 8px 0 0; color: #e4ccec; font-size: .9rem; }
+@media (max-width: 410px) { .pm-home-logo { width: min(95%, 350px); margin-top: -11px; margin-bottom: -10px; } }
 #homeView .pm-home-hero { padding: clamp(18px, 4vw, 27px); margin-bottom: 15px; }
 .pm-home-hero-heading { display: flex; justify-content: space-between; align-items: start; gap: 10px; }
 .pm-home-hero-heading h3 { margin: 8px 0 2px; font-size: clamp(1.3rem, 3vw, 1.65rem); }
