@@ -1,4 +1,10 @@
-# Pocket Mint v0.13.8
+# Pocket Mint v0.13.9
+
+## v0.13.9 Home wordmark
+
+- Makes the real Home heading a large two-line neon Pocket Mint wordmark inspired by the supplied reference.
+- Keeps characters off the Home screen and preserves the established three-tab navigation and collection data.
+
 
 ## v0.13.8 visual foundation and Home first pass
 
