@@ -155,7 +155,7 @@ const checks = [
   [identify.includes("data.uncertain||data.needs_year") && identify.includes("requestAnalysis(null)"), "portrait side is analysed only after an uncertain design or unresolved year"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("llama-3.2-11b-vision-instruct") && worker.includes("env.ASSETS.fetch"), "primary and fallback vision models plus static assets binding"],
-  [sw.includes("pocket-mint-v0.13.12") && sw.includes("./pm-visual.css") && sw.includes("./pm-wordmark.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, visual system, icon assets and remote image exclusions"],
+  [sw.includes("pocket-mint-v0.13.12-detail-scroll") && sw.includes("./pm-visual.css") && sw.includes("./pm-wordmark.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, visual system, icon assets and remote image exclusions"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],
