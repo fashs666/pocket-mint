@@ -260,7 +260,10 @@ dialog :is(button, input, select):focus-visible { outline: 3px solid var(--pm-cy
   box-shadow: 0 24px 80px rgba(0, 0, 0, .58), 0 0 19px rgba(98, 223, 237, .23);
   color: var(--pm-on-dark);
 }
-#coinDialog .dialogInner { max-height: min(94dvh, 940px); padding: 0; overscroll-behavior: contain; }
+#coinDialog .dialogInner { max-height: min(94dvh, 940px); padding: 0; overscroll-behavior: contain; scrollbar-color: #77649b #11142b; scrollbar-width: thin; }
+#coinDialog .dialogInner::-webkit-scrollbar { width: 8px; }
+#coinDialog .dialogInner::-webkit-scrollbar-track { background: #11142b; }
+#coinDialog .dialogInner::-webkit-scrollbar-thumb { background: #77649b; border-radius: 999px; }
 #coinDialog #dialogContent { padding: 0 20px 25px; }
 #coinDialog .close {
   position: sticky;
