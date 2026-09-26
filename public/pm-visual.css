@@ -95,17 +95,19 @@ body:has(#homeView.active) {
 }
 body:has(#homeView.active) .topbar { background: rgba(9, 13, 32, .93); border-color: rgba(98, 223, 237, .55); box-shadow: 0 3px 15px rgba(98, 223, 237, .13); }
 body:has(#homeView.active) .brand { color: var(--pm-on-dark); min-height: 44px; }
-body:has(#homeView.active) .brand h1 { background: linear-gradient(105deg, #f7dc91, #f08cdd 49%, #6de5e7); background-clip: text; -webkit-background-clip: text; color: transparent; }
+body:has(#homeView.active) .brand h1 { color: var(--pm-on-dark); }
 body:has(#homeView.active) .iconButton { background: var(--pm-night-raised); border-color: var(--pm-gold); color: var(--pm-on-dark); min-width: 44px; min-height: 44px; }
 body:has(#homeView.active) .badge { background: var(--pm-night-raised); color: var(--pm-mint); }
 body:has(#homeView.active) .badge.offline { color: #f3c28d; }
 #homeView { max-width: 760px; margin-inline: auto; padding-bottom: 22px; }
-.pm-home-intro { padding: 11px 3px 18px; }
-.pm-home-kicker { display: block; color: #a5f6ff; font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-shadow: 0 0 12px rgba(98, 223, 237, .62); }
-.pm-home-intro h2 { margin: 5px 0 4px; color: var(--pm-on-dark); font-size: clamp(1.9rem, 5vw, 2.65rem); letter-spacing: -.035em; }
-.pm-home-intro h2 em { font-style: normal; background: linear-gradient(105deg, #f9d987, #f596d9 48%, #83eddd); background-clip: text; -webkit-background-clip: text; color: transparent; }
-.pm-home-intro h2 span { color: var(--pm-pink); font-size: .55em; vertical-align: top; text-shadow: 0 0 12px rgba(237, 133, 217, .8); }
-.pm-home-intro p { margin: 0; color: var(--pm-muted-dark); font-size: .95rem; }
+.pm-home-intro { position: relative; display: flex; flex-direction: column; align-items: center; padding: 4px 3px 21px; text-align: center; }
+.pm-home-logo { display: flex; flex-direction: column; align-items: center; margin: 0 0 5px; font-family: "Arial Rounded MT Bold", "Trebuchet MS", ui-rounded, system-ui, sans-serif; font-size: clamp(3.35rem, 13vw, 6rem); font-weight: 1000; letter-spacing: -.075em; line-height: .83; -webkit-text-stroke: .043em #070913; paint-order: stroke fill; filter: drop-shadow(0 0 11px rgba(236, 105, 216, .43)); }
+.pm-home-logo span { display: block; padding: .08em .2em .12em; background-clip: text; -webkit-background-clip: text; color: transparent; }
+.pm-home-logo span:first-child { background-image: linear-gradient(110deg, #ff75df 5%, #f8a3cd 46%, #ffd27a 95%); transform: rotate(-2deg); text-shadow: 2px 4px 0 rgba(4, 6, 19, .3); }
+.pm-home-logo span:last-child { background-image: linear-gradient(105deg, #ffde80 3%, #91e4ba 56%, #6ee7ed 96%); transform: translateX(.13em) rotate(1deg); text-shadow: 2px 4px 0 rgba(4, 6, 19, .3); }
+.pm-home-intro::after { content: "☾"; position: absolute; right: clamp(2px, 10%, 88px); top: 4px; color: #ffe2a2; font-size: clamp(1.35rem, 4vw, 2rem); text-shadow: 0 0 13px rgba(255, 207, 104, .7); }
+.pm-home-kicker { display: inline-block; margin-top: 3px; padding: 5px 13px; border: 1px solid var(--pm-gold); border-radius: 44% 52% 47% 53% / 52% 44% 56% 48%; background: var(--pm-cream); color: var(--pm-ink); font-size: .68rem; font-weight: 850; letter-spacing: .1em; }
+.pm-home-intro p { margin: 8px 0 0; color: #e4ccec; font-size: .9rem; }
 #homeView .pm-home-hero { padding: clamp(18px, 4vw, 27px); margin-bottom: 15px; }
 .pm-home-hero-heading { display: flex; justify-content: space-between; align-items: start; gap: 10px; }
 .pm-home-hero-heading h3 { margin: 8px 0 2px; font-size: clamp(1.3rem, 3vw, 1.65rem); }
