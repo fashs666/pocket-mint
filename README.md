@@ -1,4 +1,13 @@
-# Pocket Mint v0.13.6
+# Pocket Mint v0.13.7
+
+## v0.13.7 guided camera and missing circulation coins
+
+- makes the fixed-circle guided camera the primary capture flow again
+- keeps the native phone camera available as the focus-capable fallback
+- adds the 2024 AFL and AFLW Premiership circulation coins
+- adds both 2025 Aussie Big Things 2 circulating till designs without duplicating the ten existing individual designs
+
+Phone check: tapping either coin side should open the fixed-circle camera; **Use the phone camera instead** remains available below the photo cards and inside the guided camera.
 
 ## v0.13.6 native-camera focus
 
@@ -268,7 +277,7 @@ npm run dev
 - v0.5 progress and series intelligence are calculated from existing records and add no new stored fields.
 - v0.9 backups include identification tests. Restoring an older backup leaves the current test log untouched because the older file has no test-log section.
 
-Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.6 service worker can refresh its offline cache. Some circulating records use Royal Australian Mint image links and need an internet connection for their reference pictures.
+Before testing a deployment, export a backup from **My Mint → Settings → Export Pocket Mint backup**. After deployment, open the site once online so the v0.13.7 service worker can refresh its offline cache. Some circulating records use external reference-image links and need an internet connection for their pictures.
 
 ## Phase 0 phone checks
 
