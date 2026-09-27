@@ -85,7 +85,7 @@ const designs=[],aliases=new Map();
 function tags(title,seriesId){const t=`${title} ${seriesId||''}`.toLowerCase(),result=[];
  for(const [tag,pattern] of [
   ['remembrance_military',/wwii|war|anzac|poppy|flanders|rosemary|mosaic|eternal flame|armistice|repatriation|military|peacekeeping|dawn service/],
-  ['first_nations',/aiatsis|mabo|indigenous|aboriginal|naidoc|unity/],
+  ['first_nations',/aiatsis|mabo|indigenous|aboriginal|naidoc|unity|torres strait islander/],
   ['royal',/jubilee|royal|coronation|charles.*diana|wedding/],
   ['volunteering_community',/volunteer|police|firefight|ambulance|frontline/],
   ['federation_government',/federation|parkes|apec|chogm/],
