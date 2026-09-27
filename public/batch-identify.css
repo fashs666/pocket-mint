@@ -10,3 +10,5 @@
 .batchCapturedPreview{display:block;max-width:100%;max-height:45vh;margin:12px auto;border-radius:16px}.batchCapturedPreview[hidden]{display:none}
 
 .batchSizeRow{display:flex;align-items:center;gap:12px;padding:10px 0;font-weight:700}.batchSizeRow input{flex:1;min-height:44px;accent-color:#7445aa}.batchSizeRow output{min-width:55px;text-align:right}.batchRegion{cursor:pointer}.batchOverlay.adding{cursor:crosshair}.batchRegion:focus-visible{outline:3px solid #ffcf5d;outline-offset:4px}
+
+.batchSizeRow[hidden]{display:none}
