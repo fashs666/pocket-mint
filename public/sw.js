@@ -1,5 +1,5 @@
-const CACHE = "pocket-mint-v0.13.19-batch-issue-reference";
-const STATIC = ["./", "./index.html", "./styles.css", "./progress.css", "./identify.css", "./pm-visual.css", "./pm-stars.svg", "./pm-crescent.svg", "./pm-wordmark.webp", "./app.js", "./progress.js", "./identify.js", "./batch-identify.js", "./batch-identification.js", "./batch-detection.js", "./batch-identify.css", "./catalogue.json", "./manifest.webmanifest", "./manifest-seal.webmanifest", "./manifest-spiral.webmanifest", "./manifest-character.webmanifest", "./icon-192.png", "./icon-512.png", "./icons/seal-192.png", "./icons/seal-512.png", "./icons/spiral-192.png", "./icons/spiral-512.png", "./icons/character-192.png", "./icons/character-512.png"];
+const CACHE = "pocket-mint-v0.14.0-circulating-catalogue";
+const STATIC = ["./", "./index.html", "./styles.css", "./progress.css", "./identify.css", "./pm-visual.css", "./pm-stars.svg", "./pm-crescent.svg", "./pm-wordmark.webp", "./app.js", "./progress.js", "./identify.js", "./batch-identify.js", "./batch-identification.js", "./batch-detection.js", "./batch-identify.css", "./catalogue.json", "./catalogue-v2.json", "./manifest.webmanifest", "./manifest-seal.webmanifest", "./manifest-spiral.webmanifest", "./manifest-character.webmanifest", "./icon-192.png", "./icon-512.png", "./icons/seal-192.png", "./icons/seal-512.png", "./icons/spiral-192.png", "./icons/character-192.png", "./icons/character-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil((async () => {
