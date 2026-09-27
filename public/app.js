@@ -164,7 +164,7 @@ function seriesCoins(coin) {
 
 function seriesHtml(coin) {
   const coins = seriesCoins(coin);
-  if (coins.length < 2) return "";
+  if (!coins.length || (!coin.seriesId && coins.length < 2)) return "";
   const owned = coins.filter(item => recordForDesign(item).some(record=>record.quantity>0)).length;
   const related = coins.filter(item => item.id !== coin.id).map(item => {
     const record = {...baseRec(item.id), ...(state.get(item.id) || {})};
@@ -172,7 +172,7 @@ function seriesHtml(coin) {
     return `<button type="button" class="seriesCoin" data-series-coin="${esc(item.id)}"><b>${item.year} ${esc(item.title)}</b><span>${status}${record.favourite ? " · ★" : ""}</span></button>`;
   }).join("");
   const seriesTitle=coin.seriesId?catalogueSeries.find(item=>item.id===coin.seriesId)?.title:human(coin.series_id);
-  return `<section class="seriesBox"><div class="eyebrow">SERIES</div><h3>${esc(seriesTitle)}</h3><p><strong>${owned} / ${coins.length} collected</strong></p><div class="progress"><i style="width:${Math.round(owned / coins.length * 100)}%"></i></div><h3 class="seriesMore">More coins from this series</h3><div class="seriesList">${related}</div></section>`;
+  return `<section class="seriesBox"><div class="eyebrow">SERIES</div><h3>${esc(seriesTitle)}</h3><p><strong>${owned} / ${coins.length} collected</strong></p><div class="progress"><i style="width:${Math.round(owned / coins.length * 100)}%"></i></div>${related ? `<h3 class="seriesMore">More coins from this series</h3><div class="seriesList">${related}</div>` : ""}</section>`;
 }
 
 function referenceLabel(coin) {
