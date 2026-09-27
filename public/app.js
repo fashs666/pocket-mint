@@ -52,6 +52,7 @@ function showToast(title, message = "") {
     ? `<div class="toastCard characterToast"><img src="characters/grim-noxel-high-five.webp" width="360" height="240" alt=""><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}<button type="button" class="toastViewMint">View My Mint</button></span><button type="button" class="toastDismiss" aria-label="Dismiss message">×</button></div>`
     : `<div class="toastCard"><span class="toastIcon" aria-hidden="true">✓</span><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}</span><button type="button" class="toastDismiss" aria-label="Dismiss message">×</button></div>`;
   region.classList.add("show");
+  if (added && currentView() === "homeView") reactCompanions("celebrate");
   const dismiss = () => { region.classList.remove("show"); toastTimer = null; };
   region.querySelector(".toastDismiss").onclick = dismiss;
   region.querySelector(".toastViewMint")?.addEventListener("click", () => { dismiss(); navigate("collectionView"); });
@@ -259,6 +260,7 @@ function renderHome() {
   const records = [...state.values()];
   const owned = records.filter(record => record.quantity > 0).length;
   document.getElementById("homeCharactersEmpty").hidden = owned !== 0;
+  document.getElementById("homeCompanions").classList.toggle("is-empty", owned === 0);
   const percent = catalogue.length ? Math.round(owned / catalogue.length * 100) : 0;
   const wishlist = records.filter(record => record.wishlist).length;
   const favourites = records.filter(record => record.favourite).length;
@@ -629,7 +631,43 @@ function updateNetwork() {
   renderDiag();
 }
 
+let companionReactionTimer;
+function reactCompanions(reaction) {
+  const stage = document.getElementById("homeCompanions");
+  if (!stage) return;
+  clearTimeout(companionReactionTimer);
+  stage.removeAttribute("data-reaction");
+  // Re-start the reaction when the same companion is tapped twice.
+  void stage.offsetWidth;
+  stage.dataset.reaction = reaction;
+  companionReactionTimer = setTimeout(() => stage.removeAttribute("data-reaction"), 900);
+}
+
+function sendNoxelCoinToFind() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const from = document.getElementById("companionNoxel").getBoundingClientRect();
+  const to = document.querySelector("#homeView .findHero").getBoundingClientRect();
+  const coin = document.createElement("span");
+  coin.className = "pm-coin-flight";
+  coin.setAttribute("aria-hidden", "true");
+  coin.style.left = `${from.left + from.width * .55}px`;
+  coin.style.top = `${from.top + from.height * .58}px`;
+  document.body.append(coin);
+  const dx = to.left + to.width * .18 - (from.left + from.width * .55);
+  const dy = to.top + to.height * .5 - (from.top + from.height * .58);
+  const flight = coin.animate([
+    {transform:"translate(0,0) scale(.4)",opacity:0},
+    {transform:`translate(${dx*.4}px,${dy*.4-42}px) scale(1.3)`,opacity:1,offset:.5},
+    {transform:`translate(${dx}px,${dy}px) scale(.8)`,opacity:0}
+  ], {duration:850,easing:"ease-in-out"});
+  flight.onfinish = () => coin.remove();
+  flight.oncancel = () => coin.remove();
+}
+
 function wire() {
+  document.getElementById("companionGrim").addEventListener("click", () => reactCompanions("grim"));
+  document.getElementById("companionNoxel").addEventListener("click", () => { reactCompanions("noxel"); sendNoxelCoinToFind(); });
+  document.querySelector("#homeView .findHero").addEventListener("pointerenter", () => reactCompanions("curious"));
   const updateCatalogue=()=>{document.getElementById("findCatalogueNotice").hidden=true;renderCatalogue();};
   ["yearFilter", "seriesFilter", "typeFilter", "scopeFilter", "stateFilter"].forEach(id => document.getElementById(id).onchange = updateCatalogue);
   document.getElementById("catalogueSearch").oninput = updateCatalogue;
