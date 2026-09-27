@@ -127,8 +127,9 @@
             <div class="eyebrow">BATCH IDENTIFY · REVIEW</div><h3 id="batchCount">0 coins found</h3>
             <p id="batchStatus" aria-live="polite">Check the outlines and individual crops.</p>
             <div class="batchImageFrame"><img id="batchImage" alt="Photo of coins"><div id="batchOverlay" class="batchOverlay" aria-label="Detected coin regions"></div></div>
-            <div class="batchActions"><button id="batchAdd" type="button">Add missed coin</button><button id="batchRemove" type="button" disabled>Remove selected</button><button id="batchRetake" type="button">New photo</button></div>
-            <p class="batchHint">For a missed coin, tap Add missed coin, then tap its centre. Each crop has its own Remove button. Maximum 10 coins.</p>
+            <div class="batchActions"><button id="batchAdd" type="button">Add missed coin</button><button id="batchRemove" type="button" disabled>Remove selected</button><button id="batchClearSelection" type="button" hidden>Unselect</button><button id="batchRetake" type="button">New photo</button></div>
+            <label id="batchSizeRow" class="batchSizeRow" hidden>Selected coin size <input id="batchSize" type="range" min="18" max="220" value="80" aria-label="Adjust selected coin size"><output id="batchSizeValue">80 px</output></label>
+            <p class="batchHint">Tap Add missed coin, then tap its centre in the photo. Tap an outline to select or unselect it. Use the size slider if the outline misses its edge. Maximum 10 coins.</p>
             <div id="batchCrops" class="batchCrops"></div>
             <p class="batchHint">Review only · no coins are identified or saved to My Mint.</p>
           </section>
