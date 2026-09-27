@@ -6,6 +6,53 @@
   const fileDataUrl=blob=>new Promise((resolve,reject)=>{
     const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);
   });
+  function catalogueChoice(coin,confidence=null){return {id:coin.id,title:coin.title,coin,confidence};}
+  function reference(coin){
+    const box=document.createElement('div');box.className='batchReference';
+    const picture=document.createElement('img');picture.src=coin.reference_image;picture.alt=`Catalogue reference for ${coin.title}`;
+    const description=document.createElement('span');description.textContent=`Catalogue reference · ${coin.year} ${coin.title}${coin.reference_image_kind==='series'?' (series image)':coin.reference_image_kind==='product'?' (product image)':coin.reference_image_kind==='obverse'?' (portrait side)':''}`;
+    box.append(picture,description);return box;
+  }
+  function searchCatalogue(query){
+    const words=query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+    if(!words.length)return [];
+    const unique=new Map();
+    for(const coin of catalogue){
+      const key=`${coin.denomination_display}:${coin.title}`;
+      if(unique.has(key))continue;
+      const haystack=`${coin.year} ${coin.title} ${coin.denomination_display} ${coin.series_id||''} ${coin.id}`.toLocaleLowerCase();
+      if(words.every(word=>haystack.includes(word)))unique.set(key,coin);
+    }
+    return [...unique.values()].slice(0,8);
+  }
+  function manualSearch(card,result,crop){
+    const search=document.createElement('div');search.className='batchManualSearch';
+    const label=document.createElement('label');label.textContent='Type the coin name';
+    const input=document.createElement('input');input.type='search';input.placeholder='e.g. Donation Dollar';input.autocomplete='off';input.setAttribute('aria-label',`Coin ${crop.detectionNumber} coin name`);
+    input.value=result.manualQuery||'';label.append(input);
+    const suggestions=document.createElement('div');suggestions.className='batchSuggestions';
+    function update(){
+      suggestions.replaceChildren();const matches=searchCatalogue(input.value);
+      if(!input.value.trim())return;
+      if(!matches.length){const message=document.createElement('p');message.textContent='No catalogue names match. Try another word or year.';suggestions.append(message);return;}
+      for(const coin of matches){
+        const button=document.createElement('button');button.type='button';button.className='batchSuggestion';
+        const thumbnail=document.createElement('img');thumbnail.src=coin.reference_image;thumbnail.alt='';
+        const caption=document.createElement('span');caption.textContent=`${coin.title} · ${coin.denomination_display} · ${coin.year}`;
+        button.append(thumbnail,caption);
+        button.onclick=()=>{
+          result.choices=[catalogueChoice(coin)];result.designId=coin.id;
+          const variants=designVariants(coin);
+          result.coinId=variants.length===1?coin.id:null;
+          result.ready=false;result.status='manual';result.manualOpen=false;
+          render(crops);
+        };
+        suggestions.append(button);
+      }
+    }
+    input.oninput=()=>{result.manualQuery=input.value;update();};
+    update();search.append(label,suggestions);card.append(search);
+  }
   function reset(){generation++;busy=false;crops=[];results.clear();$('batchIdentifyStatus').textContent='';render([]);}
   function sync(regions){
     const active=new Map(regions.map(r=>[r.id,`${r.x}:${r.y}:${r.width}:${r.height}`]));
@@ -26,23 +73,35 @@
       else if(result.status==='loading')summary.textContent='Checking this coin…';
       else if(result.status==='error')summary.textContent=result.message;
       else if(result.status==='no_match')summary.textContent='No reliable match. Retry or compare with the catalogue.';
-      else summary.textContent=result.status==='confident'?'Likely design and issue: check before adding.':result.status==='year_uncertain'?'Design found · choose the issue year.':'Design uncertain · choose the matching design and issue.';
+      else summary.textContent=result.status==='manual'?'Check the catalogue artwork and choose the exact issue.':result.status==='confident'?'Likely design and issue: check before adding.':result.status==='year_uncertain'?'Design found · choose the issue year.':'Design uncertain · choose the matching design and issue.';
       card.append(summary);
       if(!result){const identify=document.createElement('button');identify.type='button';identify.textContent='Identify this coin';identify.disabled=busy;identify.onclick=()=>identifyOne(crop);card.append(identify);}
       if(result?.status==='error'||result?.status==='no_match'){
         const retry=document.createElement('button');retry.type='button';retry.textContent='Retry this coin';retry.disabled=busy;retry.onclick=()=>identifyOne(crop);card.append(retry);
-        if(result.status==='no_match'){const browse=document.createElement('button');browse.type='button';browse.textContent='Search catalogue';browse.onclick=()=>window.open('./#catalogue','_blank','noopener');card.append(browse);}
+      }
+      if(result?.status!=='loading'&&!result?.added){
+        const manual=document.createElement('button');manual.type='button';manual.textContent=result?.manualOpen?'Close name search':'Type coin name';
+        manual.onclick=()=>{const current=results.get(crop.id)||{status:'manual',choices:[],geometry:`${crop.x}:${crop.y}:${crop.width}:${crop.height}`};current.manualOpen=!current.manualOpen;results.set(crop.id,current);render(crops);};
+        card.append(manual);
+        if(result?.manualOpen)manualSearch(card,result,crop);
       }
       if(result?.choices?.length){
+        const suggested=result.choices[0];
+        if(suggested?.coin){
+          const title=document.createElement('strong');title.className='batchSuggestedTitle';
+          title.textContent=result.status==='manual'?'Selected from catalogue':`Suggested match${suggested.confidence!==null?` · ${suggested.confidence}%`:''}`;
+          card.append(title,reference(suggested.coin));
+        }
         const designLabel=document.createElement('label');designLabel.textContent='Design';
         const designSelect=document.createElement('select');designSelect.setAttribute('aria-label',`Coin ${crop.detectionNumber} design`);
         designSelect.add(new Option('Choose design',''));
-        for(const choice of result.choices)designSelect.add(new Option(`${choice.title} · ${choice.confidence}%`,choice.id));
+        for(const choice of result.choices)designSelect.add(new Option(`${choice.title}${choice.confidence===null?'':` · ${choice.confidence}%`}`,choice.id));
         designSelect.value=result.designId||'';
         designSelect.onchange=()=>{result.designId=designSelect.value;result.coinId=null;result.ready=false;render(crops);};
         designLabel.append(designSelect);card.append(designLabel);
         const selected=result.choices.find(choice=>choice.id===result.designId);
         if(selected){
+          if(selected.id!==suggested?.id)card.append(reference(selected.coin));
           const variants=designVariants(selected.coin);
           const issueLabel=document.createElement('label');issueLabel.textContent='Issue year';
           const issueSelect=document.createElement('select');issueSelect.setAttribute('aria-label',`Coin ${crop.detectionNumber} issue year`);
@@ -70,7 +129,7 @@
     const choices=[];
     for(const match of data.matches||[]){
       const coin=catalogue.find(item=>item.id===match.id);if(!coin)continue;
-      if(!choices.some(choice=>choice.title===coin.title&&choice.coin.denomination_display===coin.denomination_display))choices.push({id:coin.id,title:coin.title,coin,confidence:Math.round(Number(match.confidence||0)*100)});
+      if(!choices.some(choice=>choice.title===coin.title&&choice.coin.denomination_display===coin.denomination_display))choices.push(catalogueChoice(coin,Math.round(Number(match.confidence||0)*100)));
     }
     if(!choices.length)return {status:'no_match',choices:[],ready:false};
     const definite=!data.uncertain;

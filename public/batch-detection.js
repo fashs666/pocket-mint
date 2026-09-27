@@ -1,5 +1,6 @@
 /* Local detector. Regions use coordinates in the downscaled source image. */
-const BATCH_CONFIG = Object.freeze({maxSide:900, analysisSide:480, maxCoins:10, minRadius:12, maxRadiusFraction:.19, padding:.13});
+const BATCH_CONFIG = Object.freeze({maxSide:900, analysisSide:480, maxCoins:10, minRadius:12, maxRadiusFraction:.19, padding:.13,
+  minShapeRimCoverage:.46, minRingRimCoverage:.67, minRimContrast:17});
 const batchPause = () => new Promise(resolve => setTimeout(resolve,0));
 
 async function decodeBatchImage(file) {
@@ -76,6 +77,25 @@ async function detectCoins(source) {
   // surface. Each strong edge votes for plausible centres on both sides of its rim.
   const gray=new Uint8Array(width*height);
   for(let i=0;i<gray.length;i++)gray[i]=Math.round(.299*rgba[i*4]+.587*rgba[i*4+1]+.114*rgba[i*4+2]);
+  function rimEvidence({x,y,rx,ry}) {
+    let hits=0,contrast=0,positive=0,negative=0;
+    const quarters=[0,0,0,0];
+    // A real coin has a continuous edge all around its perimeter. A textured
+    // table can generate centre votes but usually fails this angular check.
+    for(let angle=0;angle<48;angle++){
+      const theta=angle*Math.PI/24,ux=Math.cos(theta),uy=Math.sin(theta);
+      let strongest=0,signed=0;
+      for(const adjustment of [.94,1,1.06]){
+        const insideX=Math.round(x+ux*rx*(adjustment-.10)),insideY=Math.round(y+uy*ry*(adjustment-.10));
+        const outsideX=Math.round(x+ux*rx*(adjustment+.10)),outsideY=Math.round(y+uy*ry*(adjustment+.10));
+        if(insideX<1||outsideX<1||insideY<1||outsideY<1||insideX>=width-1||outsideX>=width-1||insideY>=height-1||outsideY>=height-1)continue;
+        const difference=gray[outsideY*width+outsideX]-gray[insideY*width+insideX];
+        if(Math.abs(difference)>strongest){strongest=Math.abs(difference);signed=difference;}
+      }
+      if(strongest>=BATCH_CONFIG.minRimContrast){hits++;quarters[Math.floor(angle/12)]++;contrast+=strongest;if(signed>0)positive++;else negative++;}
+    }
+    return {coverage:hits/48,balanced:quarters.every(count=>count>=5),contrast:hits?contrast/hits:0,polarity:hits?Math.max(positive,negative)/hits:0};
+  }
   const radii=[];for(let r=Math.max(12,Math.round(Math.min(width,height)*.029));r<=Math.min(width,height)*BATCH_CONFIG.maxRadiusFraction;r+=Math.max(4,Math.round(r*.12)))radii.push(r);
   const votes=radii.map(()=>new Uint16Array(width*height));
   for(let y=2;y<height-2;y+=2)for(let x=2;x<width-2;x+=2){
@@ -116,7 +136,17 @@ async function detectCoins(source) {
   rings.sort((a,b)=>b.score-a.score);
 
   const accepted=[];
-  for(const c of [...candidates,...rings]){if(accepted.length>=BATCH_CONFIG.maxCoins)break;
+  for(const suggestion of [...candidates.map(candidate=>({...candidate,kind:'shape'})),...rings.map(ring=>({...ring,kind:'ring'}))]){if(accepted.length>=BATCH_CONFIG.maxCoins)break;
+    // Edge votes sometimes land on an inner design circle. Check nearby larger
+    // radii before fixing the crop so the actual outside rim stays in frame.
+    let c=suggestion,evidence=rimEvidence(c);
+    if(c.kind==='ring')for(const factor of [1.12,1.24]){
+      const wider={...suggestion,rx:suggestion.rx*factor,ry:suggestion.ry*factor};
+      const rim=rimEvidence(wider);
+      if(rim.balanced&&rim.coverage>=BATCH_CONFIG.minRingRimCoverage&&rim.coverage*rim.contrast>evidence.coverage*evidence.contrast*1.06){c=wider;evidence=rim;}
+    }
+    if(!evidence.balanced||evidence.coverage<(c.kind==='shape'?BATCH_CONFIG.minShapeRimCoverage:BATCH_CONFIG.minRingRimCoverage))continue;
+    if(c.kind==='ring'&&(evidence.contrast<23||evidence.polarity<.64))continue;
     if(accepted.some(previous=>Math.hypot(previous.x-c.x,previous.y-c.y)<Math.max(previous.rx,previous.ry,c.rx,c.ry)*.9))continue;
     accepted.push(c);
   }
@@ -125,7 +155,10 @@ async function detectCoins(source) {
 async function cropCoins(source,regions) {
   const crops=[];
   for(const region of updateRelativeDiameters(regions)) {
-    const diameter=Math.max(region.width,region.height)*(1+BATCH_CONFIG.padding*2);
+    // Voting can catch an inner ring rather than the outer edge of a coin.
+    // Give automatic crops extra room; manual selections keep the tighter pad.
+    const padding=region.manual?BATCH_CONFIG.padding:Math.max(BATCH_CONFIG.padding,.25);
+    const diameter=Math.max(region.width,region.height)*(1+padding*2);
     const side=Math.min(768,Math.max(256,Math.ceil(diameter)));
     const canvas=document.createElement('canvas');canvas.width=side;canvas.height=side;
     const ctx=canvas.getContext('2d');ctx.fillStyle='#f3f0e9';ctx.fillRect(0,0,side,side);
