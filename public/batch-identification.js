@@ -87,10 +87,12 @@
       }
       if(result?.choices?.length){
         const suggested=result.choices[0];
+        const selected=result.choices.find(choice=>choice.id===result.designId);
         if(suggested?.coin){
           const title=document.createElement('strong');title.className='batchSuggestedTitle';
           title.textContent=result.status==='manual'?'Selected from catalogue':`Suggested match${suggested.confidence!==null?` · ${suggested.confidence}%`:''}`;
-          card.append(title,reference(suggested.coin));
+          const issue=result.coinId?catalogue.find(coin=>coin.id===result.coinId):null;
+          card.append(title,reference(issue||selected?.coin||suggested.coin));
         }
         const designLabel=document.createElement('label');designLabel.textContent='Design';
         const designSelect=document.createElement('select');designSelect.setAttribute('aria-label',`Coin ${crop.detectionNumber} design`);
@@ -99,9 +101,7 @@
         designSelect.value=result.designId||'';
         designSelect.onchange=()=>{result.designId=designSelect.value;result.coinId=null;result.ready=false;render(crops);};
         designLabel.append(designSelect);card.append(designLabel);
-        const selected=result.choices.find(choice=>choice.id===result.designId);
         if(selected){
-          if(selected.id!==suggested?.id)card.append(reference(selected.coin));
           const variants=designVariants(selected.coin);
           const issueLabel=document.createElement('label');issueLabel.textContent='Issue year';
           const issueSelect=document.createElement('select');issueSelect.setAttribute('aria-label',`Coin ${crop.detectionNumber} issue year`);
