@@ -131,7 +131,14 @@
             <label id="batchSizeRow" class="batchSizeRow" hidden>Selected coin size <input id="batchSize" type="range" min="18" max="220" value="80" aria-label="Adjust selected coin size"><output id="batchSizeValue">80 px</output></label>
             <p class="batchHint">Tap Add missed coin, then tap its centre in the photo. Tap an outline to select or unselect it. Use the size slider if the outline misses its edge. Maximum 10 coins.</p>
             <div id="batchCrops" class="batchCrops"></div>
-            <p class="batchHint">Review only · no coins are identified or saved to My Mint.</p>
+            <section id="batchResults" class="batchResults" aria-labelledby="batchResultsTitle">
+              <div class="eyebrow">NEXT · IDENTIFY INDIVIDUALLY</div><h3 id="batchResultsTitle">Identify your crops</h3>
+              <p>Check the outlines above first. Each crop is analysed separately with the same Pocket Mint identifier. The current catalogue covers $1 coins; other denominations may show no match. Nothing goes into My Mint until you confirm it.</p>
+              <button id="batchIdentifyAll" class="primary" type="button">Identify coins</button>
+              <p id="batchIdentifyStatus" role="status" aria-live="polite"></p>
+              <div id="batchResultList"></div>
+              <button id="batchAddConfirmed" class="primary" type="button" hidden>Add confirmed coins to My Mint</button>
+            </section>
           </section>
         </div>
       </div>
@@ -234,5 +241,6 @@
   <script src="identify.js"></script>
   <script src="batch-detection.js"></script>
   <script src="batch-identify.js"></script>
+  <script src="batch-identification.js"></script>
 </body>
 </html>

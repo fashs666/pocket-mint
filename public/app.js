@@ -727,6 +727,25 @@ function wire() {
   });
 }
 
+// Batch confirmation reuses the same collection writes as single-coin confirmation.
+// Each accepted crop remains an independent physical coin, including duplicates.
+async function addConfirmedBatchCoins(items) {
+  const added=[],photoFailures=[];
+  for(const item of items){
+    const coin=catalogue.find(candidate=>candidate.id===item.coinId);
+    if(!coin)continue;
+    const record=state.get(coin.id)||baseRec(coin.id);
+    await saveRec(coin.id,{quantity:(record.quantity||0)+1});
+    added.push(item.regionId);
+    if(item.crop)try{await addPhoto(coin.id,new File([item.crop],`batch-${Date.now()}.jpg`,{type:item.crop.type||"image/jpeg"}));}
+    catch{photoFailures.push(item.regionId);}
+  }
+  await loadLocal();renderAll();
+  if(added.length)showToast("Added to My Mint",`${added.length} coin${added.length===1?"":"s"} confirmed${photoFailures.length?" · some photos could not be saved":""}`);
+  return added;
+}
+window.PocketMintBatchCollection={addConfirmedBatchCoins};
+
 async function init() {
   const response = await fetch("./catalogue.json", {cache: "no-cache"});
   if (!response.ok) throw new Error(`Catalogue request failed: ${response.status}`);
