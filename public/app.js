@@ -47,11 +47,15 @@ function showToast(title, message = "") {
   const region = document.getElementById("toastRegion");
   if (!region) return;
   clearTimeout(toastTimer);
-  region.innerHTML = `<div class="toastCard"><span class="toastIcon" aria-hidden="true">✓</span><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}</span><button type="button" aria-label="Dismiss message">×</button></div>`;
+  const added = title === "Added to My Mint";
+  region.innerHTML = added
+    ? `<div class="toastCard characterToast"><img src="characters/grim-noxel-high-five.webp" width="360" height="240" alt=""><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}<button type="button" class="toastViewMint">View My Mint</button></span><button type="button" class="toastDismiss" aria-label="Dismiss message">×</button></div>`
+    : `<div class="toastCard"><span class="toastIcon" aria-hidden="true">✓</span><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}</span><button type="button" class="toastDismiss" aria-label="Dismiss message">×</button></div>`;
   region.classList.add("show");
   const dismiss = () => { region.classList.remove("show"); toastTimer = null; };
-  region.querySelector("button").onclick = dismiss;
-  toastTimer = setTimeout(dismiss, 4200);
+  region.querySelector(".toastDismiss").onclick = dismiss;
+  region.querySelector(".toastViewMint")?.addEventListener("click", () => { dismiss(); navigate("collectionView"); });
+  toastTimer = setTimeout(dismiss, added ? 7000 : 4200);
 }
 
 function openDB() {
@@ -254,6 +258,7 @@ function renderMint() {
 function renderHome() {
   const records = [...state.values()];
   const owned = records.filter(record => record.quantity > 0).length;
+  document.getElementById("homeCharactersEmpty").hidden = owned !== 0;
   const percent = catalogue.length ? Math.round(owned / catalogue.length * 100) : 0;
   const wishlist = records.filter(record => record.wishlist).length;
   const favourites = records.filter(record => record.favourite).length;
