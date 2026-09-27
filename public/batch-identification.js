@@ -28,6 +28,7 @@
       else if(result.status==='no_match')summary.textContent='No reliable match. Retry or compare with the catalogue.';
       else summary.textContent=result.status==='confident'?'Likely design and issue: check before adding.':result.status==='year_uncertain'?'Design found · choose the issue year.':'Design uncertain · choose the matching design and issue.';
       card.append(summary);
+      if(!result){const identify=document.createElement('button');identify.type='button';identify.textContent='Identify this coin';identify.disabled=busy;identify.onclick=()=>identifyOne(crop);card.append(identify);}
       if(result?.status==='error'||result?.status==='no_match'){
         const retry=document.createElement('button');retry.type='button';retry.textContent='Retry this coin';retry.disabled=busy;retry.onclick=()=>identifyOne(crop);card.append(retry);
         if(result.status==='no_match'){const browse=document.createElement('button');browse.type='button';browse.textContent='Search catalogue';browse.onclick=()=>window.open('./#catalogue','_blank','noopener');card.append(browse);}
@@ -100,7 +101,8 @@
   }
   $('batchIdentifyAll').onclick=async()=>{
     if(busy||!crops.length)return;
-    busy=true;const revision=generation,queue=[...crops].filter(crop=>!results.get(crop.id)?.added);
+    busy=true;const revision=generation,queue=[...crops].filter(crop=>!results.get(crop.id)?.added&&!results.get(crop.id)?.choices?.length);
+    if(!queue.length){busy=false;$('batchIdentifyStatus').textContent='All remaining crops have results. Review them or retry a coin individually.';render(crops);return;}
     for(let index=0;index<queue.length;index++){
       if(revision!==generation)break;
       $('batchIdentifyStatus').textContent=`Identifying coin ${index+1} of ${queue.length}…`;
