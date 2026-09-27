@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="680" viewBox="0 0 760 680" fill="none">
+  <defs>
+    <radialGradient id="gold"><stop stop-color="#fff6c9"/><stop offset=".38" stop-color="#ffe0a0"/><stop offset="1" stop-color="#e9ab5c" stop-opacity="0"/></radialGradient>
+    <radialGradient id="pink"><stop stop-color="#ffd5fb"/><stop offset="1" stop-color="#ee87e3" stop-opacity="0"/></radialGradient>
+    <radialGradient id="cyan"><stop stop-color="#d7fdff"/><stop offset="1" stop-color="#5bdfff" stop-opacity="0"/></radialGradient>
+    <filter id="glow" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="3"/></filter>
+  </defs>
+  <!-- A deliberately sparse illustrated sky: brighter glints sit toward the outer edges. -->
+  <g opacity=".7" filter="url(#glow)"><circle cx="36" cy="107" r="11" fill="url(#gold)"/><circle cx="714" cy="173" r="10" fill="url(#gold)"/><circle cx="87" cy="483" r="9" fill="url(#pink)"/><circle cx="673" cy="531" r="10" fill="url(#cyan)"/></g>
+  <g fill="#ffe4a8">
+    <path d="M36 92c1.2 9.7 2.7 12.2 12 15-9.3 2.8-10.8 5.3-12 15-1.2-9.7-2.7-12.2-12-15 9.3-2.8 10.8-5.3 12-15Z"/>
+    <path d="M714 161c1 7.8 2.2 9.7 9.8 12-7.6 2.3-8.8 4.2-9.8 12-1-7.8-2.2-9.7-9.8-12 7.6-2.3 8.8-4.2 9.8-12Z"/>
+    <path d="M641 321c.7 5.6 1.6 7 7 8.7-5.4 1.7-6.3 3.1-7 8.7-.7-5.6-1.6-7-7-8.7 5.4-1.7 6.3-3.1 7-8.7Z" opacity=".8"/>
+    <path d="M103 610c.7 5.6 1.6 7 7 8.7-5.4 1.7-6.3 3.1-7 8.7-.7-5.6-1.6-7-7-8.7 5.4-1.7 6.3-3.1 7-8.7Z" opacity=".8"/>
+  </g>
+  <g fill="#d8bbff"><circle cx="185" cy="66" r="1.7"/><circle cx="536" cy="116" r="1.3"/><circle cx="257" cy="313" r="1.2"/><circle cx="52" cy="352" r="1.8"/><circle cx="515" cy="627" r="1.7"/></g>
+  <g fill="#ffc8ee"><circle cx="342" cy="25" r="1.7"/><circle cx="691" cy="409" r="1.6"/><circle cx="218" cy="559" r="1.4"/><circle cx="445" cy="418" r="1.1"/></g>
+  <g fill="#ffe4a8"><circle cx="580" cy="34" r="1.5"/><circle cx="130" cy="231" r="1.2"/><circle cx="316" cy="505" r="1.4"/><circle cx="741" cy="647" r="1.6"/></g>
+  <g fill="#8ae9f4"><circle cx="386" cy="173" r="1.2"/><circle cx="597" cy="495" r="1.4"/><circle cx="24" cy="575" r="1.1"/></g>
+</svg>
