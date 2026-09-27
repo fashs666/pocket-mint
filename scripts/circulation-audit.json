@@ -1,0 +1,329 @@
+{
+  "counts": {
+    "designs": 270,
+    "byDenom": {
+      "5c": 2,
+      "10c": 2,
+      "20c": 20,
+      "50c": 35,
+      "$1": 136,
+      "$2": 75
+    },
+    "series": 24,
+    "releases": 32,
+    "issueIds": 533,
+    "duplicateIds": [],
+    "duplicateDesignIds": []
+  },
+  "originalTargets": {
+    "$1": 130,
+    "$2": 80,
+    "5c": 2,
+    "10c": 2,
+    "20c": 20,
+    "50c": 35,
+    "total": 269
+  },
+  "researchedTargets": {
+    "$1": 136,
+    "$2": 75,
+    "5c": 2,
+    "10c": 2,
+    "20c": 20,
+    "50c": 35,
+    "total": 270
+  },
+  "corrections": [
+    {
+      "type": "denomination",
+      "details": "Tokyo 2020 six coloured Olympic and Paralympic coins are $1 till-change issues, not $2.",
+      "source": "https://www.ramint.gov.au/collect/national-coin-collection/corporate-partnerships/woolworths-programs/tokyo-olympic-and"
+    },
+    {
+      "type": "missing_design",
+      "details": "2025 Torres Strait Islander Flag $2 was produced for circulation (2,087,802 pieces); exclude C-mintmark collector versions.",
+      "source": "https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf"
+    }
+  ],
+  "missingImages": [
+    "D200-WAR-ANIMALS-REMEMBRANCE-PURPLE-POPPY"
+  ],
+  "badParents": [],
+  "excluded": [
+    {
+      "id": "AU1-2017-POSSUM_MAGIC-BIKE",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Possum Magic — Across Australia"
+    },
+    {
+      "id": "AU1-2017-POSSUM_MAGIC-INVISIBLE",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Possum Magic — Hush Invisible"
+    },
+    {
+      "id": "AU1-2017-POSSUM_MAGIC-LAMINGTONS",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Possum Magic — Lamingtons"
+    },
+    {
+      "id": "AU1-2017-POSSUM_MAGIC-FOOD",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Possum Magic — Special Food"
+    },
+    {
+      "id": "AU1-2018-GC2018-BASKETBALL",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Gold Coast 2018 — Basketball"
+    },
+    {
+      "id": "AU1-2018-GC2018-DIVING",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Gold Coast 2018 — Diving"
+    },
+    {
+      "id": "AU1-2018-GC2018-SWIMMING",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Gold Coast 2018 — Swimming"
+    },
+    {
+      "id": "AU1-2018-GC2018-WRESTLING",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Gold Coast 2018 — Wrestling"
+    },
+    {
+      "id": "AU1-2019-MR_SQUIGGLE-FRIENDS",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Mr Squiggle and Friends"
+    },
+    {
+      "id": "AU1-2019-MR_SQUIGGLE-ROCKET",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Mr Squiggle on a Rocket"
+    },
+    {
+      "id": "AU1-2021-WIGGLES30-ORIGINAL",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "30 Years of The Wiggles — Anthony, Jeff, Murray & Greg"
+    },
+    {
+      "id": "AU1-2021-WIGGLES30-CURRENT",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "30 Years of The Wiggles — Emma, Lachy, Anthony & Simon"
+    },
+    {
+      "id": "AU1-2021-GACH2-GCOLOUR",
+      "reason": "Collector colour version",
+      "title": "Great Aussie Coin Hunt 2 — G for Great Barrier Reef (Coloured)"
+    },
+    {
+      "id": "AU1-2022-GACH3-XCOLOUR",
+      "reason": "Collector colour version",
+      "title": "Great Aussie Coin Hunt 3 — X for Crux (Coloured)"
+    },
+    {
+      "id": "AU1-2023-AFL2023-PREMIERSHIPCOLOUR",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — 2023 Premiership Season (Coloured)"
+    },
+    {
+      "id": "AU1-2023-AFL2023-ADELAIDE",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Adelaide Crows"
+    },
+    {
+      "id": "AU1-2023-AFL2023-BRISBANE",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Brisbane Lions"
+    },
+    {
+      "id": "AU1-2023-AFL2023-CARLTON",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Carlton"
+    },
+    {
+      "id": "AU1-2023-AFL2023-COLLINGWOOD",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Collingwood"
+    },
+    {
+      "id": "AU1-2023-AFL2023-ESSENDON",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Essendon"
+    },
+    {
+      "id": "AU1-2023-AFL2023-FREMANTLE",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Fremantle"
+    },
+    {
+      "id": "AU1-2023-AFL2023-GEELONG",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Geelong Cats"
+    },
+    {
+      "id": "AU1-2023-AFL2023-GOLDCOAST",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Gold Coast Suns"
+    },
+    {
+      "id": "AU1-2023-AFL2023-GWS",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — GWS Giants"
+    },
+    {
+      "id": "AU1-2023-AFL2023-HAWTHORN",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Hawthorn"
+    },
+    {
+      "id": "AU1-2023-AFL2023-MELBOURNE",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Melbourne"
+    },
+    {
+      "id": "AU1-2023-AFL2023-NORTHMELB",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — North Melbourne Kangaroos"
+    },
+    {
+      "id": "AU1-2023-AFL2023-PORTADELAIDE",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Port Adelaide"
+    },
+    {
+      "id": "AU1-2023-AFL2023-RICHMOND",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Richmond"
+    },
+    {
+      "id": "AU1-2023-AFL2023-STKILDA",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — St Kilda"
+    },
+    {
+      "id": "AU1-2023-AFL2023-SYDNEY",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Sydney Swans"
+    },
+    {
+      "id": "AU1-2023-AFL2023-WESTCOAST",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — West Coast Eagles"
+    },
+    {
+      "id": "AU1-2023-AFL2023-BULLDOGS",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — Western Bulldogs"
+    },
+    {
+      "id": "AU1-2023-AFL2023-AFLWCOLOUR",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFLW — 2023 Premiership Season (Coloured)"
+    },
+    {
+      "id": "AU1-2023-AUSSIE_BIG_THINGS-CODCOLOUR",
+      "reason": "Collector colour version",
+      "title": "Aussie Big Things — Giant Murray Cod (Coloured)"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY-COLOUR",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Bluey (Coloured)"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY-FRIENDS",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Bluey & Friends"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY-BINGO-FRIENDS",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Bluey, Bingo & Friends"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-MUFFIN-SOCKS",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Muffin & Socks"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-MUM-DAD",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Mum & Dad"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-GRANNIES",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — The Grannies"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-HEELERS",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — The Heelers"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-RAD-FRISKY",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Uncle Rad & Frisky"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-STRIPE-TRIXIE-NANA",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Uncle Stripe, Aunt Trixie & Nana"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-BARRAMUNDI",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Barramundi"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-GALAH",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Galah"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-GUITAR",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Golden Guitar"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-MANGO",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Mango"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-MERINO",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Merino"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-PENGUIN",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Penguin"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-PRAWN",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Prawn"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-ROCKING-HORSE",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Rocking Horse"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-STRAWBERRY",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Strawberry"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-WHEELBARROW",
+      "reason": "Purchasable 2025 Big Things location coin",
+      "title": "Aussie Big Things 2 — Big Wheelbarrow"
+    },
+    {
+      "id": "AU1-2025-BLUEY-CHRISTMAS",
+      "reason": "Packaged or collector-only $1 issue",
+      "title": "Bluey Christmas"
+    }
+  ]
+}
