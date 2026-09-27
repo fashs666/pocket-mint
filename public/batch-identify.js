@@ -5,7 +5,7 @@
   const state={stage:'entry',source:null,sourceUrl:null,regions:[],crops:[],selected:null,adding:false,job:0,cropJob:0};
   const $=id=>document.getElementById(id);
   function releaseCrops(){state.crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));state.crops=[];}
-  function resetPhoto(){state.job++;state.cropJob++;releaseCrops();if(state.sourceUrl)URL.revokeObjectURL(state.sourceUrl);state.sourceUrl=null;state.source=null;state.regions=[];state.selected=null;state.adding=false;image.removeAttribute('src');$('batchCapturedPreview').removeAttribute('src');$('batchCapturedPreview').hidden=true;$('batchToReview').hidden=true;}
+  function resetPhoto(){window.BatchIdentification?.reset();state.job++;state.cropJob++;releaseCrops();if(state.sourceUrl)URL.revokeObjectURL(state.sourceUrl);state.sourceUrl=null;state.source=null;state.regions=[];state.selected=null;state.adding=false;image.removeAttribute('src');$('batchCapturedPreview').removeAttribute('src');$('batchCapturedPreview').hidden=true;$('batchToReview').hidden=true;}
   function stage(next,push=true){
     state.stage=next;panel.hidden=next==='entry';normal.hidden=next!=='entry';
     $('batchCapture').hidden=next!=='capture';$('batchCapturedPreview').hidden=!state.sourceUrl;$('batchToReview').hidden=!state.sourceUrl;$('batchReview').hidden=next!=='review';
@@ -34,6 +34,7 @@
     $('batchSizeRow').hidden=!active;
     if(active){const slider=$('batchSize');slider.max=Math.round(Math.min(state.source.width,state.source.height)*.48);slider.value=Math.round(active.width);$('batchSizeValue').textContent=`${Math.round(active.width)} px`;}
     grid.replaceChildren();
+    window.BatchIdentification?.render(state.crops);
     for(const coin of state.crops){
       const card=document.createElement('article');card.className='batchCrop pm-cream-card';
       const title=document.createElement('strong');title.textContent=`Coin ${coin.detectionNumber}`;
@@ -42,7 +43,7 @@
       card.append(title,picture,remove);grid.append(card);
     }
   }
-  async function refreshCrops(){const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();}
+  async function refreshCrops(){window.BatchIdentification?.sync(state.regions);const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();}
   async function removeRegion(id){state.regions=state.regions.filter(r=>r.id!==id);state.selected=null;await refreshCrops();}
   async function process(file){
     if(!file)return;
