@@ -1,5 +1,5 @@
 /* Local detector. Regions use coordinates in the downscaled source image. */
-const BATCH_CONFIG = Object.freeze({maxSide:900, analysisSide:560, maxCoins:10, minRadius:12, maxRadiusFraction:.18, padding:.13});
+const BATCH_CONFIG = Object.freeze({maxSide:900, analysisSide:480, maxCoins:10, minRadius:12, maxRadiusFraction:.19, padding:.13});
 const batchPause = () => new Promise(resolve => setTimeout(resolve,0));
 
 async function decodeBatchImage(file) {
@@ -72,9 +72,51 @@ async function detectCoins(source) {
     candidates.push({x:(xMin+xMax)/2,y:(yMin+yMax)/2,rx:w/2,ry:h/2,score:fill*aspect*Math.sqrt(tail)});
     if(start%(width*60)<width)await batchPause();
   }
+  // Gradient voting adds candidates when foreground segmentation fails on a textured
+  // surface. Each strong edge votes for plausible centres on both sides of its rim.
+  const gray=new Uint8Array(width*height);
+  for(let i=0;i<gray.length;i++)gray[i]=Math.round(.299*rgba[i*4]+.587*rgba[i*4+1]+.114*rgba[i*4+2]);
+  const radii=[];for(let r=Math.max(12,Math.round(Math.min(width,height)*.029));r<=Math.min(width,height)*BATCH_CONFIG.maxRadiusFraction;r+=Math.max(4,Math.round(r*.12)))radii.push(r);
+  const votes=radii.map(()=>new Uint16Array(width*height));
+  for(let y=2;y<height-2;y+=2)for(let x=2;x<width-2;x+=2){
+    const i=y*width+x,gx=gray[i+1]-gray[i-1],gy=gray[i+width]-gray[i-width],strength=Math.hypot(gx,gy);
+    if(strength<31)continue;
+    const ux=gx/strength,uy=gy/strength;
+    for(let n=0;n<radii.length;n++)for(const sign of [-1,1]){
+      const cx=Math.round(x+sign*ux*radii[n]),cy=Math.round(y+sign*uy*radii[n]);
+      if(cx>0&&cy>0&&cx<width&&cy<height)votes[n][cy*width+cx]++;
+    }
+  }
+  await batchPause();
+  const rings=[];
+  for(let n=0;n<radii.length;n++){
+    const r=radii[n],vote=votes[n];
+    for(let y=Math.ceil(r*1.12);y<height-r*1.12;y+=3)for(let x=Math.ceil(r*1.12);x<width-r*1.12;x+=3){
+      let peak=0;for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)peak+=vote[(y+dy)*width+x+dx];
+      if(peak<Math.max(14,r*.29))continue;
+      let best=0,bestRatio=1;
+      for(const ratio of [1,.85,.72]){
+        let covered=0,contrast=0;
+        for(let angle=0;angle<32;angle++){
+          const theta=angle*Math.PI/16,ux=Math.cos(theta),uy=Math.sin(theta)*ratio;
+          const edgeX=Math.round(x+ux*r),edgeY=Math.round(y+uy*r),edgeIndex=edgeY*width+edgeX;
+          const localEdge=Math.abs(gray[edgeIndex+1]-gray[edgeIndex-1])+Math.abs(gray[edgeIndex+width]-gray[edgeIndex-width]);
+          if(localEdge>26)covered++;
+          contrast+=Math.abs(gray[Math.round(y+uy*r*.78)*width+Math.round(x+ux*r*.78)]-gray[Math.round(y+uy*r*1.10)*width+Math.round(x+ux*r*1.10)]);
+        }
+        const score=covered/32*peak+contrast/32*.24;
+        if(covered>=12&&contrast/32>=10&&score>best){best=score;bestRatio=ratio;}
+      }
+      if(best>16)rings.push({x,y,rx:r,ry:r*bestRatio,score:best});
+    }
+    if(n%4===0)await batchPause();
+  }
+  // Rank confident foreground shapes first, then fill gaps from rim votes.
   candidates.sort((a,b)=>b.score-a.score);
+  rings.sort((a,b)=>b.score-a.score);
+
   const accepted=[];
-  for(const c of candidates){if(accepted.length>=BATCH_CONFIG.maxCoins)break;
+  for(const c of [...candidates,...rings]){if(accepted.length>=BATCH_CONFIG.maxCoins)break;
     if(accepted.some(previous=>Math.hypot(previous.x-c.x,previous.y-c.y)<Math.max(previous.rx,previous.ry,c.rx,c.ry)*.9))continue;
     accepted.push(c);
   }
