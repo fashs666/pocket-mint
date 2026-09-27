@@ -28,6 +28,52 @@
   box-shadow: inset 0 0 0 3px rgba(255, 251, 237, .55), var(--pm-shadow);
 }
 .pm-cream-card--small { border-radius: 22px 25px 21px 24px / 24px 21px 25px 22px; }
+.pm-characters-empty[hidden] { display: none; }
+.pm-characters-empty { display: grid; justify-items: center; text-align: center; margin-top: 4px; padding: 9px 14px 16px; border-radius: 19px; background: rgba(35, 24, 67, .09); }
+.pm-characters-empty h4 { margin: 5px 0; font-size: 1.08rem; }
+.pm-characters-empty p { margin: 0 0 12px; color: #50485c; font-size: .87rem; }
+.pm-characters-empty .pm-primary-button { min-height: 44px; padding: 9px 21px; }
+.pm-companions { display: flex; justify-content: flex-end; align-items: end; height: 102px; margin: 5px 2px -5px; gap: 0; overflow: visible; }
+.pm-companions.is-empty { justify-content: center; height: 142px; margin-top: 8px; }
+#homeCompanions[hidden] { display: none; }
+.pm-companion { position: relative; display: block; flex: 0 0 auto; width: 105px; height: 105px; padding: 0; border: 0; background: transparent; cursor: pointer; touch-action: manipulation; }
+.pm-companion-noxel { width: 93px; height: 90px; margin-left: -12px; }
+.pm-companions.is-empty .pm-companion-grim { width: 137px; height: 137px; }
+.pm-companions.is-empty .pm-companion-noxel { width: 121px; height: 115px; margin-left: -17px; }
+.pm-companion img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: bottom; filter: drop-shadow(0 7px 5px rgba(20, 12, 42, .2)); animation: pm-companion-breathe 3.8s ease-in-out infinite; }
+.pm-companion-noxel img { animation: pm-companion-bob 2.9s ease-in-out infinite; }
+.pm-companion:focus-visible { outline: 3px solid #6737a2; outline-offset: 2px; border-radius: 25%; }
+.pm-companions[data-reaction="grim"] .pm-companion-grim img { animation: pm-grim-inspect .7s ease-in-out 1; }
+.pm-companions[data-reaction="grim"] .pm-companion-noxel img { animation: pm-noxel-duck .7s ease-in-out 1; }
+.pm-companions[data-reaction="noxel"] .pm-companion-noxel img,
+.pm-companions[data-reaction="celebrate"] .pm-companion-noxel img { animation: pm-noxel-hop .75s ease-out 1; }
+.pm-companions[data-reaction="noxel"] .pm-companion-grim img,
+.pm-companions[data-reaction="celebrate"] .pm-companion-grim img { animation: pm-grim-inspect .75s ease-out 1; }
+.pm-companions[data-reaction="curious"] .pm-companion-noxel img { animation: pm-noxel-peek 1s ease-in-out 1; }
+.pm-coin-flight { position: fixed; z-index: 35; width: 23px; height: 23px; border: 2px solid #a36d16; border-radius: 50%; background: radial-gradient(circle at 33% 28%, #fff4ab, #eebd47 55%, #9e5f13); box-shadow: 0 0 13px #eb92d8; pointer-events: none; }
+@keyframes pm-companion-breathe { 50% { transform: translateY(-3px) rotate(-2deg); } }
+@keyframes pm-companion-bob { 50% { transform: translateY(-6px) rotate(3deg); } }
+@keyframes pm-grim-inspect { 35% { transform: translate(4px,-9px) rotate(7deg); } 70% { transform: translate(1px,-2px) rotate(-4deg); } }
+@keyframes pm-noxel-duck { 45% { transform: translateY(20px) scale(.88); } }
+@keyframes pm-noxel-hop { 40% { transform: translateY(-20px) rotate(9deg); } 70% { transform: translateY(2px) rotate(-4deg); } }
+@keyframes pm-noxel-peek { 45% { transform: translate(14px,-8px) rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) { .pm-companion img, .pm-companions[data-reaction] .pm-companion img, .characterToast img { animation: none !important; } }
+
+/* Roaming companions occupy card edges, measured by companions.js. */
+.view { position: relative; }
+.view .pm-roaming-companions,
+.view .pm-roaming-companions.is-empty { position: absolute; inset: 0; z-index: 6; display: block; width: 100%; height: auto; margin: 0; pointer-events: none; }
+.view .pm-roaming-companions[hidden] { display: none; }
+.view .pm-roaming-companions .pm-companion,
+.view .pm-roaming-companions.is-empty .pm-companion { position: absolute; width: 82px; height: 77px; margin: 0; pointer-events: auto; will-change: transform; }
+.view .pm-roaming-companions .pm-companion-noxel,
+.view .pm-roaming-companions.is-empty .pm-companion-noxel { width: 73px; height: 70px; }
+.view .pm-roaming-companions .pm-companion img { animation: none; }
+.view .pm-companion-spotlight { outline: 2px solid rgba(98, 223, 237, .68); outline-offset: 3px; box-shadow: 0 0 15px rgba(98, 223, 237, .3); transition: outline-color .2s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .view .pm-roaming-companions .pm-companion { will-change: auto; }
+  .view .pm-companion-spotlight { outline: none; box-shadow: none; }
+}
 .pm-stat-card {
   padding: 14px;
   background: var(--pm-cream-deep);

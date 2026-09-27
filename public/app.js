@@ -50,11 +50,16 @@ function showToast(title, message = "") {
   const region = document.getElementById("toastRegion");
   if (!region) return;
   clearTimeout(toastTimer);
-  region.innerHTML = `<div class="toastCard"><span class="toastIcon" aria-hidden="true">✓</span><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}</span><button type="button" aria-label="Dismiss message">×</button></div>`;
+  const added = title === "Added to My Mint";
+  region.innerHTML = added
+    ? `<div class="toastCard characterToast"><img src="characters/grim-noxel-high-five.webp" width="360" height="240" alt=""><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}<button type="button" class="toastViewMint">View My Mint</button></span><button type="button" class="toastDismiss" aria-label="Dismiss message">×</button></div>`
+    : `<div class="toastCard"><span class="toastIcon" aria-hidden="true">✓</span><span><b>${esc(title)}</b>${message ? `<small>${esc(message)}</small>` : ""}</span><button type="button" class="toastDismiss" aria-label="Dismiss message">×</button></div>`;
   region.classList.add("show");
+  if (added) window.PocketMintCompanions?.celebrate();
   const dismiss = () => { region.classList.remove("show"); toastTimer = null; };
-  region.querySelector("button").onclick = dismiss;
-  toastTimer = setTimeout(dismiss, 4200);
+  region.querySelector(".toastDismiss").onclick = dismiss;
+  region.querySelector(".toastViewMint")?.addEventListener("click", () => { dismiss(); navigate("collectionView"); });
+  toastTimer = setTimeout(dismiss, added ? 7000 : 4200);
 }
 
 function openDB() {
@@ -242,6 +247,7 @@ function renderCatalogue() {
   fillList("catalogueList",coins,"No coins match these filters.","catalogue");
   const count=document.getElementById("catalogueResultCount");
   if(count)count.textContent=`${coins.length} design${coins.length===1?"":"s"}`;
+  window.PocketMintCompanions?.refresh();
 }
 
 function stats(items) { return items.map(([number, label]) => `<div class="stat"><b>${number}</b><span>${label}</span></div>`).join(""); }
@@ -258,11 +264,15 @@ function renderMint() {
   });
   fillList("myMintList", coins, mintFilter === "duplicates" ? "No duplicate coins yet." : mintFilter === "favourite" ? "No favourite coins yet." : "Your collection is empty.", "collection");
   document.getElementById("collectionCount").textContent = `${coins.length} coin${coins.length === 1 ? "" : "s"}`;
+  window.PocketMintCompanions?.refresh();
 }
 
 function renderHome() {
   const records = [...state.values()];
   const owned = records.filter(record => record.quantity > 0).length;
+  document.getElementById("homeCharactersEmpty").hidden = owned !== 0;
+  document.getElementById("homeCompanions").classList.toggle("is-empty", owned === 0);
+  window.PocketMintCompanions?.refresh();
   const progressOwned=catalogueDesigns.filter(design=>design.yearVariants.some(variant=>state.get(variant.id)?.quantity>0)).length;
   const percent = catalogueDesigns.length ? Math.round(progressOwned / catalogueDesigns.length * 100) : 0;
   const wishlist = records.filter(record => record.wishlist).length;
@@ -613,6 +623,7 @@ function showFindTab(tab, options={}) {
   });
   document.querySelectorAll("[data-find-panel]").forEach(panel => panel.hidden=panel.dataset.findPanel!==findTab);
   if(options.focus&&findTab==="catalogue") document.getElementById("catalogueSearch").focus();
+  window.PocketMintCompanions?.setFindTab(findTab);
 }
 
 function showView(view) {
@@ -621,6 +632,7 @@ function showView(view) {
   const navView = ["wishlistView", "statsView", "collectionView", "settingsView"].includes(safeView) ? "myMintView" : safeView;
   document.querySelectorAll(".bottomNav button").forEach(button => button.classList.toggle("active", button.dataset.nav === navView));
   scrollTo(0, 0);
+  window.PocketMintCompanions?.setView(safeView);
 }
 
 function navigate(view) {
@@ -800,6 +812,7 @@ async function init() {
   showView(initialView);
   showFindTab(findTab);
   renderAll();
+  window.PocketMintCompanions?.init();
   updateNetwork();
   if ("serviceWorker" in navigator) await navigator.serviceWorker.register("./sw.js");
 }
