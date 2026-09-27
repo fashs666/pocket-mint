@@ -33,6 +33,7 @@
   <link rel="stylesheet" href="progress.css">
   <link rel="stylesheet" href="identify.css">
   <link rel="stylesheet" href="pm-visual.css">
+  <link rel="stylesheet" href="batch-identify.css">
   <title>Pocket Mint — Coin collection companion</title>
 </head>
 <body>
@@ -58,7 +59,9 @@
       </div>
 
       <div data-find-panel="identify">
+        <div id="singleIdentify">
         <div class="findPanelHead"><div><div class="eyebrow">VISUAL IDENTIFICATION</div><h3>Photograph your coin</h3></div><button id="identifyReset" class="smallBtn" type="button">Start over</button></div>
+        <button id="batchOpen" class="batchEntry" type="button">◎ Scan multiple coins <span aria-hidden="true">›</span></button>
         <div class="identifySteps" aria-label="Identification progress"><span class="on" data-identify-step="1">1 · Photos</span><span data-identify-step="2">2 · Help</span><span data-identify-step="3">3 · Matches</span></div>
         <section id="identifyPhotos" class="identifyPanel">
           <p class="identifyIntro">Start with the design side. Centre the coin inside the guide and keep the phone straight above it. The portrait side is optional and is only checked when it can resolve an uncertain design or year.</p>
@@ -107,6 +110,29 @@
           </section>
           <div class="identifyButtons"><button id="identifyBackClues" type="button">Add or change clues</button><button id="identifyNoMatch" type="button">I can't find it</button></div>
         </section>
+        </div>
+        <div id="batchIdentify" class="batchIdentify" hidden>
+          <section id="batchCapture" class="batchPanel pm-cream-card" hidden>
+            <button id="batchBack" type="button" class="batchBack">‹ Back to Identify</button>
+            <div class="eyebrow">BATCH IDENTIFY · PHOTO</div><h3>Photograph several coins</h3>
+            <ul class="batchGuidance"><li>Spread coins apart</li><li>Keep every coin visible</li><li>Avoid overlapping coins</li><li>Use even lighting</li></ul>
+            <img id="batchCapturedPreview" class="batchCapturedPreview" alt="Captured batch photo" hidden>
+            <div class="batchActions"><button id="batchTake" type="button" class="primary">Take a photo</button><button id="batchChoose" type="button">Choose from library</button><button id="batchToReview" type="button" hidden>Review detected coins</button></div>
+            <input id="batchCameraInput" type="file" accept="image/*" capture="environment" hidden>
+            <input id="batchGalleryInput" type="file" accept="image/*" hidden>
+            <p id="batchProcess" role="status" hidden>Finding coins…</p>
+          </section>
+          <section id="batchReview" class="batchPanel" hidden>
+            <button id="batchReviewBack" type="button" class="batchBack">‹ Back to photo</button>
+            <div class="eyebrow">BATCH IDENTIFY · REVIEW</div><h3 id="batchCount">0 coins found</h3>
+            <p id="batchStatus" aria-live="polite">Check the outlines and individual crops.</p>
+            <div class="batchImageFrame"><img id="batchImage" alt="Photo of coins"><div id="batchOverlay" class="batchOverlay" aria-label="Detected coin regions"></div></div>
+            <div class="batchActions"><button id="batchAdd" type="button">Add missed coin</button><button id="batchRemove" type="button" disabled>Remove selected</button><button id="batchRetake" type="button">New photo</button></div>
+            <p class="batchHint">For a missed coin, tap Add missed coin, then tap its centre. Each crop has its own Remove button. Maximum 10 coins.</p>
+            <div id="batchCrops" class="batchCrops"></div>
+            <p class="batchHint">Review only · no coins are identified or saved to My Mint.</p>
+          </section>
+        </div>
       </div>
 
       <section data-find-panel="catalogue" hidden>
@@ -205,5 +231,7 @@
   <script src="app.js"></script>
   <script src="progress.js"></script>
   <script src="identify.js"></script>
+  <script src="batch-detection.js"></script>
+  <script src="batch-identify.js"></script>
 </body>
 </html>
