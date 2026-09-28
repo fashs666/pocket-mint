@@ -68,6 +68,8 @@ body > .pm-roaming-companions.is-empty .pm-companion { position: absolute; width
 body > .pm-roaming-companions .pm-companion-noxel,
 body > .pm-roaming-companions.is-empty .pm-companion-noxel { width: 73px; height: 70px; }
 body > .pm-roaming-companions .pm-companion img { animation: none; }
+body > .pm-roaming-companions .pm-companion .pm-companion-step { position: absolute; inset: 0; opacity: 0; transition: opacity 110ms linear; pointer-events: none; }
+body > .pm-roaming-companions .pm-companion .pm-companion-step.is-step { opacity: 1; }
 .pm-companion-spark { position: absolute; z-index: 2; color: #fff0a6; font-size: 27px; text-shadow: 0 0 9px #ffda7c, 0 0 18px #e4a5f8; pointer-events: none; }
 .pm-companion-spark::before { content: "✦"; }
 .pm-companion-spark[hidden] { display: none; }
