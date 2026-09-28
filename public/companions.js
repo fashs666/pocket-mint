@@ -44,18 +44,19 @@
     if (area.id === "homeView") {
       return [...area.querySelectorAll('.pm-home-hero, .findHero, #homeSeries .pm-cream-card, #recentCoins .coinCard')];
     }
-    if (area.id === "findView") return [...area.querySelectorAll('[data-find-panel="catalogue"] .findPanelHead, #catalogueList .coinCard')];
-    if (area.id === "collectionView") return [...area.querySelectorAll('.listMeta, #myMintList .coinCard')];
-    if (area.id === "myMintView") return [...area.querySelectorAll('.menuHeading, .menuCard')];
+    if (area.id === "findView") return [...area.querySelectorAll('#catalogueList .coinCard')];
+    if (area.id === "collectionView") return [...area.querySelectorAll('#myMintList .coinCard')];
+    if (area.id === "myMintView") return [...area.querySelectorAll('.menuCard')];
     return [];
   }
 
   function visibleTargets() {
     const safe = safeSpace();
-    return targets().filter(element => {
+    const visible = targets().filter(element => {
       const rect = element.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0 && rect.bottom > safe.top + 24 && rect.top < safe.bottom - 24;
     });
+    return visible;
   }
 
   function atCard(element, name) {
@@ -159,7 +160,7 @@
     if (!active || run !== generation) return;
     pose("noxel", "inspect");
     pose("grim", "inspect");
-    target.classList.add("pm-companion-spotlight");
+    if (target.matches(".coinCard, .pm-cream-card, .findHero, .menuCard")) target.classList.add("pm-companion-spotlight");
     visitTimer = setTimeout(() => {
       const options = visibleTargets();
       const next = options.length ? options[(Math.max(-1, options.indexOf(target)) + 1) % options.length] : null;
