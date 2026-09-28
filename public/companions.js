@@ -40,8 +40,8 @@
     const bottom = Math.max(safe.top, safe.bottom - button.offsetHeight);
     const above = rect.top - button.offsetHeight * .78;
     const below = rect.bottom - button.offsetHeight * .2;
-    const special = target.matches(".coinCard") ? rect.top + 12
-      : target.matches(".menuCard") ? rect.top - button.offsetHeight * .94 : null;
+    const special = target.matches(".coinCard, .menuCard")
+      ? (above >= safe.top ? above : rect.bottom - button.offsetHeight * .42) : null;
     const left = target.classList.contains("findHero");
     const x = left
       ? rect.left + (name === "grim" ? 8 : actors.grim.button.offsetWidth + 14)
@@ -55,6 +55,8 @@
   function pose(actor, frame) {
     const src = art[actor.name][frame];
     if (actor.image.getAttribute("src") !== src) actor.image.src = src;
+    actor.button.classList.toggle("is-walking", frame === "walk");
+    actor.button.classList.toggle("is-inspecting", frame === "inspect");
     if (frame !== "walk") actor.stepImage.classList.remove("is-step");
   }
 
@@ -75,6 +77,8 @@
   function cancel(actor) {
     actor.run++;
     clearTimeout(actor.timer);
+    clearTimeout(actor.idleTimer);
+    actor.button.classList.remove("is-meeting");
     clearInterval(actor.frames);
     actor.stepImage.classList.remove("is-step");
     if (actor.motion) {
@@ -109,19 +113,36 @@
 
   function schedule(actor) {
     clearTimeout(actor.timer);
-    if (!active || scrolling || reduced.matches || actor.hidden) return;
+    if (!active || scrolling || actor.hidden) return;
+    if (reduced.matches) { pose(actor, "idle"); return; }
+    idleMoment(actor);
     const interval = actor.name === "noxel" ? 4600 + Math.random() * 1700 : 6800 + Math.random() * 2100;
     actor.timer = setTimeout(() => {
       const options = visibleTargets();
-      if (options.length < 2) { pose(actor, "idle"); schedule(actor); return; }
+      if (options.length < 2) { schedule(actor); return; }
       const other = actors[actor.name === "grim" ? "noxel" : "grim"];
       actor.steps++;
       // Occasionally choose the other companion's card; most trips stay independent.
       const meet = actor.steps % 4 === 0 && options.includes(other.target) && other.target !== actor.target;
       const choices = options.filter(target => target !== actor.target && (!other.target || target !== other.target));
-      const next = meet ? other.target : choices.length ? choices[actor.steps % choices.length] : options.find(t => t !== actor.target);
+      const nearby = choices.sort((a, b) => {
+        const pa = destination(a, actor.name), pb = destination(b, actor.name);
+        return Math.hypot(pa.x - actor.point.x, pa.y - actor.point.y) - Math.hypot(pb.x - actor.point.x, pb.y - actor.point.y);
+      });
+      const next = meet ? other.target : nearby[0] || options.find(t => t !== actor.target);
       visit(actor.name, next);
     }, interval);
+  }
+
+  function idleMoment(actor) {
+    clearTimeout(actor.idleTimer);
+    if (!active || scrolling || reduced.matches || actor.hidden || actor.motion) return;
+    pose(actor, "idle");
+    actor.idleTimer = setTimeout(() => {
+      if (!active || scrolling || actor.hidden || actor.motion) return;
+      pose(actor, "inspect");
+      actor.idleTimer = setTimeout(() => idleMoment(actor), 800 + Math.random() * 450);
+    }, 1800 + Math.random() * 2000);
   }
 
   function maybeMeet() {
@@ -131,7 +152,7 @@
     meetTimer = setTimeout(() => {
       if (!active || scrolling || actors.grim.target !== actors.noxel.target) return;
       const g = actors.grim.point, n = actors.noxel.point;
-      spark.style.left = `${(g.x + n.x) / 2 + 42}px`;
+      spark.style.left = `${(g.x + actors.grim.button.offsetWidth / 2 + n.x + actors.noxel.button.offsetWidth / 2) / 2}px`;
       spark.style.top = `${Math.min(g.y, n.y) - 12}px`;
       spark.hidden = false;
       if (spark.animate) spark.animate([{opacity:0, transform:"scale(.3)"}, {opacity:1, transform:"scale(1.15)", offset:.4}, {opacity:0, transform:"scale(.7)"}],
@@ -139,6 +160,14 @@
       else spark.hidden = true;
       pose(actors.grim, "inspect");
       pose(actors.noxel, "inspect");
+      for (const actor of Object.values(actors)) {
+        clearTimeout(actor.idleTimer);
+        actor.button.classList.add("is-meeting");
+        actor.idleTimer = setTimeout(() => {
+          actor.button.classList.remove("is-meeting");
+          idleMoment(actor);
+        }, 1200);
+      }
     }, 450);
   }
 
@@ -153,10 +182,7 @@
     actor.target = target;
     if (reduced.matches || !actor.button.animate) {
       place(actor, next);
-    } else if (actor.hidden || distance > 195) {
-      if (!actor.hidden) await animate(actor, [{opacity:1, transform:"translateY(0) scale(1)"}, {opacity:0, transform:"translateY(12px) scale(.78)"}],
-        {duration:170, easing:"ease-in"});
-      if (!active || run !== actor.run) return;
+    } else if (actor.hidden) {
       place(actor, next);
       actor.button.style.opacity = "0";
       pose(actor, "inspect");
@@ -178,7 +204,7 @@
         {transform:"translate(0,0)"},
         {transform:`translate(${dx*.45}px,${dy*.45-5}px)`, offset:.45},
         {transform:`translate(${dx}px,${dy}px)`}
-      ], {duration:clamp(distance * 5, 600, 1150), easing:"ease-in-out"});
+      ], {duration:clamp(distance * 4, 520, 1900), easing:"ease-in-out"});
       clearInterval(actor.frames);
       actor.stepImage.classList.remove("is-step");
     }
@@ -234,13 +260,13 @@
       if (actor.target && options.includes(actor.target)) {
         // The stage is fixed, so translate the current position by the page's
         // scroll delta. Recomputing the destination here teleports a walker.
-        if (actor.point && !actor.hidden) {
-          place(actor, {x:actor.point.x, y:clamp(actor.point.y - delta, safe.top,
-            Math.max(safe.top, safe.bottom - actor.button.offsetHeight))});
-          actor.button.style.opacity = "";
-        }
-        pose(actor, "inspect");
+        if (actor.point) place(actor, {x:actor.point.x, y:actor.point.y - delta});
+        actor.hidden = !actor.point || actor.point.y < safe.top - 12 ||
+          actor.point.y > safe.bottom - actor.button.offsetHeight + 12;
+        actor.button.style.opacity = actor.hidden ? "0" : "";
+        if (!actor.hidden) pose(actor, "idle");
       } else {
+        if (actor.point) place(actor, {x:actor.point.x, y:actor.point.y - delta});
         actor.hidden = true;
         actor.button.style.opacity = "0";
       }
@@ -300,7 +326,7 @@
         visit(actor.name, options[actor.name === "noxel" && options.length > 1 ? 1 : 0]);
       } else if (!actor.motion && !actor.hidden) {
         const point = destination(actor.target, actor.name);
-        if (Math.hypot(point.x - actor.point.x, point.y - actor.point.y) > 16) place(actor, point);
+        if (Math.hypot(point.x - actor.point.x, point.y - actor.point.y) > 16) settle(actor);
       }
     }
   }
