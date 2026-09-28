@@ -73,6 +73,7 @@
 .outcomeChoices input:checked + span { background:#18211d; color:#fff; border-color:#18211d; }
 .feedbackField { display:block; margin-top:10px; font-size:.72rem; font-weight:800; }
 .feedbackField input,.feedbackField textarea,.feedbackField select { display:block; width:100%; margin-top:5px; border:1px solid #ccd6cd; background:#fff; border-radius:11px; padding:11px 12px; font:inherit; }
+.testCorrection{margin-top:12px}.testCorrection summary{cursor:pointer;min-height:44px;padding:12px 0;font-weight:750}.identifyFeedback #identifyTestCorrect[hidden]{display:none}
 .testLog { display:grid; gap:8px; margin:10px 0 12px; }
 .testLogItem { border:1px solid #dce3dc; border-radius:12px; overflow:hidden; }
 .testLogItem summary { display:grid; grid-template-columns:auto 1fr; gap:9px; align-items:center; padding:11px; cursor:pointer; list-style:none; }

@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.14.6";
+const IDENTIFY_VERSION = "0.14.9";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
 
@@ -278,14 +278,17 @@ function resetTestFeedback() {
   document.getElementById("identifyExpected").placeholder="e.g. 2020 Donation Dollar";
   document.getElementById("identifyTestNote").value="";
   document.getElementById("identifyTestStatus").textContent="";
+  document.querySelector('.testCorrection').open=false;
+  document.getElementById("identifyTestCorrect").disabled=false;
   const button=document.getElementById("saveIdentificationTest");
   button.disabled=false;button.textContent="Save test result";
   identifyState.testLogSaved=false;
+  identifyState.testLogSaving=false;
 }
 
-async function saveIdentificationTest() {
-  if(identifyState.testLogSaved)return;
-  const outcome=document.querySelector('input[name="identifyOutcome"]:checked')?.value;
+async function saveIdentificationTest(outcomeOverride) {
+  if(identifyState.testLogSaved||identifyState.testLogSaving)return;
+  const outcome=outcomeOverride==='correct'?'correct':document.querySelector('input[name="identifyOutcome"]:checked')?.value;
   const expectedLabel=document.getElementById("identifyExpected").value.trim();
   const expectedDenomination=document.getElementById("identifyExpectedDenomination").value;
   const status=document.getElementById("identifyTestStatus");
@@ -304,17 +307,30 @@ async function saveIdentificationTest() {
     candidates:identifyState.results.map((item,index)=>({rank:index+1,coin_id:item.coin.id,year:item.coin.year,title:item.coin.title,confidence:item.confidence,reasons:[...item.reasons]})),
     note:document.getElementById("identifyTestNote").value.trim()
   };
-  await put("identificationTests",test);
-  identificationTests.unshift(test);
-  identifyState.testLogSaved=true;
+  if(outcomeOverride==='correct'&&expectedCoin&&designVariants(expectedCoin).length>1&&
+    !identifyState.lastObserved?.year&&!readIdentifyClues().year){
+    test.issue_correct=null;test.expected_coin_id=null;
+    test.expected_label=`${expectedCoin.title} · year not checked`;
+  }
   const button=document.getElementById("saveIdentificationTest");
-  button.disabled=true;button.textContent="Test result saved";
-  status.classList.remove("error");status.textContent="Saved locally. You can review or export it from Settings.";
-  renderAll();
+  const quick=document.getElementById("identifyTestCorrect");
+  identifyState.testLogSaving=true;button.disabled=true;quick.disabled=true;
+  try{
+    await put("identificationTests",test);
+    identificationTests.unshift(test);
+    identifyState.testLogSaved=true;
+    button.textContent="Test result saved";
+    status.classList.remove("error");status.textContent="Saved locally. You can review or export it from Settings.";
+    renderAll();
+  }catch(error){
+    button.disabled=false;quick.disabled=false;
+    status.classList.add("error");status.textContent=`Could not save the test: ${error.message}`;
+  }finally{identifyState.testLogSaving=false;}
 }
 
 function renderIdentifyResults() {
   const visual=identifyState.resultSource==="visual",photoCount=[identifyState.obverse,identifyState.reverse].filter(Boolean).length;
+  document.getElementById("identifyTestCorrect").hidden=!identifyState.results[0];
   document.getElementById("identifySummary").innerHTML=`<div class="identifyNotice"><b>${identifyState.results.length?visual?"Visual identification results":"Best catalogue candidates":"No catalogue match yet"}</b><br>${visual?`Pocket Mint analysed the visible artwork and text${photoCount===2?" across both sides":" on the design side"}.`:"Ranked using the clues supplied."}${photoCount?` ${photoCount} photo${photoCount===1?" is":"s are"} ready to attach.`:""}</div>`;
   if(!identifyState.testLogSaved){
     const expected=document.getElementById("identifyExpected");
@@ -507,9 +523,13 @@ function wireIdentification(years=[]) {
   document.getElementById("identifyReset").onclick=resetIdentification;
   document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
   document.getElementById("saveIdentificationTest").onclick=saveIdentificationTest;
+  document.getElementById("identifyTestCorrect").onclick=()=>{
+    const top=identifyState.results[0]?.coin;if(!top)return;
+    document.getElementById("identifyExpectedDenomination").value=top.denomination_display;
+    document.getElementById("identifyExpected").value=identifyCoinLabel(top);
+    saveIdentificationTest('correct');
+  };
   document.querySelectorAll('input[name="identifyOutcome"]').forEach(input=>input.onchange=()=>{
-    const expected=document.getElementById("identifyExpected");
-    if(input.value==="correct"&&input.checked&&!expected.value&&identifyState.results[0])expected.value=identifyCoinLabel(identifyState.results[0].coin);
     document.getElementById("identifyTestStatus").classList.remove("error");
   });
 }

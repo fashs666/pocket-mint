@@ -130,33 +130,45 @@
     const section=document.createElement('section');section.className='batchTestReport';
     const title=document.createElement('strong');title.textContent='Test report · did it get the value and coin right?';section.append(title);
     if(result.testSaved){const saved=document.createElement('p');saved.textContent='Test saved locally in Settings. This did not add the coin to My Mint.';section.append(saved);card.append(section);return;}
+    const suggested=coinById(result.predictedCoinId);
+    if(suggested&&(result.status==='confident'||result.status==='year_uncertain')){
+      const quick=document.createElement('button');quick.type='button';quick.className='batchQuickReport';
+      quick.textContent=result.status==='confident'?'✓ Yes, this coin is right · save test':'✓ Value and design right · save test';
+      quick.onclick=()=>saveReport(true);section.append(quick);
+    }
+    const correction=document.createElement('details');correction.className='batchTestCorrection';
+    const expand=document.createElement('summary');expand.textContent='Wrong or partly right? Enter the actual coin';correction.append(expand);
     const denomination=document.createElement('select');denomination.setAttribute('aria-label',`Coin ${crop.detectionNumber} actual denomination`);
     denomination.add(new Option('Actual denomination',''));
     for(const value of ['5c','10c','20c','50c','$1','$2'])denomination.add(new Option(value,value));
     denomination.value=result.expectedDenomination||'';
-    const denomLabel=document.createElement('label');denomLabel.textContent='Actual denomination';denomLabel.append(denomination);section.append(denomLabel);
+    const denomLabel=document.createElement('label');denomLabel.textContent='Actual denomination';denomLabel.append(denomination);correction.append(denomLabel);
     const expected=document.createElement('input');expected.setAttribute('aria-label',`Coin ${crop.detectionNumber} actual coin`);expected.placeholder='Type the coin name';expected.value=result.expectedLabel||'';
     const options=document.createElement('datalist');options.id=`batchExpected-${crop.detectionNumber}`;expected.setAttribute('list',options.id);
     function fillOptions(){options.replaceChildren(...browseCatalogue.filter(coin=>coin.denomination_display===denomination.value).map(coin=>new Option(`${coin.year} ${coin.title}`)));}
     denomination.onchange=()=>{result.expectedDenomination=denomination.value;result.expectedLabel='';expected.value='';fillOptions();};
     expected.oninput=()=>{result.expectedLabel=expected.value;};fillOptions();
-    const expectedLabel=document.createElement('label');expectedLabel.textContent='Actual coin (choose a catalogue suggestion)';expectedLabel.append(expected,options);section.append(expectedLabel);
+    const expectedLabel=document.createElement('label');expectedLabel.textContent='Actual coin (choose a catalogue suggestion)';expectedLabel.append(expected,options);correction.append(expectedLabel);
     const save=document.createElement('button');save.type='button';save.textContent='Save test report';
     const status=document.createElement('p');status.setAttribute('role','status');
-    save.onclick=async()=>{
-      const actual=window.PocketMintIdentificationReport.resolveExpected(expected.value,browseCatalogue.filter(coin=>coin.denomination_display===denomination.value));
+    async function saveReport(quick=false){
+      if(result.testSaving||result.testSaved)return;
+      const actual=quick?coinById(result.coinId||result.predictedCoinId):window.PocketMintIdentificationReport.resolveExpected(expected.value,browseCatalogue.filter(coin=>coin.denomination_display===denomination.value));
       if(!actual){status.textContent='Choose a denomination and exact catalogue issue to compare.';return;}
-      save.disabled=true;
+      result.testSaving=true;save.disabled=true;
       try{
         const predicted=coinById(result.predictedCoinId);
-        const fields=window.PocketMintIdentificationReport.fields({flow:'batch',expectedLabel:expected.value.trim(),expectedCoin:actual,predictedCoin:predicted,predictedDenomination:result.observed?.denomination,context:{detection_number:crop.detectionNumber,relative_diameter:crop.relativeDiameter??null}});
+        const fields=window.PocketMintIdentificationReport.fields({flow:'batch',expectedLabel:quick?`${actual.year} ${actual.title}`:expected.value.trim(),expectedCoin:actual,predictedCoin:predicted,predictedDenomination:result.observed?.denomination,context:{detection_number:crop.detectionNumber,relative_diameter:crop.relativeDiameter??null}});
+        if(quick&&result.status==='year_uncertain'&&!result.coinId){fields.issue_correct=null;fields.expected_coin_id=null;fields.expected_label=`${actual.title} · year not checked`;}
         const test={id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:APP_VERSION,catalogue_version:catMeta.catalogue_version||'',...fields,
-          outcome:fields.issue_correct?'correct':fields.denomination_correct?'partial':'wrong',result_source:'batch_visual',
+          outcome:quick?'correct':fields.issue_correct?'correct':fields.denomination_correct?'partial':'wrong',result_source:'batch_visual',
           candidates:result.predictedChoices||[],observed:result.observed||null,note:''};
         await put('identificationTests',test);identificationTests.unshift(test);result.testSaved=true;renderAll();render(crops);
       }catch(error){save.disabled=false;status.textContent=`Could not save report: ${error.message}`;}
-    };
-    section.append(save,status);card.append(section);
+      finally{result.testSaving=false;}
+    }
+    save.onclick=()=>saveReport(false);
+    correction.append(save,status);section.append(correction);card.append(section);
   }
   function classify(data){
     const choices=[];
