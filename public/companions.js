@@ -55,6 +55,7 @@
   function pose(actor, frame) {
     const src = art[actor.name][frame];
     if (actor.image.getAttribute("src") !== src) actor.image.src = src;
+    if (frame !== "walk") actor.stepImage.classList.remove("is-step");
   }
 
   function place(actor, point) {
@@ -75,6 +76,7 @@
     actor.run++;
     clearTimeout(actor.timer);
     clearInterval(actor.frames);
+    actor.stepImage.classList.remove("is-step");
     if (actor.motion) {
       const rect = actor.button.getBoundingClientRect();
       actor.motion.onfinish = actor.motion.oncancel = null;
@@ -108,7 +110,7 @@
   function schedule(actor) {
     clearTimeout(actor.timer);
     if (!active || scrolling || reduced.matches || actor.hidden) return;
-    const interval = actor.name === "noxel" ? 3500 + Math.random() * 1800 : 5200 + Math.random() * 2200;
+    const interval = actor.name === "noxel" ? 4600 + Math.random() * 1700 : 6800 + Math.random() * 2100;
     actor.timer = setTimeout(() => {
       const options = visibleTargets();
       if (options.length < 2) { pose(actor, "idle"); schedule(actor); return; }
@@ -166,7 +168,10 @@
     } else {
       pose(actor, "walk");
       let alternate = false;
-      actor.frames = setInterval(() => { alternate = !alternate; pose(actor, alternate ? "step" : "walk"); }, name === "noxel" ? 180 : 220);
+      actor.frames = setInterval(() => {
+        alternate = !alternate;
+        actor.stepImage.classList.toggle("is-step", alternate);
+      }, name === "noxel" ? 230 : 270);
       const dx = next.x - from.x, dy = next.y - from.y;
       await animate(actor, [
         {transform:"translate(0,0)"},
@@ -174,6 +179,7 @@
         {transform:`translate(${dx}px,${dy}px)`}
       ], {duration:clamp(distance * 5, 600, 1150), easing:"ease-in-out"});
       clearInterval(actor.frames);
+      actor.stepImage.classList.remove("is-step");
     }
     if (!active || run !== actor.run) return;
     place(actor, next);
@@ -289,7 +295,14 @@
     stage.append(spark);
     for (const name of ["grim", "noxel"]) {
       const button = document.getElementById(name === "grim" ? "companionGrim" : "companionNoxel");
-      actors[name] = {name, button, image:button.querySelector("img"), target:null, point:null, hidden:true, run:0, steps:0};
+      const image = button.querySelector("img");
+      const stepImage = document.createElement("img");
+      stepImage.src = art[name].step;
+      stepImage.alt = "";
+      stepImage.className = "pm-companion-step";
+      stepImage.setAttribute("aria-hidden", "true");
+      button.append(stepImage);
+      actors[name] = {name, button, image, stepImage, target:null, point:null, hidden:true, run:0, steps:0};
       Object.values(art[name]).forEach(src => { const preload = new Image(); preload.src = src; });
       button.addEventListener("click", () => {
         const actor = actors[name], options = visibleTargets();
