@@ -66,14 +66,15 @@
     const bottom = Math.max(safe.top, safe.bottom - actor.offsetHeight);
     const above = rect.top - actor.offsetHeight * .78;
     const below = rect.bottom - actor.offsetHeight * .2;
-    const coinLanding = element.matches('.coinCard') ? rect.top + 12 : null;
+    const specialLanding = element.matches('.coinCard') ? rect.top + 12
+      : element.matches('.menuCard') ? rect.top - actor.offsetHeight * .94 : null;
     const onLeft = element.classList.contains('findHero');
     const edge = onLeft
       ? rect.left + (name === 'grim' ? 8 : actors.grim.button.offsetWidth + 14)
       : rect.right - actor.offsetWidth - (name === 'grim' ? actors.noxel.button.offsetWidth + 14 : 8);
     return {
       x: clamp(edge, 4, Math.max(4, innerWidth - actor.offsetWidth - 4)),
-      y: clamp((coinLanding ?? (above >= safe.top ? above : below <= bottom ? below : rect.top - actor.offsetHeight * .4)) + (name === 'noxel' ? 5 : 0), safe.top, bottom)
+      y: clamp((specialLanding ?? (above >= safe.top ? above : below <= bottom ? below : rect.top - actor.offsetHeight * .4)) + (name === 'noxel' ? 5 : 0), safe.top, bottom)
     };
   }
 
