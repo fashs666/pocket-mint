@@ -54,7 +54,8 @@
     const safe = safeSpace();
     const visible = targets().filter(element => {
       const rect = element.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0 && rect.bottom > safe.top + 24 && rect.top < safe.bottom - 24;
+      const exposed = Math.min(rect.bottom, safe.bottom) - Math.max(rect.top, safe.top);
+      return rect.width > 0 && rect.height > 0 && exposed > Math.min(85, Math.max(28, rect.height * .22));
     });
     return visible;
   }
