@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.13.12";
+const IDENTIFY_VERSION = "0.14.6";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
 
@@ -156,7 +156,7 @@ async function analysePhotos() {
   try {
     const reverse=await makeAnalysisImage(identifyState.reverse.file);
     const requestAnalysis=async obverse=>{
-      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({obverse,reverse})});
+      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"circulating",denomination:document.getElementById("identifyPhotoDenomination").value||document.getElementById("identifyDenomination").value,obverse,reverse})});
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||"Visual analysis is unavailable");
       return result;
@@ -167,7 +167,7 @@ async function analysePhotos() {
       data=await requestAnalysis(await makeAnalysisImage(identifyState.obverse.file));
     }
     identifyState.lastObserved=data.observed||null;
-    const matches=(data.matches||[]).map(match=>({coin:catalogue.find(coin=>coin.id===match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
+    const matches=(data.matches||[]).map(match=>({coin:coinById(match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
     if (matches.length&&!data.uncertain) {
       identifyState.analysisCertain=true;renderPhotoQuality();
       identifyState.results=matches.slice(0,3); identifyState.resultSource="visual";
@@ -194,6 +194,7 @@ async function analysePhotos() {
 }
 
 function prefillClues(observed) {
+  if (["5c","10c","20c","50c","$1","$2"].includes(observed.denomination) && (Number(observed.denomination_confidence||0)>=75||document.getElementById("identifyPhotoDenomination").value===observed.denomination)) document.getElementById("identifyDenomination").value=observed.denomination;
   if (observed.year&&[...document.getElementById("identifyYear").options].some(option=>option.value===String(observed.year))) document.getElementById("identifyYear").value=String(observed.year);
   if (/charles/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="charles";
   if (/elizabeth/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="elizabeth";
@@ -202,7 +203,7 @@ function prefillClues(observed) {
   if (identifyTerms(words).length) document.getElementById("identifyWords").value=words;
 }
 
-function identifyHaystack(coin) { return [coin.title,coin.series_id,coin.notes,coin.obverse_effigy,coin.privy_mark,coin.mintmark,coin.issue_type].filter(Boolean).join(" ").toLowerCase(); }
+function identifyHaystack(coin) { return [coin.title,coin.series_id,coin.seriesId,coin.notes,coin.obverse_effigy,coin.privy_mark,coin.mintmark,coin.issue_type,...(coin.searchAliases||[])].filter(Boolean).join(" ").toLowerCase(); }
 
 function identifyTerms(value) {
   const ignored=new Set(["australia","australian","coin","dollar","one","the","and","to","for","of","a","an","give","gives","help","helps","other","others","money","two","female","footballers","standard","special","design","concentric","circle","circles","kangaroo","kangaroos","roo","roos"]);
@@ -242,12 +243,13 @@ function scoreIdentifyCoin(coin,clues) {
   return {coin,score,confidence:Math.max(0,Math.min(96,confidence)),reasons,identityScore,exactDesign};
 }
 
-function readIdentifyClues() { return {year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value,design:identifyState.lastObserved?.design||"",kangaroo_count:""}; }
+function readIdentifyClues() { return {denomination:document.getElementById("identifyDenomination").value,year:document.getElementById("identifyYear").value,portrait:document.getElementById("identifyPortrait").value,type:document.getElementById("identifyType").value,words:document.getElementById("identifyWords").value.trim(),mark:document.getElementById("identifyMark").value,scope:document.getElementById("identifyScope").value,design:identifyState.lastObserved?.design||"",kangaroo_count:""}; }
 
 function rankClueCatalogue(coins,clues) {
-  if(clues.type==="standard"||clues.kangaroo_count||/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(clues.design||"")))return [];
-  coins=coins.filter(coin=>!/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(coin.title||"")));
-  const hasStrongClue=Boolean(clues.year||clues.portrait||identifyTerms(clues.words).length||clues.mark||clues.design||clues.kangaroo_count);
+  if(clues.denomination)coins=coins.filter(coin=>coin.denomination_display===clues.denomination);
+  if(!clues.denomination&&(clues.type==="standard"||clues.kangaroo_count||/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(clues.design||""))))return [];
+  if(!clues.denomination||clues.denomination==="$1")coins=coins.filter(coin=>!/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(coin.title||"")));
+  const hasStrongClue=Boolean(clues.design||identifyTerms(clues.words).length||clues.kangaroo_count);
   if(!hasStrongClue)return [];
   let ranked=coins.map(coin=>scoreIdentifyCoin(coin,clues));
   ranked.sort((a,b)=>b.identityScore-a.identityScore||b.score-a.score||b.confidence-a.confidence||Number(b.coin.year)-Number(a.coin.year)||a.coin.title.localeCompare(b.coin.title));
@@ -262,13 +264,16 @@ function rankClueCatalogue(coins,clues) {
 }
 
 function runIdentification() {
-  identifyState.results=rankClueCatalogue(catalogue,readIdentifyClues()); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
+  const clues=readIdentifyClues();
+  if(!clues.denomination){const notice=document.getElementById("identifyFallbackNotice");notice.hidden=false;notice.textContent="Choose the coin value before finding matches. Size alone is not enough to tell some Australian coins apart.";return;}
+  identifyState.results=rankClueCatalogue(browseCatalogue,clues); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
 }
 
 function identifyCoinLabel(coin) { return `${coin.year} ${coin.title}`; }
 
 function resetTestFeedback() {
   document.querySelectorAll('input[name="identifyOutcome"]').forEach(input=>input.checked=false);
+  document.getElementById("identifyExpectedDenomination").value="";
   document.getElementById("identifyExpected").value="";
   document.getElementById("identifyExpected").placeholder="e.g. 2020 Donation Dollar";
   document.getElementById("identifyTestNote").value="";
@@ -282,14 +287,17 @@ async function saveIdentificationTest() {
   if(identifyState.testLogSaved)return;
   const outcome=document.querySelector('input[name="identifyOutcome"]:checked')?.value;
   const expectedLabel=document.getElementById("identifyExpected").value.trim();
+  const expectedDenomination=document.getElementById("identifyExpectedDenomination").value;
   const status=document.getElementById("identifyTestStatus");
   if(!outcome){status.textContent="Choose how the identification performed.";status.classList.add("error");return;}
+  if(!expectedDenomination){status.textContent="Choose the coin's actual denomination.";status.classList.add("error");return;}
   if(!expectedLabel){status.textContent="Enter the coin you tested so the result is useful.";status.classList.add("error");return;}
-  const expectedCoin=catalogue.find(coin=>identifyCoinLabel(coin).toLowerCase()===expectedLabel.toLowerCase());
+  const expectedCoin=window.PocketMintIdentificationReport.resolveExpected(expectedLabel,collectionCoins().filter(coin=>coin.denomination_display===expectedDenomination));
+  if(!expectedCoin&&outcome!=="unsupported"){status.textContent="Choose an exact catalogue issue from the suggested names, or mark Not in catalogue.";status.classList.add("error");return;}
   const clean=value=>value==null?null:JSON.parse(JSON.stringify(value));
   const test={
     id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:IDENTIFY_VERSION,catalogue_version:catMeta.catalogue_version||"",
-    outcome,expected_label:expectedLabel,expected_coin_id:expectedCoin?.id||null,result_source:identifyState.resultSource,
+    outcome,...window.PocketMintIdentificationReport.fields({flow:"single",expectedLabel,expectedCoin,predictedCoin:identifyState.results[0]?.coin,context:{expected_denomination:expectedDenomination}}),result_source:identifyState.resultSource,
     visual_attempted:identifyState.visualAttempted,used_help_step:identifyState.usedHelpStep,fallback_reason:identifyState.fallbackReason||"",
     observed:clean(identifyState.lastObserved),clues:readIdentifyClues(),
     photo_quality:{obverse:clean(identifyState.obverse?.quality)||null,reverse:clean(identifyState.reverse?.quality)||null},
@@ -329,13 +337,13 @@ function renderIdentifyResults() {
     const yearPicker=multiYear?`<label class="matchYear"><span>Issue year</span><select data-identify-year>${selected?"":'<option value="">Choose issue</option>'}${variants.map(variant=>`<option value="${esc(variant.id)}" ${selected?.id===variant.id?"selected":""}>${esc(variantIssueLabel(variant,variants))}</option>`).join("")}</select></label>`:"";
     return `<article class="matchCard"><div class="matchLayout">${coinImageHtml(item.coin,{preferPersonal:false,className:"matchArtwork"})}<div><div class="matchTop"><div><div class="eyebrow">${index===0?"BEST MATCH":`CANDIDATE ${index+1}`}</div><h3>${multiYear?esc(item.coin.title):`${item.coin.year} ${esc(item.coin.title)}`}</h3><div class="meta">${esc(item.coin.denomination_display||"$1")} · ${multiYear?`${variants.length} issue years`:esc(human(item.coin.issue_type))}</div></div><span class="confidence ${item.confidence<75?"possible":""}">${label}</span></div><p class="matchReasons">Matched: ${esc(item.reasons.length?item.reasons.join(" · "):"visual appearance")}</p>${yearPicker}<div class="matchActions"><button type="button" data-identify-open="${esc(item.coin.id)}">View details</button><button type="button" class="confirmMatch" data-identify-confirm="${esc(selected?.id||item.coin.id)}" ${multiYear&&!selected?"disabled":""}>Confirm + add</button></div></div></div></article>`;
   }).join("");
-  root.querySelectorAll("[data-identify-open]").forEach(button=>button.onclick=()=>openCoin(catalogue.find(coin=>coin.id===button.dataset.identifyOpen)));
+  root.querySelectorAll("[data-identify-open]").forEach(button=>button.onclick=()=>openCoin(coinById(button.dataset.identifyOpen)));
   root.querySelectorAll("[data-identify-year]").forEach(select=>select.onchange=()=>{const button=select.closest(".matchCard").querySelector("[data-identify-confirm]");button.disabled=!select.value;button.dataset.identifyConfirm=select.value||button.dataset.identifyConfirm;});
   root.querySelectorAll("[data-identify-confirm]").forEach(button=>button.onclick=()=>confirmIdentification(button.dataset.identifyConfirm));
 }
 
 async function confirmIdentification(id) {
-  const coin=catalogue.find(item=>item.id===id); if(!coin)return;
+  const coin=coinById(id); if(!coin)return;
   const record=state.get(id)||baseRec(id); await saveRec(id,{quantity:(record.quantity||0)+1});
   for(const side of ["obverse","reverse"])if(identifyState[side]?.file)await addPhoto(id,identifyState[side].specimenFile||identifyState[side].file);
   const photoCount=[identifyState.obverse,identifyState.reverse].filter(Boolean).length;
@@ -346,7 +354,7 @@ async function confirmIdentification(id) {
 function resetIdentification() {
   closeCoinCamera();
   clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;
-  ["identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
+  ["identifyDenomination","identifyPhotoDenomination","identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
   document.getElementById("identifyFallbackNotice").hidden=true;updateAnalyseButton();resetTestFeedback();setIdentifyStep(1);
 }
@@ -356,9 +364,10 @@ if(typeof window!=="undefined")window.PocketMintIdentifyCore={identifyTerms,scor
 function openFullCatalogueFromIdentification() {
   const clues=readIdentifyClues(),observed=identifyState.lastObserved||{};
   const detectedWords=Array.isArray(observed.words)?observed.words.join(" "):"";
-  const query=(clues.words||observed.design||detectedWords||"").trim();
+  const query=(clues.words||(/^(unknown|none)$/i.test(observed.design||"")?"":observed.design)||detectedWords||"").trim();
   const year=clues.year||observed.year||"";
   document.getElementById("catalogueSearch").value=query;
+  document.getElementById("denominationFilter").value=clues.denomination?String(({"5c":5,"10c":10,"20c":20,"50c":50,"$1":100,"$2":200})[clues.denomination]):"";
   document.getElementById("scopeFilter").value="";
   document.getElementById("stateFilter").value="";
   document.getElementById("yearFilter").value=[...document.getElementById("yearFilter").options].some(option=>option.value===String(year))?String(year):"";
@@ -473,7 +482,10 @@ function wireIdentification(years=[]) {
   yearSelect.replaceChildren(new Option("Not sure",""));
   years.forEach(year=>yearSelect.add(new Option(year,year)));
   const coinOptions=document.getElementById("identificationCoinOptions");
-  coinOptions.replaceChildren(...catalogue.map(coin=>new Option(identifyCoinLabel(coin))));
+  const expectedDenomination=document.getElementById("identifyExpectedDenomination");
+  function updateTestOptions(){coinOptions.replaceChildren(...browseCatalogue.filter(coin=>coin.denomination_display===expectedDenomination.value).map(coin=>new Option(identifyCoinLabel(coin))));}
+  expectedDenomination.onchange=()=>{document.getElementById("identifyExpected").value="";updateTestOptions();};
+  updateTestOptions();
   document.querySelectorAll("[data-native-camera-side]").forEach(button=>button.onclick=()=>openNativeCoinCamera(button.dataset.nativeCameraSide));
   document.querySelectorAll("[data-camera-side]").forEach(button=>button.onclick=()=>openCoinCamera(button.dataset.cameraSide));
   document.getElementById("coinCameraClose").onclick=closeCoinCamera;
@@ -490,6 +502,8 @@ function wireIdentification(years=[]) {
   document.getElementById("identifyBackPhotos").onclick=()=>setIdentifyStep(1);
   document.getElementById("identifyBackClues").onclick=()=>{identifyState.usedHelpStep=true;if(!identifyState.fallbackReason)identifyState.fallbackReason="Tester changed or added clues";setIdentifyStep(2);};
   document.getElementById("identifyFind").onclick=runIdentification;
+  document.getElementById("identifyRetryValue").onclick=()=>{if(!document.getElementById("identifyDenomination").value)return;document.getElementById("identifyPhotoDenomination").value=document.getElementById("identifyDenomination").value;analysePhotos();};
+  document.getElementById("identifyPhotoDenomination").onchange=event=>{document.getElementById("identifyDenomination").value=event.target.value;};
   document.getElementById("identifyReset").onclick=resetIdentification;
   document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
   document.getElementById("saveIdentificationTest").onclick=saveIdentificationTest;

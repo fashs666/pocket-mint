@@ -9195,10 +9195,11 @@
       ],
       "searchAliases": [],
       "source_id": "ram_2024_25_annual_report",
-      "image_status": "pending",
-      "mintage": 2089721,
-      "reference_image": null,
-      "reference_image_kind": "unavailable"
+      "image_status": "retailer_circulation_photo",
+      "reference_image": "https://phoenyxcurios.com.au/cdn/shop/files/2024-2-Purple-Poppy-UNC-img3.jpg?v=1760852486",
+      "reference_image_kind": "reverse",
+      "reference_image_source_id": "retailer_phoenyx_circulation_photo",
+      "mintage": 2089721
     },
     {
       "id": "D200-AUSTRALIAN-WOMENS-WEEKLY-BIRTHDAY-CAKE-BOOK-HICKORY-DICKORY-WATCH",

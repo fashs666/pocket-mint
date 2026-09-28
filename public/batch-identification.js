@@ -1,5 +1,5 @@
-/* Batch results use the existing single-coin /api/identify endpoint. No collection
-   mutation occurs until the user presses the separate batch confirmation button. */
+/* Each crop uses the same opt-in circulating identifier as single Identify.
+   Diagnostic reports are independent of collection confirmation. */
 (() => {
   const results=new Map(), $=id=>document.getElementById(id);
   let crops=[],generation=0,busy=false;
@@ -17,7 +17,7 @@
     const words=query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
     if(!words.length)return [];
     const unique=new Map();
-    for(const coin of catalogue){
+    for(const coin of browseCatalogue){
       const key=`${coin.denomination_display}:${coin.title}`;
       if(unique.has(key))continue;
       const haystack=`${coin.year} ${coin.title} ${coin.denomination_display} ${coin.series_id||''} ${coin.id}`.toLocaleLowerCase();
@@ -91,7 +91,7 @@
         if(suggested?.coin){
           const title=document.createElement('strong');title.className='batchSuggestedTitle';
           title.textContent=result.status==='manual'?'Selected from catalogue':`Suggested match${suggested.confidence!==null?` · ${suggested.confidence}%`:''}`;
-          const issue=result.coinId?catalogue.find(coin=>coin.id===result.coinId):null;
+          const issue=result.coinId?coinById(result.coinId):null;
           card.append(title,reference(issue||selected?.coin||suggested.coin));
         }
         const designLabel=document.createElement('label');designLabel.textContent='Design';
@@ -118,6 +118,7 @@
           }
         }
       }
+      if(result&&result.status!=='loading')renderTestReport(card,result,crop);
       root.append(card);
     }
     const count=[...results.values()].filter(result=>result.ready&&result.coinId&&!result.added).length;
@@ -125,20 +126,53 @@
     $('batchAddConfirmed').disabled=busy;
     $('batchAddConfirmed').textContent=`Add ${count} confirmed coin${count===1?'':'s'} to My Mint`;
   }
+  function renderTestReport(card,result,crop){
+    const section=document.createElement('section');section.className='batchTestReport';
+    const title=document.createElement('strong');title.textContent='Test report · did it get the value and coin right?';section.append(title);
+    if(result.testSaved){const saved=document.createElement('p');saved.textContent='Test saved locally in Settings. This did not add the coin to My Mint.';section.append(saved);card.append(section);return;}
+    const denomination=document.createElement('select');denomination.setAttribute('aria-label',`Coin ${crop.detectionNumber} actual denomination`);
+    denomination.add(new Option('Actual denomination',''));
+    for(const value of ['5c','10c','20c','50c','$1','$2'])denomination.add(new Option(value,value));
+    denomination.value=result.expectedDenomination||'';
+    const denomLabel=document.createElement('label');denomLabel.textContent='Actual denomination';denomLabel.append(denomination);section.append(denomLabel);
+    const expected=document.createElement('input');expected.setAttribute('aria-label',`Coin ${crop.detectionNumber} actual coin`);expected.placeholder='Type the coin name';expected.value=result.expectedLabel||'';
+    const options=document.createElement('datalist');options.id=`batchExpected-${crop.detectionNumber}`;expected.setAttribute('list',options.id);
+    function fillOptions(){options.replaceChildren(...browseCatalogue.filter(coin=>coin.denomination_display===denomination.value).map(coin=>new Option(`${coin.year} ${coin.title}`)));}
+    denomination.onchange=()=>{result.expectedDenomination=denomination.value;result.expectedLabel='';expected.value='';fillOptions();};
+    expected.oninput=()=>{result.expectedLabel=expected.value;};fillOptions();
+    const expectedLabel=document.createElement('label');expectedLabel.textContent='Actual coin (choose a catalogue suggestion)';expectedLabel.append(expected,options);section.append(expectedLabel);
+    const save=document.createElement('button');save.type='button';save.textContent='Save test report';
+    const status=document.createElement('p');status.setAttribute('role','status');
+    save.onclick=async()=>{
+      const actual=window.PocketMintIdentificationReport.resolveExpected(expected.value,browseCatalogue.filter(coin=>coin.denomination_display===denomination.value));
+      if(!actual){status.textContent='Choose a denomination and exact catalogue issue to compare.';return;}
+      save.disabled=true;
+      try{
+        const predicted=coinById(result.predictedCoinId);
+        const fields=window.PocketMintIdentificationReport.fields({flow:'batch',expectedLabel:expected.value.trim(),expectedCoin:actual,predictedCoin:predicted,predictedDenomination:result.observed?.denomination,context:{detection_number:crop.detectionNumber,relative_diameter:crop.relativeDiameter??null}});
+        const test={id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:APP_VERSION,catalogue_version:catMeta.catalogue_version||'',...fields,
+          outcome:fields.issue_correct?'correct':fields.denomination_correct?'partial':'wrong',result_source:'batch_visual',
+          candidates:result.predictedChoices||[],observed:result.observed||null,note:''};
+        await put('identificationTests',test);identificationTests.unshift(test);result.testSaved=true;renderAll();render(crops);
+      }catch(error){save.disabled=false;status.textContent=`Could not save report: ${error.message}`;}
+    };
+    section.append(save,status);card.append(section);
+  }
   function classify(data){
     const choices=[];
     for(const match of data.matches||[]){
-      const coin=catalogue.find(item=>item.id===match.id);if(!coin)continue;
-      if(!choices.some(choice=>choice.title===coin.title&&choice.coin.denomination_display===coin.denomination_display))choices.push(catalogueChoice(coin,Math.round(Number(match.confidence||0)*100)));
+      const coin=coinById(match.id);if(!coin)continue;
+      if(!choices.some(choice=>choice.coin.design_id===coin.design_id))choices.push(catalogueChoice(coin,Math.round(Number(match.confidence||0)*100)));
     }
-    if(!choices.length)return {status:'no_match',choices:[],ready:false};
+    if(!choices.length)return {status:'no_match',choices:[],ready:false,predictedCoinId:null,observed:data.observed||null,predictedChoices:[]};
     const definite=!data.uncertain;
     const chosen=definite?choices[0]:null;
     const variants=chosen?designVariants(chosen.coin):[];
     const observedYear=String(data.observed?.year||'');
     const matching=variants.filter(coin=>String(coin.year)===observedYear);
     const coinId=chosen&&(variants.length===1?chosen.coin.id:matching.length===1&&!data.needs_year?matching[0].id:null);
-    return {status:!definite?'design_uncertain':coinId?'confident':'year_uncertain',choices,designId:chosen?.id||null,coinId,ready:Boolean(coinId),added:false};
+    return {status:!definite?'design_uncertain':coinId?'confident':'year_uncertain',choices,designId:chosen?.id||null,coinId,ready:Boolean(coinId),added:false,
+      predictedCoinId:choices[0].coin.id,predictedChoices:(data.matches||[]).map((item,index)=>({rank:index+1,coin_id:item.id,confidence:Math.round(Number(item.confidence||0)*100)})),observed:data.observed||null};
   }
   async function identifyOne(crop,fromAll=false){
     if(busy&&!fromAll)return;
@@ -147,7 +181,7 @@
     try{
       const reverse=await fileDataUrl(crop.crop);
       if(revision!==generation)return;
-      const response=await fetch('/api/identify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({obverse:null,reverse})});
+      const response=await fetch('/api/identify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',obverse:null,reverse})});
       const data=await response.json();
       if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429});
       if(revision!==generation)return;

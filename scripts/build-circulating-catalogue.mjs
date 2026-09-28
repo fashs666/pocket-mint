@@ -78,6 +78,14 @@ function releaseImage(denom,year,title,seriesId){
  if(year===2025&&title.includes('Hickory'))return search('birthday','2025 Australian Women','product');
  if(year===2025&&title.includes('Torres Strait Islander Flag'))return search('torres','Torres Strait Islander flag coins','product');
  if(year===2025&&title.includes('Poppy Wreath'))return search('wwii2025','poppy wreath coin in card','product');
+ // The Mint's circulating production appendix verifies the unmarked 2024
+ // Purple Poppy issue; this retailer photograph depicts that circulation coin,
+ // not the separately sold C-mintmark product. Keep its provenance explicit.
+ if(year===2024&&title.includes('Purple Poppy'))return {
+  reference_image:'https://phoenyxcurios.com.au/cdn/shop/files/2024-2-Purple-Poppy-UNC-img3.jpg?v=1760852486',
+  reference_image_kind:'reverse',reference_image_source_id:'retailer_phoenyx_circulation_photo',
+  image_status:'retailer_circulation_photo'
+ };
  if(year===2026&&title==='Dawn Service')return search('dawn','2026 $2 Circulating Coin Dawn Service');
  return null;
 }
@@ -185,5 +193,5 @@ const missingImages=designs.filter(d=>!d.reference_image).map(d=>d.id);
 const badParents=designs.filter(d=>d.seriesId&&!series.some(s=>s.id===d.seriesId)||d.releaseId&&!releases.some(r=>r.id===d.releaseId&&r.seriesId===d.seriesId)).map(d=>d.id);
 const output={meta:{catalogue_version:'1.0.0-circulation-draft',scope:'Circulating and deliberate till-change designs only',source_pages:Object.values(sources).map(s=>s.source),canonical_target:270,taxonomy_correction:'Tokyo 2020 six designs are $1, per Royal Australian Mint Woolworths program. 2025 Torres Strait Islander Flag $2 circulated. Researched denomination targets: $1 136, $2 75.'},series,releases,designs};
 await writeFile('public/catalogue-v2.json',JSON.stringify(output,null,2)+'\n');
-await writeFile('scripts/circulation-audit.json',JSON.stringify({counts,originalTargets:{$1:130,$2:80,'5c':2,'10c':2,'20c':20,'50c':35,total:269},researchedTargets:{$1:136,$2:75,'5c':2,'10c':2,'20c':20,'50c':35,total:270},corrections:[{type:'denomination',details:'Tokyo 2020 six coloured Olympic and Paralympic coins are $1 till-change issues, not $2.',source:'https://www.ramint.gov.au/collect/national-coin-collection/corporate-partnerships/woolworths-programs/tokyo-olympic-and'},{type:'missing_design',details:'2025 Torres Strait Islander Flag $2 was produced for circulation (2,087,802 pieces); exclude C-mintmark collector versions.',source:'https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf'}],missingImages,badParents,excluded},null,2)+'\n');
+await writeFile('scripts/circulation-audit.json',JSON.stringify({counts,originalTargets:{$1:130,$2:80,'5c':2,'10c':2,'20c':20,'50c':35,total:269},researchedTargets:{$1:136,$2:75,'5c':2,'10c':2,'20c':20,'50c':35,total:270},corrections:[{type:'denomination',details:'Tokyo 2020 six coloured Olympic and Paralympic coins are $1 till-change issues, not $2.',source:'https://www.ramint.gov.au/collect/national-coin-collection/corporate-partnerships/woolworths-programs/tokyo-olympic-and'},{type:'missing_design',details:'2025 Torres Strait Islander Flag $2 was produced for circulation (2,087,802 pieces); exclude C-mintmark collector versions.',source:'https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf'}],researchNotes:[{details:'The Mint Coin Swap page labels a NAIDOC sachet 2025; its official circulating fifty-cent table documents the 50 Years of NAIDOC Committee design as dated 2024. Do not add another year without coin-specific confirmation.',source:'https://www.ramint.gov.au/visit-our-museum/whats/coin-swap'},{details:'The 2026 premium roll set is packaged for collectors; do not infer general-release 2026 standard-year variants solely from this product.',source:'https://eshop.ramint.gov.au/2026-premium-rolled-coin-set'},{details:'2024 Purple Poppy circulating mintage: 2,089,721; reference photograph is a retailer image of an unmarked circulation-finish specimen rather than a Mint C-mintmark collector product.',source:'https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf'}],missingImages,badParents,excluded},null,2)+'\n');
 console.log(JSON.stringify({counts,missingImages:missingImages.length,badParents:badParents.length,excluded:excluded.length},null,2));

@@ -71,6 +71,7 @@
           </div>
           <button id="identifyGuidedCamera" class="textButton guidedCameraButton" type="button" data-native-camera-side="reverse">Use the phone camera instead</button>
           <div id="photoQuality" class="qualitySummary" aria-live="polite"></div>
+          <label class="identifyValueHint">Coin value (optional)<select id="identifyPhotoDenomination"><option value="">Let Pocket Mint read it</option><option value="5c">5c</option><option value="10c">10c</option><option value="20c">20c</option><option value="50c">50c</option><option value="$1">$1</option><option value="$2">$2</option></select></label>
           <p class="photoPrivacy">When you tap Analyse, reduced copies are securely sent to Pocket Mint’s Cloudflare vision service. When you confirm a match, the cleaned coin images stay in this device’s local collection.</p>
           <button id="identifyAnalyse" class="primaryWide" type="button" disabled>Add the design side to analyse</button>
           <div id="identifyAnalyseStatus" class="analyseStatus" aria-live="polite"></div>
@@ -80,14 +81,15 @@
           <div id="identifyFallbackNotice" class="noMatchHelp" hidden></div>
           <p class="identifyIntro">Add whatever you can read or recognise. Leave anything uncertain blank.</p>
           <div class="clueGrid">
+            <label>Coin value<select id="identifyDenomination"><option value="">Not sure — check the value on the coin</option><option value="5c">5c</option><option value="10c">10c</option><option value="20c">20c</option><option value="50c">50c</option><option value="$1">$1</option><option value="$2">$2</option></select></label>
             <label>Year<select id="identifyYear"><option value="">Not sure</option></select></label>
             <label>Portrait<select id="identifyPortrait"><option value="">Not sure</option><option value="charles">King Charles III</option><option value="elizabeth">Queen Elizabeth II</option></select></label>
-            <label>Design type<select id="identifyType"><option value="">Not sure</option><option value="standard">Five kangaroos</option><option value="commemorative">Special design</option></select></label>
+            <label>Design type<select id="identifyType"><option value="">Not sure</option><option value="standard">Regular design</option><option value="commemorative">Special design</option></select></label>
             <label>Words, letters or subject<input id="identifyWords" type="search" placeholder="e.g. Matildas, Qantas, A, dinosaur"></label>
             <label>Special mark<select id="identifyMark"><option value="">Not sure / none seen</option><option value="mintmark">Mintmark</option><option value="privy">Privy mark</option></select></label>
-            <label>Issue group<select id="identifyScope"><option value="circulation_core">Found in change</option><option value="">Not sure / all records</option><option value="collector_exemplar">Collector issue</option></select></label>
+            <label>Issue group<select id="identifyScope"><option value="circulation_core">Circulating coins only</option></select></label>
           </div>
-          <div class="identifyButtons"><button id="identifyBackPhotos" type="button">Back to photos</button><button id="identifyFind" class="primary" type="button">Find matches</button></div>
+          <div class="identifyButtons"><button id="identifyBackPhotos" type="button">Back to photos</button><button id="identifyRetryValue" type="button">Analyse photo with this value</button><button id="identifyFind" class="primary" type="button">Find matches</button></div>
         </section>
         <section id="identifyMatches" class="identifyPanel" hidden>
           <div id="identifySummary"></div>
@@ -102,6 +104,7 @@
               <label><input type="radio" name="identifyOutcome" value="wrong"><span>Wrong</span></label>
               <label><input type="radio" name="identifyOutcome" value="unsupported"><span>Not in catalogue</span></label>
             </div>
+            <label class="feedbackField">Actual denomination<select id="identifyExpectedDenomination"><option value="">Choose value</option><option>5c</option><option>10c</option><option>20c</option><option>50c</option><option>$1</option><option>$2</option></select></label>
             <label class="feedbackField">What coin was it?<input id="identifyExpected" list="identificationCoinOptions" placeholder="e.g. 2020 Donation Dollar"></label>
             <datalist id="identificationCoinOptions"></datalist>
             <label class="feedbackField">Note (optional)<textarea id="identifyTestNote" rows="3" placeholder="What was right or wrong?"></textarea></label>
@@ -133,7 +136,7 @@
             <div id="batchCrops" class="batchCrops"></div>
             <section id="batchResults" class="batchResults" aria-labelledby="batchResultsTitle">
               <div class="eyebrow">NEXT · IDENTIFY INDIVIDUALLY</div><h3 id="batchResultsTitle">Identify your crops</h3>
-              <p>Check the outlines above first. Each crop is analysed separately with the same Pocket Mint identifier. The current catalogue covers $1 coins; other denominations may show no match. Nothing goes into My Mint until you confirm it.</p>
+              <p>Check the outlines above first. Each crop is analysed separately against all six circulating denominations. You can report whether the value and design were right without adding anything to My Mint.</p>
               <button id="batchIdentifyAll" class="primary" type="button">Identify coins</button>
               <p id="batchIdentifyStatus" role="status" aria-live="polite"></p>
               <div id="batchResultList"></div>
@@ -170,7 +173,7 @@
 
     <section id="collectionView" class="view"><div class="sectionHead"><h2 id="collectionTitle">Collection</h2></div><div class="segmented collectionTabs"><button data-mintfilter="owned" class="on">All</button><button data-mintfilter="favourite">Favourites</button><button data-mintfilter="duplicates">Duplicates</button></div><input id="collectionSearch" class="search" type="search" placeholder="Search collection" aria-label="Search collection"><div class="listMeta"><span id="collectionCount">0 coins</span><button type="button" class="textButton">Sort</button></div><div id="myMintList" class="coinList coinGrid"></div></section>
 
-    <section id="myMintView" class="view"><div class="sectionHead"><h2>My Mint</h2></div><h3 class="menuHeading">Your collection</h3><div class="menuCard"><button data-open-collection="owned"><span>▤</span><b>Collection</b><i>›</i></button><button data-nav="wishlistView"><span>♡</span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span>☆</span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span>▣</span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span>▥</span><b>Stats</b><i>›</i></button><button disabled><span>⇄</span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span>⚙</span><b>Settings</b><i>›</i></button><button data-static-page="Help &amp; feedback"><span>?</span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span>ⓘ</span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.14.0</p></section>
+    <section id="myMintView" class="view"><div class="sectionHead"><h2>My Mint</h2></div><h3 class="menuHeading">Your collection</h3><div class="menuCard"><button data-open-collection="owned"><span>▤</span><b>Collection</b><i>›</i></button><button data-nav="wishlistView"><span>♡</span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span>☆</span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span>▣</span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span>▥</span><b>Stats</b><i>›</i></button><button disabled><span>⇄</span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span>⚙</span><b>Settings</b><i>›</i></button><button data-static-page="Help &amp; feedback"><span>?</span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span>ⓘ</span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.14.6</p></section>
 
     <section id="settingsView" class="view">
       <div class="sectionHead"><div><div class="eyebrow">PERSONALISE &amp; PORTABILITY</div><h2>Settings</h2></div></div>
@@ -241,6 +244,7 @@
   <dialog id="coinDialog"><div class="dialogInner"><button id="closeDialog" class="close" type="button" aria-label="Close coin details">×</button><div id="dialogContent"></div></div></dialog>
   <script src="companions.js"></script>
   <script src="app.js"></script>
+  <script src="identification-report.js"></script>
   <script src="progress.js"></script>
   <script src="identify.js"></script>
   <script src="batch-detection.js"></script>
