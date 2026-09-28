@@ -1,7 +1,22 @@
-// Single-coin circulating identification. Batch and the existing dollar matcher
-// remain on their established path until their own migration is reviewed.
+// Opt-in circulating identification for one photo or an individual batch crop.
+// The existing dollar matcher remains unchanged.
 export const DENOMINATIONS = Object.freeze({'5c':5,'10c':10,'20c':20,'50c':50,'$1':100,'$2':200});
 const normal=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const generic=new Set(['coin','coins','australia','australian','dollar','dollars','cent','cents','year','portrait','unknown','design','coloured','color','colour','round','silver','gold','metal']);
+
+export function independentClues(answer) {
+  const extract=key=>String(answer||'').match(new RegExp(`(?:^|[;\\n])\\s*${key}\\s*=\\s*([^;\\n]+)`,'i'))?.[1]?.trim()||'';
+  return {words:extract('WORDS'),motif:extract('MOTIF')};
+}
+
+export function shortlistDesigns(designs,clues) {
+  const tokens=normal(`${clues.words} ${clues.motif}`).split(' ').filter(token=>token.length>=4&&!generic.has(token));
+  if(!tokens.length)return [];
+  return designs.filter(design=>{
+    const labels=normal([design.title,...(design.searchAliases||[])].join(' ')).split(' ');
+    return tokens.some(token=>labels.some(label=>label===token||label.length>=5&&token.length>=5&&(label.startsWith(token)||token.startsWith(label))));
+  });
+}
 
 export function parseDenomination(answer) {
   const label=(String(answer||'').match(/\bDENOM\s*=\s*(5c|10c|20c|50c|\$1|\$2|unknown)\s*(?:;|$)/i)?.[1]||'unknown').toLowerCase();
@@ -15,7 +30,7 @@ export function rankCirculatingDesigns(designs,denomination,answer,year=null) {
   const choice=designs.find(design=>design.denomination===DENOMINATIONS[denomination]&&normal(design.title)===normal(exact));
   // Never promote a vague subject, a readable year alone, or a near-title to
   // an identified coin: that is how an absent coin gets a plausible match.
-  if(!choice||confidence<70)return {matches:[],uncertain:true,needs_year:false,observed:{design:exact||null,year,denomination},reason:'The design is not clear enough to select a catalogue coin. Check the photo or enter the visible clues.'};
+  if(!choice||confidence<80)return {matches:[],uncertain:true,needs_year:false,observed:{design:exact||null,year,denomination},reason:'The design is not clear enough to select a catalogue coin. Check the photo or enter the visible clues.'};
   const matchingYear=choice.yearVariants.filter(variant=>String(variant.year)===String(year));
   if(year&&matchingYear.length===0)return {matches:[],uncertain:true,needs_year:false,observed:{design:choice.title,year,denomination},reason:`The visible year ${year} does not match this design’s recorded issues. Check the portrait side or search the catalogue.`};
   const preferred=matchingYear.length===1?matchingYear[0]:choice.yearVariants.at(-1);
@@ -25,8 +40,9 @@ export function rankCirculatingDesigns(designs,denomination,answer,year=null) {
 
 export async function identifyCirculating({request,env,body,runVision,answerText,json,legacyIdentify}) {
   const raw=answerText(await runVision(env,body.reverse,
-    'This is one Australian circulating coin, photographed from the design side. Read the FACE VALUE only if visible. Use colour and the outer shape as supporting clues, never alone: $1 and $2 are both gold-coloured; 5c and $2 have similar diameters; 50c is usually twelve-sided. If unclear say unknown. Reply exactly: DENOM=5c|10c|20c|50c|$1|$2|unknown; CONFIDENCE=0-100.',80));
+    'This is one Australian circulating coin, photographed from the design side. Before seeing any catalogue names, describe only what is actually visible: distinctive readable words and a recognisable object or emblem. Read the FACE VALUE only if visible. Colour and outer shape are secondary: $1 and $2 are gold-coloured; 5c and $2 have similar diameters; 50c is usually twelve-sided. If unclear say unknown. Reply exactly: DENOM=5c|10c|20c|50c|$1|$2|unknown; CONFIDENCE=0-100; WORDS=visible distinctive words or unknown; MOTIF=recognisable object or emblem or unknown.',130));
   const detected=parseDenomination(raw);
+  const clues=independentClues(raw);
   const supplied=String(body.denomination||'');
   // A user can supply a denomination after an uncertain reading; a clearly
   // contradictory machine reading is still a stop, never a silent override.
@@ -51,9 +67,11 @@ export async function identifyCirculating({request,env,body,runVision,answerText
   if(!catalogueResponse.ok)throw new Error('Circulating catalogue unavailable');
   const catalogue=await catalogueResponse.json();
   const designs=(catalogue.designs||[]).filter(design=>design.denomination===DENOMINATIONS[denomination]);
-  const titles=designs.map(design=>design.title);
+  const shortlist=shortlistDesigns(designs,clues);
+  if(!shortlist.length)return json({matches:[],uncertain:true,needs_year:false,observed:{denomination,denomination_confidence:detected.confidence,words:clues.words,motif:clues.motif},reason:'I could not verify a design from visible artwork or lettering. Check the crop, enter clues, or search the catalogue.'});
+  const titles=shortlist.map(design=>design.title);
   const answer=answerText(await runVision(env,body.reverse,
-    `One Australian ${denomination} coin, design side. Choose an EXACT design name from this list only when the artwork or readable lettering supports it: ${titles.join(' | ')}. Do not guess from popularity, year, portrait, or vague colour. If only the value is legible, return unknown. Reply exactly: DESIGN=exact list name or unknown; CONFIDENCE=0-100.`,170));
+    `One Australian ${denomination} coin, design side. A separate observation recorded WORDS=${clues.words}; MOTIF=${clues.motif}. Compare the ACTUAL artwork against this short candidate list: ${titles.join(' | ')}. Select the EXACT name only if the photographed design supports it; otherwise say unknown. Do not infer the year or pick a familiar coin. Reply exactly: DESIGN=exact list name or unknown; CONFIDENCE=0-100.`,160));
   let year=null;
   if(body.obverse) {
     const obverse=answerText(await runVision(env,body.obverse,
@@ -61,6 +79,6 @@ export async function identifyCirculating({request,env,body,runVision,answerText
     const match=obverse.match(/\bYEAR\s*=\s*((?:19|20)\d{2})\b/i);
     if(match&&Number(obverse.match(/\bCONFIDENCE\s*=\s*(\d+)/i)?.[1]||0)>=80)year=match[1];
   }
-  const result=rankCirculatingDesigns(designs,denomination,answer,year);
-  return json({...result,observed:{...result.observed,denomination_confidence:detected.confidence}});
+  const result=rankCirculatingDesigns(shortlist,denomination,answer,year);
+  return json({...result,observed:{...result.observed,denomination_confidence:detected.confidence,words:clues.words,motif:clues.motif}});
 }

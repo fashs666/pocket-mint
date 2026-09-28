@@ -40,3 +40,28 @@ const noMatch=batchContext.window.BatchIdentificationCore.classify({matches:[],u
 assert.equal(noMatch.predictedCoinId,null);
 assert.match(await readFile('public/batch-identification.js','utf8'),/mode:'circulating',obverse:null,reverse/);
 console.log('PASS single and batch value, design, issue scoring; six-denomination batch routing; no-match recording');
+
+// The correct-result shortcut can save without the denomination, title, or
+// outcome radio having been supplied by the user.
+const elements=new Map();
+function element(id){if(!elements.has(id))elements.set(id,{value:'',disabled:false,textContent:'',classList:{add(){},remove(){}}});return elements.get(id);}
+const saved=[];
+const shortcut={window:{},document:{getElementById:element,querySelector:()=>null},crypto:{randomUUID:()=>`test-${saved.length+1}`},
+  catMeta:{catalogue_version:'test'},collectionCoins:()=>variants,designVariants:coin=>variants.filter(item=>item.design_id===coin.design_id),
+  put:async(store,test)=>{assert.equal(store,'identificationTests');saved.push(test);},identificationTests:[],renderAll:()=>{},
+  browseCatalogue:variants,catalogue:variants,Math,Date,JSON};
+vm.createContext(shortcut);
+vm.runInContext(await readFile('public/identification-report.js','utf8'),shortcut);
+vm.runInContext(await readFile('public/identify.js','utf8'),shortcut);
+shortcut.topCoin=five;
+vm.runInContext('identifyState.results=[{coin:topCoin,confidence:90,reasons:[]}]',shortcut);
+element('identifyExpectedDenomination').value='5c';
+element('identifyExpected').value=`${five.year} ${five.title}`;
+await shortcut.saveIdentificationTest('correct');
+assert.equal(saved.length,1);
+assert.equal(saved[0].denomination_correct,true);
+assert.equal(saved[0].design_correct,true);
+assert.equal(saved[0].issue_correct,null);
+assert.equal(saved[0].expected_coin_id,null);
+assert.equal(element('identifyTestCorrect').disabled,true);
+console.log('PASS one-tap correct report saves value and design; unknown year is not scored');

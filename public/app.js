@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.6";
+const APP_VERSION = "0.14.9";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -340,15 +340,16 @@ function renderIdentificationTestLog() {
   }
   const summary=['single','batch'].map(flow=>{
     const tests=identificationTests.filter(item=>item.flow===flow&&item.denomination_correct!==null&&item.denomination_correct!==undefined);
-    const correct=key=>tests.filter(item=>item[key]===true).length;
-    return `<div class="testSummary"><b>${flow==='batch'?'Multi-coin':'Single coin'}</b><span>${tests.length} scored · value ${correct('denomination_correct')}/${tests.length} · design ${correct('design_correct')}/${tests.length} · exact issue ${correct('issue_correct')}/${tests.length}</span></div>`;
+    const scored=key=>tests.filter(item=>item[key]!==null&&item[key]!==undefined);
+    const rate=key=>`${scored(key).filter(item=>item[key]===true).length}/${scored(key).length}`;
+    return `<div class="testSummary"><b>${flow==='batch'?'Multi-coin':'Single coin'}</b><span>${tests.length} scored · value ${rate('denomination_correct')} · design ${rate('design_correct')} · exact issue ${rate('issue_correct')}</span></div>`;
   }).join('');
   root.innerHTML = summary+identificationTests.map(test => {
     const top = test.candidates?.[0];
     const date = test.created_at ? new Date(test.created_at).toLocaleString() : "Unknown date";
     const route = test.flow==='batch'?`Multi-coin · coin ${test.detection_number||'?'}`:test.used_help_step ? test.visual_attempted ? "Visual + Help" : "Help only" : test.visual_attempted ? "Visual only" : "Clues only";
     const observed = test.observed ? JSON.stringify(test.observed, null, 2) : "No visual observation recorded";
-    const comparison=test.denomination_correct===null||test.denomination_correct===undefined?'':`<p><b>Actual:</b> ${esc(test.expected_denomination||'—')} · ${esc(test.expected_label||'—')}</p><p><b>Predicted:</b> ${esc(test.predicted_denomination||'Unknown')} · ${esc(test.predicted_label||'No match')}</p><p><b>Value:</b> ${test.denomination_correct?'Right':'Wrong'} · <b>Design:</b> ${test.design_correct?'Right':'Wrong'} · <b>Exact issue:</b> ${test.issue_correct?'Right':'Wrong'}</p>`;
+    const comparison=test.denomination_correct===null||test.denomination_correct===undefined?'':`<p><b>Actual:</b> ${esc(test.expected_denomination||'—')} · ${esc(test.expected_label||'—')}</p><p><b>Predicted:</b> ${esc(test.predicted_denomination||'Unknown')} · ${esc(test.predicted_label||'No match')}</p><p><b>Value:</b> ${test.denomination_correct?'Right':'Wrong'} · <b>Design:</b> ${test.design_correct?'Right':'Wrong'} · <b>Exact issue:</b> ${test.issue_correct===null?'Year unverified':test.issue_correct?'Right':'Wrong'}</p>`;
     return `<details class="testLogItem"><summary><span class="testOutcome ${esc(test.outcome)}">${esc(testOutcomeLabel(test.outcome))}</span><span><b>${esc(test.expected_label || "Unspecified coin")}</b><small>${esc(date)} · ${esc(route)}</small></span></summary><div class="testLogDetails">${comparison}<p><b>Top result:</b> ${top ? `${esc(top.year||'')} ${esc(top.title||top.coin_id||'')} (${esc(top.confidence)}%)` : "No catalogue candidate"}</p>${test.note ? `<p><b>Note:</b> ${esc(test.note)}</p>` : ""}${test.flow==='batch'?'':`<p><b>Step 2 reason:</b> ${esc(test.fallback_reason || "Not used")}</p>`}<pre>${esc(observed)}</pre></div></details>`;
   }).join("");
 }

@@ -1,6 +1,7 @@
 /* Local detector. Regions use coordinates in the downscaled source image. */
 const BATCH_CONFIG = Object.freeze({maxSide:900, analysisSide:480, maxCoins:10, minRadius:12, maxRadiusFraction:.19, padding:.13,
-  minShapeRimCoverage:.46, minRingRimCoverage:.67, minRimContrast:17});
+  minShapeRimCoverage:.46, minRingRimCoverage:.70, minRimContrast:17,
+  minRingPolarity:.70, minRingSurfaceDifference:10, minRingSurfaceConsistency:.60});
 const batchPause = () => new Promise(resolve => setTimeout(resolve,0));
 
 async function decodeBatchImage(file) {
@@ -78,7 +79,7 @@ async function detectCoins(source) {
   const gray=new Uint8Array(width*height);
   for(let i=0;i<gray.length;i++)gray[i]=Math.round(.299*rgba[i*4]+.587*rgba[i*4+1]+.114*rgba[i*4+2]);
   function rimEvidence({x,y,rx,ry}) {
-    let hits=0,contrast=0,positive=0,negative=0;
+    let hits=0,contrast=0,positive=0,negative=0,surface=0,surfacePositive=0,surfaceNegative=0;
     const quarters=[0,0,0,0];
     // A real coin has a continuous edge all around its perimeter. A textured
     // table can generate centre votes but usually fails this angular check.
@@ -93,8 +94,17 @@ async function detectCoins(source) {
         if(Math.abs(difference)>strongest){strongest=Math.abs(difference);signed=difference;}
       }
       if(strongest>=BATCH_CONFIG.minRimContrast){hits++;quarters[Math.floor(angle/12)]++;contrast+=strongest;if(signed>0)positive++;else negative++;}
+      // A real disk has a consistent inside/outside appearance across its rim.
+      // Periodic tabletop grain can cast strong edge votes without this signal.
+      const ix=Math.round(x+ux*rx*.72),iy=Math.round(y+uy*ry*.72);
+      const ox=Math.round(x+ux*rx*1.22),oy=Math.round(y+uy*ry*1.22);
+      if(ix>=0&&iy>=0&&ox>=0&&oy>=0&&ix<width&&iy<height&&ox<width&&oy<height){
+        const difference=gray[iy*width+ix]-gray[oy*width+ox];
+        surface+=Math.abs(difference);if(difference>6)surfacePositive++;else if(difference< -6)surfaceNegative++;
+      }
     }
-    return {coverage:hits/48,balanced:quarters.every(count=>count>=5),contrast:hits?contrast/hits:0,polarity:hits?Math.max(positive,negative)/hits:0};
+    return {coverage:hits/48,balanced:quarters.every(count=>count>=5),contrast:hits?contrast/hits:0,polarity:hits?Math.max(positive,negative)/hits:0,
+      surfaceDifference:surface/48,surfaceConsistency:Math.max(surfacePositive,surfaceNegative)/48};
   }
   const radii=[];for(let r=Math.max(12,Math.round(Math.min(width,height)*.029));r<=Math.min(width,height)*BATCH_CONFIG.maxRadiusFraction;r+=Math.max(4,Math.round(r*.12)))radii.push(r);
   const votes=radii.map(()=>new Uint16Array(width*height));
@@ -146,7 +156,9 @@ async function detectCoins(source) {
       if(rim.balanced&&rim.coverage>=BATCH_CONFIG.minRingRimCoverage&&rim.coverage*rim.contrast>evidence.coverage*evidence.contrast*1.06){c=wider;evidence=rim;}
     }
     if(!evidence.balanced||evidence.coverage<(c.kind==='shape'?BATCH_CONFIG.minShapeRimCoverage:BATCH_CONFIG.minRingRimCoverage))continue;
-    if(c.kind==='ring'&&(evidence.contrast<23||evidence.polarity<.64))continue;
+    if(c.kind==='shape'&&(evidence.polarity<.62||evidence.surfaceConsistency<.58))continue;
+    if(c.kind==='ring'&&(evidence.contrast<24||evidence.polarity<BATCH_CONFIG.minRingPolarity||
+      evidence.surfaceDifference<BATCH_CONFIG.minRingSurfaceDifference||evidence.surfaceConsistency<BATCH_CONFIG.minRingSurfaceConsistency))continue;
     if(accepted.some(previous=>Math.hypot(previous.x-c.x,previous.y-c.y)<Math.max(previous.rx,previous.ry,c.rx,c.ry)*.9))continue;
     accepted.push(c);
   }
