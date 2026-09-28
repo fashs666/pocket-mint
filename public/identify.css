@@ -40,8 +40,8 @@
 .clueGrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .clueGrid label { display:block; font-size:.72rem; font-weight:800; }
 .clueGrid input,.clueGrid select { display:block; width:100%; margin-top:5px; border:1px solid #ccd6cd; background:#fff; border-radius:11px; padding:11px 12px; }
-.clueGrid label:nth-child(4) { grid-column:1/-1; }
-.identifyButtons { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px; }
+.clueGrid label:nth-child(5) { grid-column:1/-1; }
+.identifyButtons { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:16px; }
 .identifyButtons button:not(.primary) { background:#edf1ed; color:#334239; }
 .matchList { display:grid; gap:9px; margin-top:12px; }
 .matchCard { border:1px solid #dce3dc; border-radius:14px; padding:13px; }
@@ -72,7 +72,7 @@
 .outcomeChoices span { display:block; padding:10px 8px; border:1px solid #cad4cc; border-radius:10px; text-align:center; font-size:.76rem; font-weight:800; }
 .outcomeChoices input:checked + span { background:#18211d; color:#fff; border-color:#18211d; }
 .feedbackField { display:block; margin-top:10px; font-size:.72rem; font-weight:800; }
-.feedbackField input,.feedbackField textarea { display:block; width:100%; margin-top:5px; border:1px solid #ccd6cd; background:#fff; border-radius:11px; padding:11px 12px; font:inherit; }
+.feedbackField input,.feedbackField textarea,.feedbackField select { display:block; width:100%; margin-top:5px; border:1px solid #ccd6cd; background:#fff; border-radius:11px; padding:11px 12px; font:inherit; }
 .testLog { display:grid; gap:8px; margin:10px 0 12px; }
 .testLogItem { border:1px solid #dce3dc; border-radius:12px; overflow:hidden; }
 .testLogItem summary { display:grid; grid-template-columns:auto 1fr; gap:9px; align-items:center; padding:11px; cursor:pointer; list-style:none; }
@@ -85,6 +85,7 @@
 .testOutcome.unsupported { background:#e5e5ef; color:#46466d; }
 .testLogDetails { padding:0 12px 12px; font-size:.75rem; }
 .testLogDetails pre { max-height:160px; overflow:auto; padding:9px; border-radius:8px; background:#f2f5f2; white-space:pre-wrap; }
+.testSummary { display:flex; justify-content:space-between; flex-wrap:wrap; gap:5px; padding:10px; background:#eee8dc; border-radius:12px; font-size:.75rem; }
 .settingsActions { display:flex; flex-wrap:wrap; gap:8px; }
 .coinCamera[hidden] { display:none; }
 .coinCamera { position:fixed; z-index:1000; inset:0; overflow:hidden; background:#050806; color:#fff; touch-action:none; overscroll-behavior:none; }
@@ -112,4 +113,6 @@
 body.cameraOpen { overflow:hidden; }
 .bottomNav { grid-template-columns:repeat(4,1fr); }
 .bottomNav button { font-size:.7rem; }
-@media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(4){grid-column:auto}.captureCard{aspect-ratio:.92}.matchLayout{grid-template-columns:82px minmax(0,1fr);gap:10px}.matchArtwork{width:82px}.matchTop{display:block}.confidence{display:inline-block;margin-top:7px}.matchActions{grid-template-columns:1fr} }
+@media(max-width:520px) { .clueGrid{grid-template-columns:1fr}.clueGrid label:nth-child(5){grid-column:auto}.identifyButtons{grid-template-columns:1fr}.captureCard{aspect-ratio:.92}.matchLayout{grid-template-columns:82px minmax(0,1fr);gap:10px}.matchArtwork{width:82px}.matchTop{display:block}.confidence{display:inline-block;margin-top:7px}.matchActions{grid-template-columns:1fr} }
+.identifyValueHint{display:grid;gap:.4rem;margin:1rem 0;color:var(--ink,#252224);font-weight:600}
+.identifyValueHint select{min-height:44px;width:100%;border-radius:12px;padding:.55rem;background:#fff;color:#252224}

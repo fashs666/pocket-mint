@@ -245,6 +245,10 @@ Pocket Mint is a local-first Progressive Web App for testing an Australian $1 co
 
 Visual analysis now runs before the fallback clue form. Pocket Mint sends a reduced two-side composite to a Cloudflare-hosted vision model, maps its structured result to the local catalogue, and goes directly to likely matches when the result is decisive. The clue form appears only for uncertain, failed, or deliberately skipped visual analysis. Confirmed original photos remain in local IndexedDB.
 
+### Circulating six-denomination single-coin path (v0.14.5)
+
+Find → Identify now opts into `mode: "circulating"`: the Worker checks visible face value, then narrows design choices to that denomination in `catalogue-v2.json`. If the value is unclear, the user can select it and retry the same photo; a mismatched value or year prevents automatic confirmation. Issue-year selection remains required for designs struck in multiple years. The existing `/api/identify` request without the mode is unchanged for Batch Identify, and the $1 visual matcher is reused with collector-only matches removed from this new path. A photo of the portrait side helps resolve the stamped year; a photographed reverse alone cannot determine an uncertain year or distinguish the 2016 changeover obverse from an ordinary reverse. Each denomination check consumes an additional vision call. These safeguards require real-photo acceptance testing before production deployment.
+
 ## v0.5 collection progress
 
 The Home screen now turns the existing collection data into useful collecting intelligence without changing the local database schema:

@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.0";
+const APP_VERSION = "0.14.6";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -338,12 +338,18 @@ function renderIdentificationTestLog() {
     root.innerHTML = '<div class="empty">No identification tests saved yet.</div>';
     return;
   }
-  root.innerHTML = identificationTests.map(test => {
+  const summary=['single','batch'].map(flow=>{
+    const tests=identificationTests.filter(item=>item.flow===flow&&item.denomination_correct!==null&&item.denomination_correct!==undefined);
+    const correct=key=>tests.filter(item=>item[key]===true).length;
+    return `<div class="testSummary"><b>${flow==='batch'?'Multi-coin':'Single coin'}</b><span>${tests.length} scored · value ${correct('denomination_correct')}/${tests.length} · design ${correct('design_correct')}/${tests.length} · exact issue ${correct('issue_correct')}/${tests.length}</span></div>`;
+  }).join('');
+  root.innerHTML = summary+identificationTests.map(test => {
     const top = test.candidates?.[0];
     const date = test.created_at ? new Date(test.created_at).toLocaleString() : "Unknown date";
-    const route = test.used_help_step ? test.visual_attempted ? "Visual + Help" : "Help only" : test.visual_attempted ? "Visual only" : "Clues only";
+    const route = test.flow==='batch'?`Multi-coin · coin ${test.detection_number||'?'}`:test.used_help_step ? test.visual_attempted ? "Visual + Help" : "Help only" : test.visual_attempted ? "Visual only" : "Clues only";
     const observed = test.observed ? JSON.stringify(test.observed, null, 2) : "No visual observation recorded";
-    return `<details class="testLogItem"><summary><span class="testOutcome ${esc(test.outcome)}">${esc(testOutcomeLabel(test.outcome))}</span><span><b>${esc(test.expected_label || "Unspecified coin")}</b><small>${esc(date)} · ${esc(route)}</small></span></summary><div class="testLogDetails"><p><b>Top result:</b> ${top ? `${esc(top.year)} ${esc(top.title)} (${esc(top.confidence)}%)` : "No catalogue candidate"}</p>${test.note ? `<p><b>Note:</b> ${esc(test.note)}</p>` : ""}<p><b>Step 2 reason:</b> ${esc(test.fallback_reason || "Not used")}</p><pre>${esc(observed)}</pre></div></details>`;
+    const comparison=test.denomination_correct===null||test.denomination_correct===undefined?'':`<p><b>Actual:</b> ${esc(test.expected_denomination||'—')} · ${esc(test.expected_label||'—')}</p><p><b>Predicted:</b> ${esc(test.predicted_denomination||'Unknown')} · ${esc(test.predicted_label||'No match')}</p><p><b>Value:</b> ${test.denomination_correct?'Right':'Wrong'} · <b>Design:</b> ${test.design_correct?'Right':'Wrong'} · <b>Exact issue:</b> ${test.issue_correct?'Right':'Wrong'}</p>`;
+    return `<details class="testLogItem"><summary><span class="testOutcome ${esc(test.outcome)}">${esc(testOutcomeLabel(test.outcome))}</span><span><b>${esc(test.expected_label || "Unspecified coin")}</b><small>${esc(date)} · ${esc(route)}</small></span></summary><div class="testLogDetails">${comparison}<p><b>Top result:</b> ${top ? `${esc(top.year||'')} ${esc(top.title||top.coin_id||'')} (${esc(top.confidence)}%)` : "No catalogue candidate"}</p>${test.note ? `<p><b>Note:</b> ${esc(test.note)}</p>` : ""}${test.flow==='batch'?'':`<p><b>Step 2 reason:</b> ${esc(test.fallback_reason || "Not used")}</p>`}<pre>${esc(observed)}</pre></div></details>`;
   }).join("");
 }
 
@@ -473,7 +479,7 @@ function detailHtml(coin, record) {
   const multiYear = variants.length > 1;
   const yearControl = multiYear ? `<label for="dYear">Issue year</label><select id="dYear">${variants.map(item => `<option value="${esc(item.id)}" ${item.id === coin.id ? "selected" : ""}>${esc(variantIssueLabel(item,variants))}</option>`).join("")}</select><p class="yearHelp">Choose an issue to view its details and update that exact coin in My Mint.</p>` : "";
   const date = record.date_added ? `<p class="autoDate">Date Added: <strong>${esc(record.date_added)}</strong> <span>(automatic)</span></p>` : '<p class="autoDate muted">Date Added will be recorded automatically when this coin first becomes owned.</p>';
-  const imageNote = coin.reference_image_kind === "unavailable" ? "An exact reference image has not yet been verified for this design." : coin.reference_image_kind === "series" ? "This official image shows the series packaging; an exact individual reverse is not available in the current source." : coin.reference_image_kind === "product" ? "This official collector product image shows the design. Packaging and any collector mintmark are not part of this circulating entry." : coin.reference_image_kind === "obverse" ? "This official image shows the special portrait-side design used for this circulating issue." : "Use this official catalogue image to compare the design with your coin.";
+  const imageNote = coin.reference_image_source_id === 'retailer_phoenyx_circulation_photo' ? "Retailer photograph of the unmarked circulation coin; this is not the collector C-mintmark version." : coin.reference_image_kind === "unavailable" ? "An exact reference image has not yet been verified for this design." : coin.reference_image_kind === "series" ? "This official image shows the series packaging; an exact individual reverse is not available in the current source." : coin.reference_image_kind === "product" ? "This official collector product image shows the design. Packaging and any collector mintmark are not part of this circulating entry." : coin.reference_image_kind === "obverse" ? "This official image shows the special portrait-side design used for this circulating issue." : "Use this official catalogue image to compare the design with your coin.";
   const releaseInfo=coin.releaseId?`<p class="muted">${esc(catalogueSeries.find(s=>s.id===coin.seriesId)?.title||'')} · ${esc(catalogueReleases.find(r=>r.id===coin.releaseId)?.title||'')}</p>`:'';
   const themeInfo=coin.collectionTags?.length?`<p class="muted">Themes: ${coin.collectionTags.map(tag=>esc(human(tag))).join(' · ')}</p>`:'';
   return `<section class="referencePanel pm-detail-art" aria-label="Catalogue coin artwork"><div class="pm-detail-artwork"><div class="eyebrow">${esc(referenceLabel(coin).toUpperCase())}</div>${coinImageHtml(coin, {preferPersonal: false, className: "detailArtwork"})}</div><p>${esc(imageNote)}</p></section>
@@ -756,7 +762,7 @@ function wire() {
 async function addConfirmedBatchCoins(items) {
   const added=[],photoFailures=[];
   for(const item of items){
-    const coin=catalogue.find(candidate=>candidate.id===item.coinId);
+    const coin=coinById(item.coinId);
     if(!coin)continue;
     const record=state.get(coin.id)||baseRec(coin.id);
     await saveRec(coin.id,{quantity:(record.quantity||0)+1});
@@ -802,7 +808,7 @@ async function init() {
     document.getElementById('releaseFilter').add(new Option(`${parent?.title||release.seriesId} · ${release.title}`,release.id));
   }
   wire();
-  if(typeof wireIdentification==="function") wireIdentification([...new Set(catalogue.map(coin=>coin.year))].sort((a,b)=>b-a));
+  if(typeof wireIdentification==="function") wireIdentification([...new Set(browseCatalogue.map(coin=>coin.year))].sort((a,b)=>b-a));
   const hash=location.hash.slice(1)||"home";
   const legacyTabs={identify:"identify",catalogue:"catalogue",search:"catalogue"};
   const hashView = `${hash}View`;

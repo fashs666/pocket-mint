@@ -45,9 +45,21 @@
       "source": "https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf"
     }
   ],
-  "missingImages": [
-    "D200-WAR-ANIMALS-REMEMBRANCE-PURPLE-POPPY"
+  "researchNotes": [
+    {
+      "details": "The Mint Coin Swap page labels a NAIDOC sachet 2025; its official circulating fifty-cent table documents the 50 Years of NAIDOC Committee design as dated 2024. Do not add another year without coin-specific confirmation.",
+      "source": "https://www.ramint.gov.au/visit-our-museum/whats/coin-swap"
+    },
+    {
+      "details": "The 2026 premium roll set is packaged for collectors; do not infer general-release 2026 standard-year variants solely from this product.",
+      "source": "https://eshop.ramint.gov.au/2026-premium-rolled-coin-set"
+    },
+    {
+      "details": "2024 Purple Poppy circulating mintage: 2,089,721; reference photograph is a retailer image of an unmarked circulation-finish specimen rather than a Mint C-mintmark collector product.",
+      "source": "https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf"
+    }
   ],
+  "missingImages": [],
   "badParents": [],
   "excluded": [
     {

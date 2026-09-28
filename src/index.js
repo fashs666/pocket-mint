@@ -1,3 +1,5 @@
+import {identifyCirculating} from './identify-circulating.js';
+
 const MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
 const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 
@@ -267,13 +269,13 @@ function applyReferenceMatch(matches,referenceMatch) {
   return [updated,...matches.filter(match=>match.id!==selected.id)];
 }
 
-async function identify(request,env) {
+async function identify(request,env,providedBody=null,legacy=false) {
   const requestId=crypto.randomUUID();
   if(!env.AI) return json({error:"Pocket Mint’s vision service is not configured yet."},503);
   const length=Number(request.headers.get("content-length")||0);
   if(length>10_000_000) return json({error:"The prepared images are too large."},413);
   let body;
-  try { body=await request.json(); } catch { return json({error:"Invalid image request."},400); }
+  try { body=providedBody||await request.json(); } catch { return json({error:"Invalid image request."},400); }
   const validImage=value=>typeof value==="string"&&value.startsWith("data:image/jpeg;base64,")&&value.length<5_000_000;
   if(!validImage(body.reverse)||(body.obverse!=null&&!validImage(body.obverse))) return json({error:"A valid design-side image is required."},400);
   const catalogueResponse=await env.ASSETS.fetch(new URL("/catalogue.json",request.url));
@@ -284,6 +286,7 @@ async function identify(request,env) {
   const obversePrompt="This is the portrait side of an Australian one-dollar coin. Read only the four digits physically stamped at the bottom of this exact coin and identify Queen Elizabeth II or King Charles III. Do not infer the year from the portrait, coin design, likely issue, or catalogue. If every digit is not sharply legible, use YEAR=unknown even if one year seems likely. Reply exactly: YEAR=value; PORTRAIT=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100. Use unknown when unreadable.";
   const reversePrompt=`This is the reverse design of an Australian one-dollar coin. Compare the artwork and lettering to these catalogue choices: ${titleOptions}. Count kangaroos carefully and report KANGAROOS=5, KANGAROOS=6 or KANGAROOS=unknown; never estimate a count when the whole design is not clear. Do not choose Five Kangaroos or Mob of Six Roos from a rough impression alone. Matildas is a valid series even when the exact player design is unclear. For Dollar Discovery, report its A, U or S mark as "letter A", "letter U" or "letter S" in WORDS only when legible. Select an exact title only when visible artwork or lettering supports it; otherwise use unknown. TYPE must be exactly standard, commemorative or unknown. Read distinctive visible words and describe the central subject. Reply exactly: DESIGN=value; TYPE=value; WORDS=value; SUBJECT=value; KANGAROOS=value; CONFIDENCE=value. Confidence must be one integer from 0 to 100.`;
   try {
+    if(body.mode==='circulating'&&!legacy) return await identifyCirculating({request,env,body,runVision,answerText,json,legacyIdentify:()=>identify(request,env,body,true)});
     console.log("Coin identification started",{request_id:requestId,has_obverse:Boolean(body.obverse)});
     const [obverseOutput,reverseOutput]=await Promise.all([
       body.obverse?runVision(env,body.obverse,obversePrompt,120):Promise.resolve(null),
