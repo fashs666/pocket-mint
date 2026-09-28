@@ -33,8 +33,12 @@ function element() {
 const card = element();
 card.getBoundingClientRect = () => ({left:40, right:450, top:160, bottom:385, width:410, height:225});
 card.matches = selector => selector.includes(".pm-home-hero") || selector.includes(".pm-cream-card");
+const card2 = element();
+card2.getBoundingClientRect = () => ({left:40, right:450, top:415, bottom:625, width:410, height:210});
+card2.matches = card.matches;
+const visibleCards = [card];
 const area = element(); area.id = "homeView"; area.classList.add("active");
-area.querySelectorAll = () => [card];
+area.querySelectorAll = () => visibleCards;
 const stage = element();
 function button(width, height) {
   const b = element(), img = element();
@@ -61,7 +65,7 @@ const context = {
   document, window:{}, innerWidth:500, innerHeight:700, scrollY:0,
   Image:class {set src(value) {this.value = value;}},
   matchMedia:()=>({matches:false, addEventListener(){}}),
-  performance:{now:()=>now}, Math:{...Math, random:()=>.5, max:Math.max, min:Math.min, hypot:Math.hypot, sin:Math.sin, PI:Math.PI, floor:Math.floor},
+  performance:{now:()=>now}, Math:{random:()=>.5, abs:Math.abs, max:Math.max, min:Math.min, hypot:Math.hypot, sin:Math.sin, PI:Math.PI, floor:Math.floor},
   setTimeout:later, clearTimeout:clear,
   requestAnimationFrame:fn=>later(fn, 16), cancelAnimationFrame:clear,
   addEventListener(){}
@@ -70,14 +74,54 @@ vm.runInNewContext(await readFile(new URL("../public/companions.js", import.meta
 context.window.PocketMintCompanions.init();
 await advance(1000);
 const start = {grim:Number.parseFloat(grim.style.left), noxel:Number.parseFloat(noxel.style.left)};
-await advance(7200);
-const beforeStride = Number.parseFloat(grim.style.left);
-await advance(350);
-const duringStride = Number.parseFloat(grim.style.left);
-assert.ok(Math.abs(duringStride - beforeStride) > 3 && Math.abs(duringStride - beforeStride) < 64,
-  "Grim's position must progress through a visible walk, without teleporting");
-await advance(950);
+const samples = {grim:[start.grim], noxel:[start.noxel]};
+for (let elapsed = 0; elapsed < 16000; elapsed += 100) {
+  await advance(100);
+  samples.grim.push(Number.parseFloat(grim.style.left));
+  samples.noxel.push(Number.parseFloat(noxel.style.left));
+}
 const end = {grim:Number.parseFloat(grim.style.left), noxel:Number.parseFloat(noxel.style.left)};
-assert.ok(Math.abs(end.grim - start.grim) > 25, "Grim must walk while one card is visible");
-assert.ok(Math.abs(end.noxel - start.noxel) > 25, "Noxel must walk independently while one card is visible");
-console.log("PASS: independent companion walking with one visible card");
+for (const [name, positions] of Object.entries(samples)) {
+  const steps = positions.slice(1).map((x, i) => Math.abs(x - positions[i]));
+  assert.ok(steps.reduce((sum, step) => sum + step, 0) > 80, `${name} must travel while one card is visible`);
+  assert.ok(steps.filter(step => step > .5 && step < 25).length > 8, `${name} must show intermediate walking positions`);
+  assert.ok(Math.max(...steps) < 80, `${name} must not teleport between samples`);
+}
+assert.ok(Math.abs(end.grim - end.noxel) > 45 || Math.abs(Number.parseFloat(grim.style.top) - Number.parseFloat(noxel.style.top)) > 60,
+  "the companions must never rest on top of each other");
+visibleCards.push(card2);
+const secondCardPath = {grim:[], noxel:[]};
+for (let elapsed = 0; elapsed < 14000; elapsed += 100) {
+  await advance(100);
+  secondCardPath.grim.push(Number.parseFloat(grim.style.top));
+  secondCardPath.noxel.push(Number.parseFloat(noxel.style.top));
+  if (!grim.classList.contains("is-walking") && !noxel.classList.contains("is-walking") &&
+      grim.style.opacity !== "0" && noxel.style.opacity !== "0") {
+    const dx = Math.abs(Number.parseFloat(grim.style.left) - Number.parseFloat(noxel.style.left));
+    const dy = Math.abs(Number.parseFloat(grim.style.top) - Number.parseFloat(noxel.style.top));
+    assert.ok(dx >= 73 || dy >= 70, "the companions must not rest in front of each other");
+  }
+}
+for (const [name, positions] of Object.entries(secondCardPath)) {
+  const steps = positions.slice(1).map((y, i) => Math.abs(y - positions[i]));
+  assert.ok(steps.reduce((sum, step) => sum + step, 0) > 110, `${name} must travel between visible cards`);
+  assert.ok(steps.filter(step => step > .5 && step < 30).length > 8, `${name} must walk between cards without snapping`);
+}
+grim.animate = undefined;
+noxel.animate = undefined;
+const fallbackPath = [];
+for (let elapsed = 0; elapsed < 12000; elapsed += 100) {
+  await advance(100);
+  fallbackPath.push(Number.parseFloat(grim.style.top));
+}
+const fallbackSteps = fallbackPath.slice(1).map((y, i) => Math.abs(y - fallbackPath[i]));
+assert.ok(fallbackSteps.filter(step => step > .5 && step < 30).length > 5,
+  "walking must still animate when Element.animate is unavailable");
+visibleCards.pop();
+card.getBoundingClientRect = () => ({left:100, right:232, top:160, bottom:385, width:132, height:225});
+context.window.PocketMintCompanions.refresh();
+await advance(5000);
+assert.ok(Math.abs(Number.parseFloat(grim.style.left) - Number.parseFloat(noxel.style.left)) >= 73 ||
+  Math.abs(Number.parseFloat(grim.style.top) - Number.parseFloat(noxel.style.top)) >= 70,
+"the companions must have separate resting spots even on a narrow card");
+console.log("PASS: separate companions walk around and between visible cards");
