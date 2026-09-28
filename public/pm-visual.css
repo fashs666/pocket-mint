@@ -79,6 +79,10 @@ body > .pm-roaming-companions .pm-companion-noxel.is-meeting > img:first-child {
 body > .pm-roaming-companions .pm-companion.is-walking > img:first-child,
 body > .pm-roaming-companions .pm-companion.is-walking > .pm-companion-step { animation: none; }
 body > .pm-roaming-companions .pm-companion.is-walking.is-facing-left > img { scale: -1 1; }
+body > .pm-roaming-companions .pm-companion .pm-companion-sheet { display: none; position: absolute; inset: 0; background-size: 400% 200%; background-repeat: no-repeat; pointer-events: none; }
+body > .pm-roaming-companions .pm-companion.has-sheet > img { visibility: hidden; }
+body > .pm-roaming-companions .pm-companion.has-sheet > .pm-companion-sheet { display: block; }
+body > .pm-roaming-companions .pm-companion.has-sheet.is-facing-left > .pm-companion-sheet { scale: -1 1; }
 body > .pm-roaming-companions .pm-companion .pm-companion-step { position: absolute; inset: 0; opacity: 0; transition: opacity 60ms linear; pointer-events: none; }
 body > .pm-roaming-companions .pm-companion .pm-companion-step.is-step { opacity: 1; }
 .pm-companion-spark { position: absolute; z-index: 2; color: #fff0a6; font-size: 27px; text-shadow: 0 0 9px #ffda7c, 0 0 18px #e4a5f8; pointer-events: none; }

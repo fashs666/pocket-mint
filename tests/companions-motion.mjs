@@ -23,10 +23,10 @@ async function advance(ms) {
 function element() {
   const classes = new Set();
   return {
-    style:{}, hidden:false, offsetWidth:82, offsetHeight:77, isConnected:true,
+    style:{}, children:[], hidden:false, offsetWidth:82, offsetHeight:77, isConnected:true,
     classList:{add:x=>classes.add(x), remove:x=>classes.delete(x),
       contains:x=>classes.has(x), toggle:(x, value)=>value === undefined ? classes.has(x) ? (classes.delete(x), false) : (classes.add(x), true) : value ? (classes.add(x), true) : (classes.delete(x), false)},
-    setAttribute(){}, addEventListener(){}, append(){}, matches(){return false;},
+    setAttribute(){}, addEventListener(){}, append(...items){this.children.push(...items);}, matches(){return false;},
     getBoundingClientRect() {return {left:Number.parseFloat(this.style.left) || 0, top:Number.parseFloat(this.style.top) || 0};}
   };
 }
@@ -63,7 +63,7 @@ const document = {
 };
 const context = {
   document, window:{}, innerWidth:500, innerHeight:700, scrollY:0,
-  Image:class {set src(value) {this.value = value;}},
+  Image:class {set src(value) {this.value = value; later(() => this.onload?.(), 0);}},
   matchMedia:()=>({matches:false, addEventListener(){}}),
   performance:{now:()=>now}, Math:{random:()=>.5, abs:Math.abs, max:Math.max, min:Math.min, hypot:Math.hypot, sin:Math.sin, PI:Math.PI, floor:Math.floor},
   setTimeout:later, clearTimeout:clear,
@@ -75,10 +75,15 @@ context.window.PocketMintCompanions.init();
 await advance(1000);
 const start = {grim:Number.parseFloat(grim.style.left), noxel:Number.parseFloat(noxel.style.left)};
 const samples = {grim:[start.grim], noxel:[start.noxel]};
+const artSeen = {grim:new Set(), noxel:new Set()};
 for (let elapsed = 0; elapsed < 16000; elapsed += 100) {
   await advance(100);
   samples.grim.push(Number.parseFloat(grim.style.left));
   samples.noxel.push(Number.parseFloat(noxel.style.left));
+  for (const [name, actor] of [["grim", grim], ["noxel", noxel]]) {
+    const sheet = actor.children.find(child => child.className === "pm-companion-sheet");
+    if (actor.classList.contains("has-sheet")) artSeen[name].add(`${sheet.style.backgroundImage}:${sheet.style.backgroundPosition}`);
+  }
 }
 const end = {grim:Number.parseFloat(grim.style.left), noxel:Number.parseFloat(noxel.style.left)};
 for (const [name, positions] of Object.entries(samples)) {
@@ -86,6 +91,7 @@ for (const [name, positions] of Object.entries(samples)) {
   assert.ok(steps.reduce((sum, step) => sum + step, 0) > 80, `${name} must travel while one card is visible`);
   assert.ok(steps.filter(step => step > .5 && step < 25).length > 8, `${name} must show intermediate walking positions`);
   assert.ok(Math.max(...steps) < 80, `${name} must not teleport between samples`);
+  assert.ok(artSeen[name].size >= 8, `${name} must display multiple sprite frames during walking and idle actions`);
 }
 assert.ok(Math.abs(end.grim - end.noxel) > 45 || Math.abs(Number.parseFloat(grim.style.top) - Number.parseFloat(noxel.style.top)) > 60,
   "the companions must never rest on top of each other");
