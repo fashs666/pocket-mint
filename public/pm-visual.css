@@ -77,22 +77,24 @@ body > .pm-roaming-companions .pm-companion-noxel.is-meeting > img:first-child {
 @keyframes pm-grim-meet { 38% { transform: translate(7px,-5px) rotate(6deg); } 70% { transform: translate(3px,-2px) rotate(-2deg); } }
 @keyframes pm-noxel-meet { 35% { transform: translate(-9px,-10px) rotate(-7deg); } 70% { transform: translate(-4px,1px) rotate(3deg); } }
 body > .pm-roaming-companions .pm-companion.is-walking > img:first-child,
-body > .pm-roaming-companions .pm-companion.is-walking > .pm-companion-step { animation: pm-companion-step-bob .46s ease-in-out infinite; }
-@keyframes pm-companion-step-bob { 50% { transform: translateY(-4px) rotate(2deg); } }
-body > .pm-roaming-companions .pm-companion .pm-companion-step { position: absolute; inset: 0; opacity: 0; transition: opacity 110ms linear; pointer-events: none; }
+body > .pm-roaming-companions .pm-companion.is-walking > .pm-companion-step { animation: none; }
+body > .pm-roaming-companions .pm-companion.is-walking.is-facing-left > img { scale: -1 1; }
+body > .pm-roaming-companions .pm-companion .pm-companion-step { position: absolute; inset: 0; opacity: 0; transition: opacity 60ms linear; pointer-events: none; }
 body > .pm-roaming-companions .pm-companion .pm-companion-step.is-step { opacity: 1; }
 .pm-companion-spark { position: absolute; z-index: 2; color: #fff0a6; font-size: 27px; text-shadow: 0 0 9px #ffda7c, 0 0 18px #e4a5f8; pointer-events: none; }
 .pm-companion-spark::before { content: "✦"; }
 .pm-companion-spark[hidden] { display: none; }
 .view .pm-companion-spotlight { outline: 2px solid rgba(98, 223, 237, .68); outline-offset: 3px; box-shadow: 0 0 15px rgba(98, 223, 237, .3); transition: outline-color .2s ease; }
-.view .pm-companion-investigated { position: relative; }
-.view .pm-companion-investigated::after { content: "✦"; position: absolute; z-index: 3; right: 9px; top: 4px; color: #f8d378; font-size: 23px; text-shadow: 0 0 12px #e784eb; pointer-events: none; animation: pm-companion-notice 1.1s ease-out both; }
+.view .pm-companion-grim-clue, .view .pm-companion-noxel-idea { position: relative; }
+.view .pm-companion-grim-clue::after, .view .pm-companion-noxel-idea::after { position: absolute; z-index: 3; right: 9px; top: 4px; font-size: 23px; pointer-events: none; animation: pm-companion-notice 1.1s ease-out both; }
+.view .pm-companion-grim-clue::after { content: "⌕"; color: #61d6dc; text-shadow: 0 0 12px #5fd5ec; }
+.view .pm-companion-noxel-idea::after { content: "✦"; color: #f8d378; text-shadow: 0 0 12px #e784eb; }
 @keyframes pm-companion-notice { 0% { opacity: 0; transform: translateY(9px) scale(.3); } 40% { opacity: 1; transform: translateY(-5px) scale(1.15); } 100% { opacity: 0; transform: translateY(-13px) scale(.7); } }
 @media (prefers-reduced-motion: reduce) {
   body > .pm-roaming-companions .pm-companion { will-change: auto; }
   body > .pm-roaming-companions .pm-companion img { animation: none !important; }
   .view .pm-companion-spotlight { outline: none; box-shadow: none; }
-  .view .pm-companion-investigated::after { animation: none; }
+  .view .pm-companion-grim-clue::after, .view .pm-companion-noxel-idea::after { animation: none; }
 }
 .pm-stat-card {
   padding: 14px;
