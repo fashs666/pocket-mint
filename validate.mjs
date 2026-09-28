@@ -5,6 +5,8 @@ import vm from "node:vm";
 const root = path.resolve("public");
 const required = ["index.html", "styles.css", "progress.css", "identify.css", "app.js", "progress.js", "identify.js", "catalogue.json", "manifest.webmanifest", "manifest-seal.webmanifest", "manifest-spiral.webmanifest", "manifest-character.webmanifest", "sw.js", "icon-192.png", "icon-512.png", "icons/seal-192.png", "icons/seal-512.png", "icons/spiral-192.png", "icons/spiral-512.png", "icons/character-192.png", "icons/character-512.png"];
 for (const file of required) await access(path.join(root, file));
+for (const file of ["grim-walk-sheet.webp", "grim-clue-sheet.webp", "noxel-walk-sheet.webp", "noxel-discovery-sheet.webp"])
+  await access(path.join(root, "characters", file));
 
 const [html, app, progress, identify, worker, sw, manifestText, catalogueText, rootCatalogueText] = await Promise.all([
   readFile(path.join(root, "index.html"), "utf8"),
@@ -157,7 +159,8 @@ const checks = [
   [identify.includes("data.uncertain||data.needs_year") && identify.includes("requestAnalysis(null)"), "portrait side is analysed only after an uncertain design or unresolved year"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("llama-3.2-11b-vision-instruct") && worker.includes("env.ASSETS.fetch"), "primary and fallback vision models plus static assets binding"],
-  [sw.includes("pocket-mint-v0.14.7-separated-companions") && sw.includes("./identification-report.js") && sw.includes("./catalogue-v2.json") && sw.includes("./pm-visual.css") && sw.includes("./pm-stars.svg") && sw.includes("./pm-crescent.svg") && sw.includes("./pm-wordmark.webp") && sw.includes("./companions.js") && sw.includes("./characters/grim-walk.webp") && sw.includes("./characters/noxel-scuttle.webp") && sw.includes("./characters/noxel-peek.webp") && sw.includes("./characters/grim-noxel-high-five.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, circulating catalogue, visual assets and companions"],
+  [sw.includes("pocket-mint-v0.14.8-character-sheets") && sw.includes("./identification-report.js") && sw.includes("./catalogue-v2.json") && sw.includes("./pm-visual.css") && sw.includes("./pm-stars.svg") && sw.includes("./pm-crescent.svg") && sw.includes("./pm-wordmark.webp") && sw.includes("./companions.js") && sw.includes("./characters/grim-walk.webp") && sw.includes("./characters/noxel-scuttle.webp") && sw.includes("./characters/noxel-peek.webp") && sw.includes("./characters/grim-noxel-high-five.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, circulating catalogue, visual assets and companions"],
+  [["grim-walk-sheet.webp", "grim-clue-sheet.webp", "noxel-walk-sheet.webp", "noxel-discovery-sheet.webp"].every(file => sw.includes(`./characters/${file}`)), "character animation sheets cached offline"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],
   [manifest.start_url === "./#home", "manifest start route"],

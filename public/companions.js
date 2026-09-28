@@ -2,8 +2,8 @@
 // collection or identification state.
 (() => {
   const art = {
-    grim: {idle:"characters/grim-companion.webp", walk:"characters/grim-walk.webp", step:"characters/grim-walk-b.webp", inspect:"characters/grim-inspect.webp"},
-    noxel: {idle:"characters/noxel-companion.webp", walk:"characters/noxel-scuttle.webp", step:"characters/noxel-scuttle-b.webp", inspect:"characters/noxel-peek.webp"}
+    grim: {idle:"characters/grim-companion.webp", walk:"characters/grim-walk.webp", step:"characters/grim-walk-b.webp", inspect:"characters/grim-inspect.webp", walkSheet:"characters/grim-walk-sheet.webp", actionSheet:"characters/grim-clue-sheet.webp"},
+    noxel: {idle:"characters/noxel-companion.webp", walk:"characters/noxel-scuttle.webp", step:"characters/noxel-scuttle-b.webp", inspect:"characters/noxel-peek.webp", walkSheet:"characters/noxel-walk-sheet.webp", actionSheet:"characters/noxel-discovery-sheet.webp"}
   };
   const supported = new Set(["homeView", "findView", "collectionView", "myMintView"]);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
@@ -52,11 +52,25 @@
   }
 
   function pose(actor, frame) {
+    actor.button.classList.remove("has-sheet");
     const src = art[actor.name][frame];
     if (actor.image.getAttribute("src") !== src) actor.image.src = src;
     actor.button.classList.toggle("is-walking", frame === "walk");
     actor.button.classList.toggle("is-inspecting", frame === "inspect");
     if (frame !== "walk") actor.stepImage.classList.remove("is-step");
+  }
+
+  function showSheet(actor, kind, phase) {
+    if (!actor.ready[kind]) return false;
+    const a = Math.floor(phase) % 8, b = (a + 1) % 8, blend = phase - Math.floor(phase);
+    const src = `url("${art[actor.name][kind === "walk" ? "walkSheet" : "actionSheet"]}")`;
+    for (const [layer, index, opacity] of [[actor.sheet, a, 1 - blend], [actor.sheetNext, b, blend]]) {
+      if (layer.style.backgroundImage !== src) layer.style.backgroundImage = src;
+      layer.style.backgroundPosition = `${(index % 4) * 100 / 3}% ${Math.floor(index / 4) * 100}%`;
+      layer.style.opacity = opacity;
+    }
+    actor.button.classList.add("has-sheet");
+    return true;
   }
 
   function place(actor, point) {
@@ -96,6 +110,10 @@
     actor.run++;
     clearTimeout(actor.timer);
     clearTimeout(actor.idleTimer);
+    clearTimeout(actor.meetTimer);
+    if (actor.actionFrame) cancelAnimationFrame(actor.actionFrame);
+    actor.actionFrame = null;
+    actor.button.classList.remove("has-sheet");
     clearTimeout(actor.pulseTimer);
     actor.pulseTarget?.classList.remove("pm-companion-grim-clue", "pm-companion-noxel-idea");
     actor.pulseTarget = null;
@@ -154,12 +172,14 @@
           x:from.x + (next.x - from.x) * progress,
           y:from.y + (next.y - from.y) * progress - Math.sin(Math.PI * t) * Math.min(9, distance * .05)
         });
-        actor.stepImage.classList.toggle("is-step", Math.floor(elapsed / (actor.name === "noxel" ? 190 : 230)) % 2 === 1);
+        if (!showSheet(actor, "walk", elapsed / (actor.name === "noxel" ? 95 : 105)))
+          actor.stepImage.classList.toggle("is-step", Math.floor(elapsed / 190) % 2 === 1);
         if (t < 1) actor.walkFrame = requestAnimationFrame(frame);
         else {
           actor.walkFrame = null;
           actor.walkResolve = null;
           actor.stepImage.classList.remove("is-step");
+          actor.button.classList.remove("has-sheet");
           resolve();
         }
       };
@@ -210,13 +230,37 @@
     }, interval);
   }
 
+  function playAction(actor) {
+    if (actor.actionFrame) cancelAnimationFrame(actor.actionFrame);
+    actor.actionFrame = null;
+    if (!actor.ready.action || reduced.matches) {
+      pose(actor, "inspect");
+      actor.idleTimer = setTimeout(() => idleMoment(actor), 1100);
+      return;
+    }
+    const run = actor.run, started = performance.now(), duration = actor.name === "grim" ? 1750 : 1550;
+    const frame = now => {
+      if (run !== actor.run || !active || scrolling) return;
+      const progress = Math.min(1, (now - started) / duration);
+      showSheet(actor, "action", progress * 7);
+      if (progress < 1) actor.actionFrame = requestAnimationFrame(frame);
+      else {
+        actor.actionFrame = null;
+        actor.button.classList.remove("has-sheet");
+        pose(actor, "idle");
+        idleMoment(actor);
+      }
+    };
+    actor.actionFrame = requestAnimationFrame(frame);
+  }
+
   function idleMoment(actor) {
     clearTimeout(actor.idleTimer);
-    if (!active || scrolling || reduced.matches || actor.hidden || actor.motion) return;
+    if (!active || scrolling || reduced.matches || actor.hidden || actor.motion || actor.actionFrame) return;
     pose(actor, "idle");
     actor.idleTimer = setTimeout(() => {
       if (!active || scrolling || actor.hidden || actor.motion) return;
-      pose(actor, "inspect");
+      playAction(actor);
       if (actor.target?.isConnected) {
         actor.pulseTarget = actor.target;
         actor.pulseTarget.classList.add(actor.name === "grim" ? "pm-companion-grim-clue" : "pm-companion-noxel-idea");
@@ -225,7 +269,6 @@
           actor.pulseTarget = null;
         }, 1100);
       }
-      actor.idleTimer = setTimeout(() => idleMoment(actor), 800 + Math.random() * 450);
     }, 1800 + Math.random() * 2000);
   }
 
@@ -233,9 +276,10 @@
     clearTimeout(meetTimer);
     if (!active || scrolling || actors.grim.hidden || actors.noxel.hidden || !actors.grim.target ||
         actors.grim.target !== actors.noxel.target || actors.grim.motion || actors.noxel.motion ||
-        actors.grim.walkFrame || actors.noxel.walkFrame || reduced.matches) return;
+        actors.grim.walkFrame || actors.noxel.walkFrame || actors.grim.actionFrame || actors.noxel.actionFrame || reduced.matches) return;
     meetTimer = setTimeout(() => {
-      if (!active || scrolling || actors.grim.target !== actors.noxel.target || actors.grim.walkFrame || actors.noxel.walkFrame) return;
+      if (!active || scrolling || actors.grim.target !== actors.noxel.target || actors.grim.walkFrame || actors.noxel.walkFrame ||
+          actors.grim.actionFrame || actors.noxel.actionFrame) return;
       const g = actors.grim.point, n = actors.noxel.point;
       spark.style.left = `${(g.x + actors.grim.button.offsetWidth / 2 + n.x + actors.noxel.button.offsetWidth / 2) / 2}px`;
       spark.style.top = `${Math.min(g.y, n.y) - 12}px`;
@@ -248,10 +292,10 @@
       for (const actor of Object.values(actors)) {
         clearTimeout(actor.idleTimer);
         actor.button.classList.add("is-meeting");
-        actor.idleTimer = setTimeout(() => {
+        playAction(actor);
+        actor.meetTimer = setTimeout(() => {
           actor.button.classList.remove("is-meeting");
-          idleMoment(actor);
-        }, 1200);
+        }, 1800);
       }
     }, 450);
   }
@@ -436,8 +480,23 @@
       stepImage.className = "pm-companion-step";
       stepImage.setAttribute("aria-hidden", "true");
       button.append(stepImage);
-      actors[name] = {name, button, image, stepImage, target:null, point:null, hidden:true, run:0, steps:0};
-      Object.values(art[name]).forEach(src => { const preload = new Image(); preload.src = src; });
+      const sheet = document.createElement("span"), sheetNext = document.createElement("span");
+      sheet.className = "pm-companion-sheet";
+      sheetNext.className = "pm-companion-sheet pm-companion-sheet-next";
+      sheet.setAttribute("aria-hidden", "true");
+      sheetNext.setAttribute("aria-hidden", "true");
+      button.append(sheet, sheetNext);
+      const actor = actors[name] = {name, button, image, stepImage, sheet, sheetNext,
+        ready:{walk:false, action:false}, preloads:[], target:null, point:null, hidden:true, run:0, steps:0};
+      for (const [kind, src] of [["walk", art[name].walkSheet], ["action", art[name].actionSheet]]) {
+        const preload = new Image();
+        preload.onload = () => { actor.ready[kind] = true; };
+        preload.src = src;
+        actor.preloads.push(preload);
+      }
+      for (const src of [art[name].idle, art[name].walk, art[name].step, art[name].inspect]) {
+        const preload = new Image(); preload.src = src;
+      }
       button.addEventListener("click", () => {
         const actor = actors[name], options = visibleTargets();
         const choice = options.find(t => t !== actor.target);
