@@ -78,8 +78,14 @@
     actor.run++;
     clearTimeout(actor.timer);
     clearTimeout(actor.idleTimer);
+    clearTimeout(actor.pulseTimer);
+    actor.pulseTarget?.classList.remove("pm-companion-investigated");
+    actor.pulseTarget = null;
     actor.button.classList.remove("is-meeting");
-    clearInterval(actor.frames);
+    if (actor.walkFrame) cancelAnimationFrame(actor.walkFrame);
+    actor.walkFrame = null;
+    actor.walkResolve?.();
+    actor.walkResolve = null;
     actor.stepImage.classList.remove("is-step");
     if (actor.motion) {
       const rect = actor.button.getBoundingClientRect();
@@ -111,6 +117,48 @@
     });
   }
 
+  function walk(actor, next, run) {
+    const from = {...actor.point};
+    const distance = Math.hypot(next.x - from.x, next.y - from.y);
+    const duration = clamp(distance * (actor.name === "noxel" ? 7 : 8), 650, 2700);
+    return new Promise(resolve => {
+      actor.walkResolve = resolve;
+      const started = performance.now();
+      const frame = now => {
+        if (run !== actor.run || !active || scrolling) return;
+        const elapsed = now - started;
+        const t = Math.min(1, elapsed / duration);
+        // Position and footfall come from the same clock. This keeps each
+        // stride attached to actual travel rather than a stationary wobble.
+        const progress = t * t * (3 - 2 * t);
+        place(actor, {
+          x:from.x + (next.x - from.x) * progress,
+          y:from.y + (next.y - from.y) * progress - Math.sin(Math.PI * t) * Math.min(9, distance * .05)
+        });
+        actor.stepImage.classList.toggle("is-step", Math.floor(elapsed / (actor.name === "noxel" ? 190 : 230)) % 2 === 1);
+        if (t < 1) actor.walkFrame = requestAnimationFrame(frame);
+        else {
+          actor.walkFrame = null;
+          actor.walkResolve = null;
+          actor.stepImage.classList.remove("is-step");
+          resolve();
+        }
+      };
+      actor.walkFrame = requestAnimationFrame(frame);
+    });
+  }
+
+  function patrolPoint(actor) {
+    const anchor = destination(actor.target, actor.name);
+    const card = actor.target.getBoundingClientRect();
+    const size = actor.button.offsetWidth;
+    const roomLeft = Math.max(4, card.left + 8);
+    const roomRight = Math.min(innerWidth - size - 4, card.right - size - 8);
+    // Stay by the card's edge, alternating a modest walk in either direction.
+    const offset = actor.steps % 2 ? -64 : 35;
+    return {x:clamp(anchor.x + offset, roomLeft, Math.max(roomLeft, roomRight)), y:anchor.y};
+  }
+
   function schedule(actor) {
     clearTimeout(actor.timer);
     if (!active || scrolling || actor.hidden) return;
@@ -119,9 +167,18 @@
     const interval = actor.name === "noxel" ? 4600 + Math.random() * 1700 : 6800 + Math.random() * 2100;
     actor.timer = setTimeout(() => {
       const options = visibleTargets();
-      if (options.length < 2) { schedule(actor); return; }
+      if (!options.length) { schedule(actor); return; }
+      if (!options.includes(actor.target)) {
+        actor.target = null;
+        visit(actor.name, options[0]);
+        return;
+      }
       const other = actors[actor.name === "grim" ? "noxel" : "grim"];
       actor.steps++;
+      if (options.length === 1 || actor.steps % 3 === 1) {
+        visit(actor.name, actor.target, patrolPoint(actor), actor.steps % 5 === 0);
+        return;
+      }
       // Occasionally choose the other companion's card; most trips stay independent.
       const meet = actor.steps % 4 === 0 && options.includes(other.target) && other.target !== actor.target;
       const choices = options.filter(target => target !== actor.target && (!other.target || target !== other.target));
@@ -130,7 +187,7 @@
         return Math.hypot(pa.x - actor.point.x, pa.y - actor.point.y) - Math.hypot(pb.x - actor.point.x, pb.y - actor.point.y);
       });
       const next = meet ? other.target : nearby[0] || options.find(t => t !== actor.target);
-      visit(actor.name, next);
+      visit(actor.name, next, null, meet && actor.steps % 8 === 0);
     }, interval);
   }
 
@@ -141,6 +198,14 @@
     actor.idleTimer = setTimeout(() => {
       if (!active || scrolling || actor.hidden || actor.motion) return;
       pose(actor, "inspect");
+      if (actor.target?.isConnected) {
+        actor.pulseTarget = actor.target;
+        actor.pulseTarget.classList.add("pm-companion-investigated");
+        actor.pulseTimer = setTimeout(() => {
+          actor.pulseTarget?.classList.remove("pm-companion-investigated");
+          actor.pulseTarget = null;
+        }, 1100);
+      }
       actor.idleTimer = setTimeout(() => idleMoment(actor), 800 + Math.random() * 450);
     }, 1800 + Math.random() * 2000);
   }
@@ -148,9 +213,10 @@
   function maybeMeet() {
     clearTimeout(meetTimer);
     if (!active || scrolling || actors.grim.hidden || actors.noxel.hidden || !actors.grim.target ||
-        actors.grim.target !== actors.noxel.target || actors.grim.motion || actors.noxel.motion || reduced.matches) return;
+        actors.grim.target !== actors.noxel.target || actors.grim.motion || actors.noxel.motion ||
+        actors.grim.walkFrame || actors.noxel.walkFrame || reduced.matches) return;
     meetTimer = setTimeout(() => {
-      if (!active || scrolling || actors.grim.target !== actors.noxel.target) return;
+      if (!active || scrolling || actors.grim.target !== actors.noxel.target || actors.grim.walkFrame || actors.noxel.walkFrame) return;
       const g = actors.grim.point, n = actors.noxel.point;
       spark.style.left = `${(g.x + actors.grim.button.offsetWidth / 2 + n.x + actors.noxel.button.offsetWidth / 2) / 2}px`;
       spark.style.top = `${Math.min(g.y, n.y) - 12}px`;
@@ -171,18 +237,21 @@
     }, 450);
   }
 
-  async function visit(name, target) {
+  async function visit(name, target, waypoint = null, pop = false) {
     const actor = actors[name];
-    if (!active || scrolling || !target || !visibleTargets().includes(target) || actor.target === target) return;
+    if (!active || scrolling || !target || !visibleTargets().includes(target) || (actor.target === target && !waypoint)) return;
     cancel(actor);
     const run = actor.run;
-    const next = destination(target, name);
+    const next = waypoint || destination(target, name);
     const from = actor.point;
     const distance = from ? Math.hypot(next.x - from.x, next.y - from.y) : Infinity;
     actor.target = target;
     if (reduced.matches || !actor.button.animate) {
       place(actor, next);
-    } else if (actor.hidden) {
+    } else if (actor.hidden || pop) {
+      if (pop && !actor.hidden) await animate(actor, [{opacity:1, transform:"scale(1)"}, {opacity:0, transform:"scale(.8)"}],
+        {duration:220, easing:"ease-in"});
+      if (!active || run !== actor.run) return;
       place(actor, next);
       actor.button.style.opacity = "0";
       pose(actor, "inspect");
@@ -194,19 +263,7 @@
       ], {duration:name === "noxel" ? 390 : 470, easing:"ease-out"});
     } else {
       pose(actor, "walk");
-      let alternate = false;
-      actor.frames = setInterval(() => {
-        alternate = !alternate;
-        actor.stepImage.classList.toggle("is-step", alternate);
-      }, name === "noxel" ? 230 : 270);
-      const dx = next.x - from.x, dy = next.y - from.y;
-      await animate(actor, [
-        {transform:"translate(0,0)"},
-        {transform:`translate(${dx*.45}px,${dy*.45-5}px)`, offset:.45},
-        {transform:`translate(${dx}px,${dy}px)`}
-      ], {duration:clamp(distance * 4, 520, 1900), easing:"ease-in-out"});
-      clearInterval(actor.frames);
-      actor.stepImage.classList.remove("is-step");
+      await walk(actor, next, run);
     }
     if (!active || run !== actor.run) return;
     place(actor, next);
@@ -324,7 +381,7 @@
       if (!options.includes(actor.target)) {
         actor.target = null;
         visit(actor.name, options[actor.name === "noxel" && options.length > 1 ? 1 : 0]);
-      } else if (!actor.motion && !actor.hidden) {
+      } else if (!actor.motion && !actor.walkFrame && !actor.hidden) {
         const point = destination(actor.target, actor.name);
         if (Math.hypot(point.x - actor.point.x, point.y - actor.point.y) > 16) settle(actor);
       }
