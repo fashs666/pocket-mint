@@ -9,7 +9,7 @@
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const actors = {};
   let area, stage, spark, active = false, initialized = false;
-  let scrollTimer, scrollFrame, resizeTimer, meetTimer, scrolling = false;
+  let scrollTimer, scrollFrame, resizeTimer, meetTimer, scrolling = false, lastScrollY = scrollY;
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const safeSpace = () => ({
     top: Math.max(8, (document.querySelector(".topbar")?.getBoundingClientRect().bottom || 0) + 8),
@@ -134,8 +134,9 @@
       spark.style.left = `${(g.x + n.x) / 2 + 42}px`;
       spark.style.top = `${Math.min(g.y, n.y) - 12}px`;
       spark.hidden = false;
-      spark.animate([{opacity:0, transform:"scale(.3)"}, {opacity:1, transform:"scale(1.15)", offset:.4}, {opacity:0, transform:"scale(.7)"}],
+      if (spark.animate) spark.animate([{opacity:0, transform:"scale(.3)"}, {opacity:1, transform:"scale(1.15)", offset:.4}, {opacity:0, transform:"scale(.7)"}],
         {duration:900, easing:"ease-out"}).onfinish = () => { spark.hidden = true; };
+      else spark.hidden = true;
       pose(actors.grim, "inspect");
       pose(actors.noxel, "inspect");
     }, 450);
@@ -197,6 +198,7 @@
     const options = visibleTargets();
     if (!options.length) return;
     active = true;
+    lastScrollY = scrollY;
     stage.hidden = false;
     for (const actor of Object.values(actors)) {
       actor.target = null;
@@ -224,12 +226,19 @@
   function followScroll() {
     scrollFrame = null;
     if (!active) return;
+    const delta = scrollY - lastScrollY;
+    lastScrollY = scrollY;
     const options = visibleTargets();
+    const safe = safeSpace();
     for (const actor of Object.values(actors)) {
       if (actor.target && options.includes(actor.target)) {
-        place(actor, destination(actor.target, actor.name));
-        actor.hidden = false;
-        actor.button.style.opacity = "";
+        // The stage is fixed, so translate the current position by the page's
+        // scroll delta. Recomputing the destination here teleports a walker.
+        if (actor.point && !actor.hidden) {
+          place(actor, {x:actor.point.x, y:clamp(actor.point.y - delta, safe.top,
+            Math.max(safe.top, safe.bottom - actor.button.offsetHeight))});
+          actor.button.style.opacity = "";
+        }
         pose(actor, "inspect");
       } else {
         actor.hidden = true;
@@ -240,7 +249,7 @@
   }
 
   function onScroll() {
-    if (!active) { clearTimeout(scrollTimer); scrollTimer = setTimeout(start, 170); return; }
+    if (!active) { lastScrollY = scrollY; clearTimeout(scrollTimer); scrollTimer = setTimeout(start, 170); return; }
     if (!scrolling) {
       scrolling = true;
       clearTimeout(meetTimer);
@@ -257,10 +266,26 @@
         if (actor.hidden || !options.includes(actor.target)) {
           actor.target = null;
           visit(actor.name, options[actor.name === "noxel" && options.length > 1 ? 1 : 0]);
-        } else schedule(actor);
+        } else settle(actor);
       }
       maybeMeet();
     }, 180);
+  }
+
+  async function settle(actor) {
+    const next = destination(actor.target, actor.name);
+    const from = actor.point;
+    const distance = Math.hypot(next.x - from.x, next.y - from.y);
+    const run = actor.run;
+    if (distance > 8 && !reduced.matches) {
+      await animate(actor, [{transform:"translate(0,0)"},
+        {transform:`translate(${next.x - from.x}px,${next.y - from.y}px)`}],
+      {duration:clamp(distance * 3, 180, 340), easing:"ease-out"});
+    }
+    if (!active || scrolling || run !== actor.run) return;
+    place(actor, next);
+    schedule(actor);
+    maybeMeet();
   }
 
   function refresh() {
