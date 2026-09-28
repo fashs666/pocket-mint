@@ -42,10 +42,9 @@
     const below = rect.bottom - button.offsetHeight * .2;
     const special = target.matches(".coinCard, .menuCard")
       ? (above >= safe.top ? above : rect.bottom - button.offsetHeight * .42) : null;
-    const left = target.classList.contains("findHero");
-    const x = left
-      ? rect.left + (name === "grim" ? 8 : actors.grim.button.offsetWidth + 14)
-      : rect.right - button.offsetWidth - (name === "grim" ? actors.noxel.button.offsetWidth + 14 : 8);
+    // Keep their resting places on opposite sides of a card.
+    const x = name === "grim" ? rect.left - button.offsetWidth * .4
+      : rect.right - button.offsetWidth * .6;
     return {
       x: clamp(x, 4, Math.max(4, innerWidth - button.offsetWidth - 4)),
       y: clamp((special ?? (above >= safe.top ? above : below <= bottom ? below : rect.top - button.offsetHeight * .4)) + (name === "noxel" ? 5 : 0), safe.top, bottom)
@@ -66,6 +65,25 @@
     actor.button.style.top = `${point.y}px`;
   }
 
+  function separate(actor, point) {
+    const other = actors[actor.name === "grim" ? "noxel" : "grim"];
+    const occupied = other?.goal || other?.point;
+    if (!occupied) return point;
+    const dx = point.x + actor.button.offsetWidth / 2 - occupied.x - other.button.offsetWidth / 2;
+    const dy = point.y + actor.button.offsetHeight / 2 - occupied.y - other.button.offsetHeight / 2;
+    const minX = (actor.button.offsetWidth + other.button.offsetWidth) / 2 + 10;
+    const minY = (actor.button.offsetHeight + other.button.offsetHeight) / 2 + 8;
+    if (Math.abs(dx) >= minX || Math.abs(dy) >= minY) return point;
+    const safe = safeSpace(), height = actor.button.offsetHeight;
+    const down = occupied.y + other.button.offsetHeight + 10;
+    const up = occupied.y - height - 10;
+    if (down <= safe.bottom - height) return {...point, y:down};
+    if (up >= safe.top) return {...point, y:up};
+    const right = occupied.x + other.button.offsetWidth + 10;
+    const left = occupied.x - actor.button.offsetWidth - 10;
+    return {...point, x:right <= innerWidth - actor.button.offsetWidth - 4 ? right : Math.max(4, left)};
+  }
+
   function highlight() {
     document.querySelectorAll(".pm-companion-spotlight").forEach(e => e.classList.remove("pm-companion-spotlight"));
     for (const actor of Object.values(actors)) {
@@ -79,13 +97,14 @@
     clearTimeout(actor.timer);
     clearTimeout(actor.idleTimer);
     clearTimeout(actor.pulseTimer);
-    actor.pulseTarget?.classList.remove("pm-companion-investigated");
+    actor.pulseTarget?.classList.remove("pm-companion-grim-clue", "pm-companion-noxel-idea");
     actor.pulseTarget = null;
     actor.button.classList.remove("is-meeting");
     if (actor.walkFrame) cancelAnimationFrame(actor.walkFrame);
     actor.walkFrame = null;
     actor.walkResolve?.();
     actor.walkResolve = null;
+    actor.goal = null;
     actor.stepImage.classList.remove("is-step");
     if (actor.motion) {
       const rect = actor.button.getBoundingClientRect();
@@ -155,7 +174,7 @@
     const roomLeft = Math.max(4, card.left + 8);
     const roomRight = Math.min(innerWidth - size - 4, card.right - size - 8);
     // Stay by the card's edge, alternating a modest walk in either direction.
-    const offset = actor.steps % 2 ? -64 : 35;
+    const offset = actor.name === "grim" ? (actor.steps % 2 ? 115 : 0) : (actor.steps % 2 ? -115 : 0);
     return {x:clamp(anchor.x + offset, roomLeft, Math.max(roomLeft, roomRight)), y:anchor.y};
   }
 
@@ -164,7 +183,7 @@
     if (!active || scrolling || actor.hidden) return;
     if (reduced.matches) { pose(actor, "idle"); return; }
     idleMoment(actor);
-    const interval = actor.name === "noxel" ? 4600 + Math.random() * 1700 : 6800 + Math.random() * 2100;
+    const interval = actor.name === "noxel" ? 2600 + Math.random() * 1100 : 3300 + Math.random() * 1300;
     actor.timer = setTimeout(() => {
       const options = visibleTargets();
       if (!options.length) { schedule(actor); return; }
@@ -175,7 +194,7 @@
       }
       const other = actors[actor.name === "grim" ? "noxel" : "grim"];
       actor.steps++;
-      if (options.length === 1 || actor.steps % 3 === 1) {
+      if (options.length === 1 || actor.steps % 3 === 0) {
         visit(actor.name, actor.target, patrolPoint(actor), actor.steps % 5 === 0);
         return;
       }
@@ -200,9 +219,9 @@
       pose(actor, "inspect");
       if (actor.target?.isConnected) {
         actor.pulseTarget = actor.target;
-        actor.pulseTarget.classList.add("pm-companion-investigated");
+        actor.pulseTarget.classList.add(actor.name === "grim" ? "pm-companion-grim-clue" : "pm-companion-noxel-idea");
         actor.pulseTimer = setTimeout(() => {
-          actor.pulseTarget?.classList.remove("pm-companion-investigated");
+          actor.pulseTarget?.classList.remove("pm-companion-grim-clue", "pm-companion-noxel-idea");
           actor.pulseTarget = null;
         }, 1100);
       }
@@ -242,11 +261,12 @@
     if (!active || scrolling || !target || !visibleTargets().includes(target) || (actor.target === target && !waypoint)) return;
     cancel(actor);
     const run = actor.run;
-    const next = waypoint || destination(target, name);
+    const next = separate(actor, waypoint || destination(target, name));
+    actor.goal = next;
     const from = actor.point;
     const distance = from ? Math.hypot(next.x - from.x, next.y - from.y) : Infinity;
     actor.target = target;
-    if (reduced.matches || !actor.button.animate) {
+    if (reduced.matches) {
       place(actor, next);
     } else if (actor.hidden || pop) {
       if (pop && !actor.hidden) await animate(actor, [{opacity:1, transform:"scale(1)"}, {opacity:0, transform:"scale(.8)"}],
@@ -263,12 +283,15 @@
       ], {duration:name === "noxel" ? 390 : 470, easing:"ease-out"});
     } else {
       pose(actor, "walk");
+      actor.button.classList.toggle("is-facing-left", next.x < from.x - 4);
       await walk(actor, next, run);
     }
     if (!active || run !== actor.run) return;
     place(actor, next);
+    actor.goal = null;
     actor.hidden = false;
     actor.button.style.opacity = "";
+    actor.button.classList.remove("is-facing-left");
     pose(actor, "inspect");
     highlight();
     maybeMeet();
@@ -356,17 +379,20 @@
   }
 
   async function settle(actor) {
-    const next = destination(actor.target, actor.name);
+    const next = separate(actor, destination(actor.target, actor.name));
+    actor.goal = next;
     const from = actor.point;
     const distance = Math.hypot(next.x - from.x, next.y - from.y);
     const run = actor.run;
     if (distance > 8 && !reduced.matches) {
-      await animate(actor, [{transform:"translate(0,0)"},
-        {transform:`translate(${next.x - from.x}px,${next.y - from.y}px)`}],
-      {duration:clamp(distance * 3, 180, 340), easing:"ease-out"});
+      pose(actor, "walk");
+      actor.button.classList.toggle("is-facing-left", next.x < from.x - 4);
+      await walk(actor, next, run);
     }
     if (!active || scrolling || run !== actor.run) return;
     place(actor, next);
+    actor.goal = null;
+    actor.button.classList.remove("is-facing-left");
     schedule(actor);
     maybeMeet();
   }
@@ -418,7 +444,7 @@
         if (choice) visit(name, choice);
         else if (actor.target && !reduced.matches) {
           pose(actor, "inspect");
-          actor.button.animate([{transform:"translateY(0)"}, {transform:"translateY(-6px)", offset:.5}, {transform:"translateY(0)"}],
+          actor.button.animate?.([{transform:"translateY(0)"}, {transform:"translateY(-6px)", offset:.5}, {transform:"translateY(0)"}],
             {duration:370, easing:"ease-out"});
         }
       });
