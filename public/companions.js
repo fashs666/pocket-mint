@@ -149,7 +149,10 @@
     cancelMotion();
     const run = generation;
     currentTarget = target;
-    for (const name of ["grim", "noxel"]) if (!points[name] && !reduced.matches && actors[name].button.animate) actors[name].button.style.opacity = "0";
+    for (const name of ["grim", "noxel"]) {
+      if (reposition) actors[name].button.style.opacity = "";
+      else if (!points[name] && !reduced.matches && actors[name].button.animate) actors[name].button.style.opacity = "0";
+    }
     const noxel = atCard(target, "noxel"), grim = atCard(target, "grim");
     if (reposition) { place("noxel", noxel); place("grim", grim); }
     else await Promise.all([move("noxel", noxel, 0, run), move("grim", grim, 140, run)]);
