@@ -73,7 +73,14 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
     else {chosen=null;matchConfidence=0;}
   }
   observed.reference_status=reference.status;
-  if(chosen&&roos(chosen.title)&&((count&&count!==(chosen.title==='Five Kangaroos'?5:6))||!count&&reference.status!=='checked'))chosen=null;
+  const verifiedArtwork=reference.status==='checked'&&reference.title===chosen?.title&&reference.confidence>=90;
+  if(chosen&&roos(chosen.title)){
+    const countConflict=Boolean(count&&count!==(chosen.title==='Five Kangaroos'?5:6));
+    // Counting overlapping animals is unreliable. A strong direct comparison
+    // of the actual reverse can resolve it; counting alone never overrides it.
+    if(countConflict&&verifiedArtwork){observed.kangaroo_count=null;observed.kangaroo_count_conflict=true;}
+    else if(countConflict||!count&&!verifiedArtwork)chosen=null;
+  }
   if(!chosen||matchConfidence<80){
     const review=candidates.length<=5?candidates:chosen?[chosen]:[];
     return json({matches:review.map(design=>({id:design.yearVariants.at(-1).id,confidence:.5,evidence:['Candidate for manual comparison; design not confirmed']})),uncertain:true,needs_year:true,observed,reason:'The exact design is uncertain. Compare the candidate images, retake the photo, or use visible clues.'});

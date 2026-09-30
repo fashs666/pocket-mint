@@ -32,6 +32,8 @@ const uncertain=await identify(['DENOM=$1; CONFIDENCE=95; WORDS=unknown; MOTIF=g
 assert.equal(uncertain.data.uncertain,true);assert.ok(uncertain.data.matches.length>=2);assert.equal(uncertain.data.observed.year,null);
 const contradictory=await identify(['DENOM=$1; CONFIDENCE=95; WORDS=unknown; MOTIF=group of kangaroos','DESIGN=Five Kangaroos; CONFIDENCE=92; KANGAROOS=6']);
 assert.equal(contradictory.data.uncertain,true);
+const verifiedRoos=await identify(['DENOM=$1; CONFIDENCE=95; WORDS=unknown; MOTIF=group of kangaroos','DESIGN=Five Kangaroos; CONFIDENCE=92; KANGAROOS=6','DESIGN=Five Kangaroos; CONFIDENCE=97; REASON=matching arrangement against the exact reverse'],{reference:true});
+assert.equal(verifiedRoos.data.uncertain,false);assert.equal(verifiedRoos.data.observed.design,'Five Kangaroos');assert.equal(verifiedRoos.data.observed.kangaroo_count,null);assert.equal(verifiedRoos.data.observed.kangaroo_count_conflict,true);
 const referenceMatch=await identify(['DENOM=10c; CONFIDENCE=95; WORDS=unknown; MOTIF=bird tail feathers','DESIGN=Lyrebird; CONFIDENCE=90','DESIGN=Lyrebird; CONFIDENCE=93; REASON=matching tail pattern'],{reference:true});
 assert.equal(referenceMatch.data.uncertain,false);assert.equal(referenceMatch.data.observed.reference_status,'checked');
 assert.equal(referenceMatch.calls[2].messages[1].content.filter(item=>item.type==='image_url').length,2);
