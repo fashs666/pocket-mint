@@ -1,5 +1,5 @@
-const IDENTIFY_VERSION = "0.14.9";
-const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null};
+const IDENTIFY_VERSION = "0.14.10";
+const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null, uncertain:false};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
 
 function setIdentifyStep(step) {
@@ -96,12 +96,17 @@ async function prepareIdentifyPhoto(file) {
 async function loadIdentifyPhoto(side,file) {
   if (!file) return;
   identifyState.analysisCertain=null;
+  identifyState.lastObserved=null;
+  identifyState.results=[];
+  identifyState.uncertain=false;
+  identifyState.testLogSaved=false;
   clearIdentifyPhoto(side);
   const preview=document.querySelector(`#${side}Capture .capturePreview`);
   preview.innerHTML=`<b class="photoSpinner">◌</b><strong>Preparing photo…</strong><small>Keep Pocket Mint open</small>`;
   let specimen=file,prepared=file;
-  try { specimen=await createCircularSpecimen(file);prepared=await prepareIdentifyPhoto(specimen); }
-  catch { try { prepared=await prepareIdentifyPhoto(file); } catch { /* Keep the original when this browser cannot resize it. */ } }
+  // Keep the whole gallery/native-camera image. Guided captures are already cropped.
+  try { prepared=await prepareIdentifyPhoto(file); }
+  catch { /* Keep the original when this browser cannot resize it. */ }
   const url=URL.createObjectURL(specimen);
   try { identifyState[side]={file:prepared,specimenFile:specimen,url,quality:await inspectIdentifyPhoto(prepared)}; }
   catch { identifyState[side]={file:prepared,specimenFile:specimen,url,quality:{warnings:["quality could not be checked on this device"]}}; }
@@ -156,7 +161,7 @@ async function analysePhotos() {
   try {
     const reverse=await makeAnalysisImage(identifyState.reverse.file);
     const requestAnalysis=async obverse=>{
-      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"circulating",denomination:document.getElementById("identifyPhotoDenomination").value||document.getElementById("identifyDenomination").value,obverse,reverse})});
+      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"circulating",single_coin:true,denomination:document.getElementById("identifyPhotoDenomination").value||document.getElementById("identifyDenomination").value,obverse,reverse})});
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||"Visual analysis is unavailable");
       return result;
@@ -168,8 +173,10 @@ async function analysePhotos() {
     }
     identifyState.lastObserved=data.observed||null;
     const matches=(data.matches||[]).map(match=>({coin:coinById(match.id),confidence:Math.round(Number(match.confidence||0)*100),reasons:Array.isArray(match.evidence)?match.evidence:[match.evidence].filter(Boolean)})).filter(item=>item.coin);
-    if (matches.length&&!data.uncertain) {
-      identifyState.analysisCertain=true;renderPhotoQuality();
+    identifyState.uncertain=Boolean(data.uncertain);
+    identifyState.fallbackReason=data.reason||"";
+    if (matches.length) {
+      identifyState.analysisCertain=!data.uncertain;renderPhotoQuality();
       identifyState.results=matches.slice(0,3); identifyState.resultSource="visual";
       renderIdentifyResults(); setIdentifyStep(3);
     } else {
@@ -248,7 +255,9 @@ function readIdentifyClues() { return {denomination:document.getElementById("ide
 function rankClueCatalogue(coins,clues) {
   if(clues.denomination)coins=coins.filter(coin=>coin.denomination_display===clues.denomination);
   if(!clues.denomination&&(clues.type==="standard"||clues.kangaroo_count||/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(clues.design||""))))return [];
-  if(!clues.denomination||clues.denomination==="$1")coins=coins.filter(coin=>!/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(coin.title||"")));
+  const exactRooTitle=["Five Kangaroos","Mob of Six Roos"].find(title=>clues.design===title||String(clues.words||"").trim().toLowerCase()===title.toLowerCase());
+  if(!clues.denomination||clues.denomination==="$1")coins=coins.filter(coin=>!/^(Five Kangaroos|Mob of Six Roos)$/i.test(String(coin.title||""))||coin.title===exactRooTitle);
+  if(exactRooTitle)clues={...clues,design:exactRooTitle};
   const hasStrongClue=Boolean(clues.design||identifyTerms(clues.words).length||clues.kangaroo_count);
   if(!hasStrongClue)return [];
   let ranked=coins.map(coin=>scoreIdentifyCoin(coin,clues));
@@ -266,7 +275,7 @@ function rankClueCatalogue(coins,clues) {
 function runIdentification() {
   const clues=readIdentifyClues();
   if(!clues.denomination){const notice=document.getElementById("identifyFallbackNotice");notice.hidden=false;notice.textContent="Choose the coin value before finding matches. Size alone is not enough to tell some Australian coins apart.";return;}
-  identifyState.results=rankClueCatalogue(browseCatalogue,clues); identifyState.resultSource="clue"; renderIdentifyResults(); setIdentifyStep(3);
+  identifyState.results=rankClueCatalogue(browseCatalogue,clues); identifyState.resultSource="clue"; identifyState.uncertain=false; renderIdentifyResults(); setIdentifyStep(3);
 }
 
 function identifyCoinLabel(coin) { return `${coin.year} ${coin.title}`; }
@@ -331,7 +340,7 @@ async function saveIdentificationTest(outcomeOverride) {
 function renderIdentifyResults() {
   const visual=identifyState.resultSource==="visual",photoCount=[identifyState.obverse,identifyState.reverse].filter(Boolean).length;
   document.getElementById("identifyTestCorrect").hidden=!identifyState.results[0];
-  document.getElementById("identifySummary").innerHTML=`<div class="identifyNotice"><b>${identifyState.results.length?visual?"Visual identification results":"Best catalogue candidates":"No catalogue match yet"}</b><br>${visual?`Pocket Mint analysed the visible artwork and text${photoCount===2?" across both sides":" on the design side"}.`:"Ranked using the clues supplied."}${photoCount?` ${photoCount} photo${photoCount===1?" is":"s are"} ready to attach.`:""}</div>`;
+  document.getElementById("identifySummary").innerHTML=`<div class="identifyNotice"><b>${identifyState.results.length?visual?identifyState.uncertain?"Compare these candidates":"Visual identification results":"Best catalogue candidates":"No catalogue match yet"}</b><br>${visual&&identifyState.uncertain?esc(identifyState.fallbackReason):visual?`Pocket Mint analysed the visible artwork and text${photoCount===2?" across both sides":" on the design side"}.`:"Ranked using the clues supplied."}${photoCount?` ${photoCount} photo${photoCount===1?" is":"s are"} ready to attach.`:""}</div>`;
   if(!identifyState.testLogSaved){
     const expected=document.getElementById("identifyExpected");
     if(!expected.value&&identifyState.results[0]) expected.placeholder=`e.g. ${identifyCoinLabel(identifyState.results[0].coin)}`;
@@ -346,8 +355,8 @@ function renderIdentifyResults() {
   }
   root.innerHTML=grouped.map((item,index)=>{
     const variants=designVariants(item.coin),multiYear=variants.length>1;
-    const label=visual?`${item.confidence}% visual match`:item.confidence>=75?`${item.confidence}% clue match`:"Possible";
-    const exactYear=identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:"";
+    const label=visual?identifyState.uncertain?"Review candidate":`${item.confidence}% visual match`:item.confidence>=75?`${item.confidence}% clue match`:"Possible";
+    const exactYear=identifyState.resultSource==="clue"?document.getElementById("identifyYear").value:(!identifyState.uncertain&&Number(identifyState.lastObserved?.year_confidence)>=80?identifyState.lastObserved.year:"");
     const yearMatches=variants.filter(variant=>String(variant.year)===String(exactYear));
     const selected=yearMatches.length===1?yearMatches[0]:null;
     const yearPicker=multiYear?`<label class="matchYear"><span>Issue year</span><select data-identify-year>${selected?"":'<option value="">Choose issue</option>'}${variants.map(variant=>`<option value="${esc(variant.id)}" ${selected?.id===variant.id?"selected":""}>${esc(variantIssueLabel(variant,variants))}</option>`).join("")}</select></label>`:"";
@@ -369,7 +378,7 @@ async function confirmIdentification(id) {
 
 function resetIdentification() {
   closeCoinCamera();
-  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;
+  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;identifyState.uncertain=false;
   ["identifyDenomination","identifyPhotoDenomination","identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
   document.getElementById("identifyFallbackNotice").hidden=true;updateAnalyseButton();resetTestFeedback();setIdentifyStep(1);

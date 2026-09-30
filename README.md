@@ -245,7 +245,13 @@ Pocket Mint is a local-first Progressive Web App for testing an Australian $1 co
 
 Visual analysis now runs before the fallback clue form. Pocket Mint sends a reduced two-side composite to a Cloudflare-hosted vision model, maps its structured result to the local catalogue, and goes directly to likely matches when the result is decisive. The clue form appears only for uncertain, failed, or deliberately skipped visual analysis. Confirmed original photos remain in local IndexedDB.
 
-### Circulating six-denomination single-coin path (v0.14.5)
+### Single-coin reliability pass (v0.14.10)
+
+Single Identify sends `single_coin: true` with circulating mode. All six denominations use the circulating design catalogue, including Five Kangaroos and Mob of Six Roos. Independent observations produce a semantic shortlist; distinctive artwork with unmatched wording can fall back to the denomination's complete design list. Exact reverse references, when available, verify or reject matches. Series/packaging images are excluded from verification. Unreadable or contradictory kangaroo counts remain review candidates unless a reference comparison confirms the design. Generic value/colour/shape alone cannot identify a design.
+
+Gallery/native-camera images retain the full frame for analysis; guided photos retain the guide crop. A confidently read year selects an issue only when exactly one catalogue variant has that year. Unreadable years and same-year variants still need selection. Candidate results are labelled for review, and collection changes still require explicit confirmation. Batch requests omit the new flag and retain their existing identification path. Reference verification adds one vision call and can fall back to the artwork matcher when reference loading is unavailable; real-phone accuracy still needs acceptance testing.
+
+### Previous circulating six-denomination path (v0.14.5)
 
 Find → Identify now opts into `mode: "circulating"`: the Worker checks visible face value, then narrows design choices to that denomination in `catalogue-v2.json`. If the value is unclear, the user can select it and retry the same photo; a mismatched value or year prevents automatic confirmation. Issue-year selection remains required for designs struck in multiple years. The existing `/api/identify` request without the mode is unchanged for Batch Identify, and the $1 visual matcher is reused with collector-only matches removed from this new path. A photo of the portrait side helps resolve the stamped year; a photographed reverse alone cannot determine an uncertain year or distinguish the 2016 changeover obverse from an ordinary reverse. Each denomination check consumes an additional vision call. These safeguards require real-photo acceptance testing before production deployment.
 

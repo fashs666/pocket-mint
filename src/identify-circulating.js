@@ -1,3 +1,4 @@
+import {identifySingleCoin} from './identify-single.js';
 // Opt-in circulating identification for one photo or an individual batch crop.
 // The existing dollar matcher remains unchanged.
 export const DENOMINATIONS = Object.freeze({'5c':5,'10c':10,'20c':20,'50c':50,'$1':100,'$2':200});
@@ -39,6 +40,7 @@ export function rankCirculatingDesigns(designs,denomination,answer,year=null) {
 }
 
 export async function identifyCirculating({request,env,body,runVision,answerText,json,legacyIdentify}) {
+  if(body.single_coin===true)return identifySingleCoin({request,env,body,runVision,answerText,json});
   const raw=answerText(await runVision(env,body.reverse,
     'This is one Australian circulating coin, photographed from the design side. Before seeing any catalogue names, describe only what is actually visible: distinctive readable words and a recognisable object or emblem. Read the FACE VALUE only if visible. Colour and outer shape are secondary: $1 and $2 are gold-coloured; 5c and $2 have similar diameters; 50c is usually twelve-sided. If unclear say unknown. Reply exactly: DENOM=5c|10c|20c|50c|$1|$2|unknown; CONFIDENCE=0-100; WORDS=visible distinctive words or unknown; MOTIF=recognisable object or emblem or unknown.',130));
   const detected=parseDenomination(raw);
