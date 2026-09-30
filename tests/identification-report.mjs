@@ -65,3 +65,27 @@ assert.equal(saved[0].issue_correct,null);
 assert.equal(saved[0].expected_coin_id,null);
 assert.equal(element('identifyTestCorrect').disabled,true);
 console.log('PASS one-tap correct report saves value and design; unknown year is not scored');
+// A service error and a no-match can be saved without an expected issue.
+element('identifyExpectedDenomination').value='';element('identifyExpected').value='';
+vm.runInContext('identifyState.testLogSaved=false;identifyState.results=[];identifyState.analysisError={status:503,diagnostic_code:"VISION-01",request_id:"diagnostic-test"};identifyState.fallbackReason="Visual analysis unavailable";',shortcut);
+await shortcut.saveIdentificationTest('failed');
+assert.equal(saved.length,2);assert.equal(saved[1].outcome,'error');assert.equal(saved[1].analysis_error.diagnostic_code,'VISION-01');assert.equal(saved[1].expected_coin_id,null);
+vm.runInContext('identifyState.testLogSaved=false;identifyState.analysisError=null;',shortcut);
+await shortcut.saveIdentificationTest('failed');
+assert.equal(saved.length,3);assert.equal(saved[2].outcome,'no_match');assert.equal(saved[2].predicted_coin_id,null);
+console.log('PASS failed single tests save without selecting a value or catalogue issue');
+const node=tag=>({tag,children:[],value:'',disabled:false,textContent:'',setAttribute(){},add(child){this.children.push(child);},append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;}});
+const batchElements=new Map();const batchElement=id=>{if(!batchElements.has(id))batchElements.set(id,node('div'));return batchElements.get(id);};
+const batchSaved=[];
+const failureContext={window:{PocketMintIdentificationReport:shortcut.window.PocketMintIdentificationReport},document:{createElement:node,getElementById:batchElement},Option:function(text,value){return {text,value};},browseCatalogue:variants,catalogue:variants,coinById:id=>variants.find(coin=>coin.id===id),APP_VERSION:'test',catMeta:{},crypto:{randomUUID:()=>`batch-${batchSaved.length}`},identificationTests:[],renderAll(){},put:async(store,test)=>{assert.equal(store,'identificationTests');batchSaved.push(test);}};
+vm.createContext(failureContext);
+const batchSource=(await readFile('public/batch-identification.js','utf8')).replace('window.BatchIdentificationCore={classify};','window.BatchIdentificationCore={classify,renderTestReport};');
+vm.runInContext(batchSource,failureContext);
+function findButton(root,text){for(const child of root.children){if(child.textContent===text)return child;const found=child.children&&findButton(child,text);if(found)return found;}}
+for(const status of ['error','no_match']){
+  const card=node('article'),result={status,message:'Diagnostic failure',analysisError:status==='error'?{diagnostic_code:'VISION-01'}:null};
+  failureContext.window.BatchIdentificationCore.renderTestReport(card,result,{detectionNumber:1});
+  const button=findButton(card,'Save failed test');assert.ok(button);
+  await button.onclick();assert.equal(batchSaved.at(-1).outcome,status);assert.equal(batchSaved.at(-1).expected_coin_id,null);assert.equal(result.testSaved,true);
+}
+console.log('PASS failed batch tests save without selecting an exact issue');

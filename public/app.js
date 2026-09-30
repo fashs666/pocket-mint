@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.11";
+const APP_VERSION = "0.14.12";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -326,7 +326,7 @@ function renderDiag() {
 }
 
 function testOutcomeLabel(outcome) {
-  return ({correct:"Correct",partial:"Partly right",wrong:"Wrong",unsupported:"Not in catalogue"})[outcome] || human(outcome);
+  return ({correct:"Correct",partial:"Partly right",wrong:"Wrong",unsupported:"Not in catalogue",error:"Analysis failed",no_match:"No match"})[outcome] || human(outcome);
 }
 
 function renderIdentificationTestLog() {

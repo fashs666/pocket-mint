@@ -1,5 +1,5 @@
-const IDENTIFY_VERSION = "0.14.11";
-const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null, uncertain:false};
+const IDENTIFY_VERSION = "0.14.12";
+const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null, uncertain:false, analysisError:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
 
 function setIdentifyStep(step) {
@@ -7,6 +7,9 @@ function setIdentifyStep(step) {
   document.getElementById("identifyPhotos").hidden = step !== 1;
   document.getElementById("identifyClues").hidden = step !== 2;
   document.getElementById("identifyMatches").hidden = step !== 3;
+  document.getElementById("identifyFeedback").hidden=step===1||!identifyState.visualAttempted&&!identifyState.results.length;
+  document.getElementById("identifyTestFailed").hidden=!identifyState.visualAttempted||Boolean(identifyState.results.length);
+  document.getElementById("identifyTestCorrect").hidden=!identifyState.results.length;
   if (currentView() === "findView") scrollTo(0,0);
 }
 
@@ -155,6 +158,8 @@ function setAnalyseStatus(message,isError=false) {
 
 async function analysePhotos(denomination="") {
   if (!identifyState.reverse) return;
+  resetTestFeedback();
+  identifyState.results=[];identifyState.lastObserved=null;identifyState.analysisError=null;identifyState.resultSource="visual";
   identifyState.visualAttempted=true;
   const button=document.getElementById("identifyAnalyse");
   button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus("Checking the design side first…");
@@ -163,7 +168,7 @@ async function analysePhotos(denomination="") {
     const requestAnalysis=async obverse=>{
       const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"circulating",single_coin:true,denomination,obverse,reverse})});
       const result=await response.json();
-      if(!response.ok)throw new Error(result.error||"Visual analysis is unavailable");
+      if(!response.ok){identifyState.analysisError={status:response.status,diagnostic_code:result.diagnostic_code||null,request_id:result.request_id||null,message:result.error||"Visual analysis is unavailable"};throw new Error(identifyState.analysisError.message);}
       return result;
     };
     let data=await requestAnalysis(null);
@@ -190,6 +195,7 @@ async function analysePhotos(denomination="") {
       setIdentifyStep(2);
     }
   } catch(error) {
+    identifyState.analysisError??={message:error.message};
     identifyState.usedHelpStep=true;
     identifyState.fallbackReason=`Visual analysis unavailable: ${error.message}`;
     const notice=document.getElementById("identifyFallbackNotice");
@@ -289,6 +295,8 @@ function resetTestFeedback() {
   document.getElementById("identifyTestStatus").textContent="";
   document.querySelector('.testCorrection').open=false;
   document.getElementById("identifyTestCorrect").disabled=false;
+  document.getElementById("identifyTestFailed").disabled=false;
+  document.getElementById("identifyTestFailed").textContent="Save failed test";
   const button=document.getElementById("saveIdentificationTest");
   button.disabled=false;button.textContent="Save test result";
   identifyState.testLogSaved=false;
@@ -297,21 +305,22 @@ function resetTestFeedback() {
 
 async function saveIdentificationTest(outcomeOverride) {
   if(identifyState.testLogSaved||identifyState.testLogSaving)return;
-  const outcome=outcomeOverride==='correct'?'correct':document.querySelector('input[name="identifyOutcome"]:checked')?.value;
+  const failed=outcomeOverride==='failed';
+  const outcome=failed?identifyState.analysisError?'error':'no_match':outcomeOverride==='correct'?'correct':document.querySelector('input[name="identifyOutcome"]:checked')?.value;
   const expectedLabel=document.getElementById("identifyExpected").value.trim();
-  const expectedDenomination=document.getElementById("identifyExpectedDenomination").value;
+  const expectedDenomination=document.getElementById("identifyExpectedDenomination").value||(failed?document.getElementById("identifyDenomination").value:"");
   const status=document.getElementById("identifyTestStatus");
   if(!outcome){status.textContent="Choose how the identification performed.";status.classList.add("error");return;}
-  if(!expectedDenomination){status.textContent="Choose the coin's actual denomination.";status.classList.add("error");return;}
-  if(!expectedLabel){status.textContent="Enter the coin you tested so the result is useful.";status.classList.add("error");return;}
+  if(!failed&&!expectedDenomination){status.textContent="Choose the coin's actual denomination.";status.classList.add("error");return;}
+  if(!failed&&!expectedLabel){status.textContent="Enter the coin you tested so the result is useful.";status.classList.add("error");return;}
   const expectedCoin=window.PocketMintIdentificationReport.resolveExpected(expectedLabel,collectionCoins().filter(coin=>coin.denomination_display===expectedDenomination));
-  if(!expectedCoin&&outcome!=="unsupported"){status.textContent="Choose an exact catalogue issue from the suggested names, or mark Not in catalogue.";status.classList.add("error");return;}
+  if(!failed&&!expectedCoin&&outcome!=="unsupported"){status.textContent="Choose an exact catalogue issue from the suggested names, or mark Not in catalogue.";status.classList.add("error");return;}
   const clean=value=>value==null?null:JSON.parse(JSON.stringify(value));
   const test={
     id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:IDENTIFY_VERSION,catalogue_version:catMeta.catalogue_version||"",
     outcome,...window.PocketMintIdentificationReport.fields({flow:"single",expectedLabel,expectedCoin,predictedCoin:identifyState.results[0]?.coin,context:{expected_denomination:expectedDenomination}}),result_source:identifyState.resultSource,
     visual_attempted:identifyState.visualAttempted,used_help_step:identifyState.usedHelpStep,fallback_reason:identifyState.fallbackReason||"",
-    observed:clean(identifyState.lastObserved),clues:readIdentifyClues(),
+    observed:clean(identifyState.lastObserved),analysis_error:clean(identifyState.analysisError),clues:readIdentifyClues(),
     photo_quality:{obverse:clean(identifyState.obverse?.quality)||null,reverse:clean(identifyState.reverse?.quality)||null},
     candidates:identifyState.results.map((item,index)=>({rank:index+1,coin_id:item.coin.id,year:item.coin.year,title:item.coin.title,confidence:item.confidence,reasons:[...item.reasons]})),
     note:document.getElementById("identifyTestNote").value.trim()
@@ -328,6 +337,7 @@ async function saveIdentificationTest(outcomeOverride) {
     await put("identificationTests",test);
     identificationTests.unshift(test);
     identifyState.testLogSaved=true;
+    document.getElementById("identifyTestFailed").disabled=true;document.getElementById("identifyTestFailed").textContent="Failed test saved";
     button.textContent="Test result saved";
     status.classList.remove("error");status.textContent="Saved locally. You can review or export it from Settings.";
     renderAll();
@@ -378,7 +388,7 @@ async function confirmIdentification(id) {
 
 function resetIdentification() {
   closeCoinCamera();
-  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;identifyState.uncertain=false;
+  clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;identifyState.uncertain=false;identifyState.analysisError=null;
   ["identifyDenomination","identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
   document.getElementById("identifyFallbackNotice").hidden=true;updateAnalyseButton();resetTestFeedback();setIdentifyStep(1);
@@ -531,6 +541,7 @@ function wireIdentification(years=[]) {
   document.getElementById("identifyReset").onclick=resetIdentification;
   document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
   document.getElementById("saveIdentificationTest").onclick=saveIdentificationTest;
+  document.getElementById("identifyTestFailed").onclick=()=>saveIdentificationTest('failed');
   document.getElementById("identifyTestCorrect").onclick=()=>{
     const top=identifyState.results[0]?.coin;if(!top)return;
     document.getElementById("identifyExpectedDenomination").value=top.denomination_display;

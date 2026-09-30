@@ -151,24 +151,30 @@
     const expectedLabel=document.createElement('label');expectedLabel.textContent='Actual coin (choose a catalogue suggestion)';expectedLabel.append(expected,options);correction.append(expectedLabel);
     const save=document.createElement('button');save.type='button';save.textContent='Save test report';
     const status=document.createElement('p');status.setAttribute('role','status');
-    async function saveReport(quick=false){
+    async function saveReport(quick=false,failed=false){
       if(result.testSaving||result.testSaved)return;
       const actual=quick?coinById(result.coinId||result.predictedCoinId):window.PocketMintIdentificationReport.resolveExpected(expected.value,browseCatalogue.filter(coin=>coin.denomination_display===denomination.value));
-      if(!actual){status.textContent='Choose a denomination and exact catalogue issue to compare.';return;}
+      if(!actual&&!failed){status.textContent='Choose a denomination and exact catalogue issue to compare.';return;}
       result.testSaving=true;save.disabled=true;
       try{
         const predicted=coinById(result.predictedCoinId);
         const fields=window.PocketMintIdentificationReport.fields({flow:'batch',expectedLabel:quick?`${actual.year} ${actual.title}`:expected.value.trim(),expectedCoin:actual,predictedCoin:predicted,predictedDenomination:result.observed?.denomination,context:{detection_number:crop.detectionNumber,relative_diameter:crop.relativeDiameter??null}});
         if(quick&&result.status==='year_uncertain'&&!result.coinId){fields.issue_correct=null;fields.expected_coin_id=null;fields.expected_label=`${actual.title} · year not checked`;}
         const test={id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:APP_VERSION,catalogue_version:catMeta.catalogue_version||'',...fields,
-          outcome:quick?'correct':fields.issue_correct?'correct':fields.denomination_correct?'partial':'wrong',result_source:'batch_visual',
-          candidates:result.predictedChoices||[],observed:result.observed||null,note:''};
+          outcome:failed?result.status==='error'?'error':'no_match':quick?'correct':fields.issue_correct?'correct':fields.denomination_correct?'partial':'wrong',result_source:'batch_visual',
+          expected_denomination:actual?.denomination_display||denomination.value||null,
+          candidates:result.predictedChoices||[],observed:result.observed||null,analysis_error:result.analysisError||null,fallback_reason:result.message||'',note:''};
         await put('identificationTests',test);identificationTests.unshift(test);result.testSaved=true;renderAll();render(crops);
       }catch(error){save.disabled=false;status.textContent=`Could not save report: ${error.message}`;}
       finally{result.testSaving=false;}
     }
     save.onclick=()=>saveReport(false);
-    correction.append(save,status);section.append(correction);card.append(section);
+    if(result.status==='error'||result.status==='no_match'){
+      const failed=document.createElement('button');failed.type='button';failed.className='batchQuickReport';failed.textContent='Save failed test';
+      failed.onclick=()=>saveReport(false,true);section.append(failed,status);
+    }
+    correction.append(save);if(result.status==='error'||result.status==='no_match')section.append(status);else correction.append(status);
+    section.append(correction);card.append(section);
   }
   function classify(data){
     const choices=[];
@@ -176,7 +182,7 @@
       const coin=coinById(match.id);if(!coin)continue;
       if(!choices.some(choice=>choice.coin.design_id===coin.design_id))choices.push(catalogueChoice(coin,Math.round(Number(match.confidence||0)*100)));
     }
-    if(!choices.length)return {status:'no_match',choices:[],ready:false,predictedCoinId:null,observed:data.observed||null,predictedChoices:[]};
+    if(!choices.length)return {status:'no_match',message:data.reason||'',choices:[],ready:false,predictedCoinId:null,observed:data.observed||null,predictedChoices:[]};
     const definite=!data.uncertain;
     const chosen=definite?choices[0]:null;
     const variants=chosen?designVariants(chosen.coin):[];
@@ -195,12 +201,12 @@
       if(revision!==generation)return;
       const response=await fetch('/api/identify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',obverse:null,reverse})});
       const data=await response.json();
-      if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429});
+      if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429,analysisError:{status:response.status,diagnostic_code:data.diagnostic_code||null,request_id:data.request_id||null,message:data.error||'Identification unavailable'}});
       if(revision!==generation)return;
       results.set(crop.id,{...classify(data),geometry});
     }catch(error){
       if(revision!==generation)return;
-      results.set(crop.id,{status:'error',message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,quota:Boolean(error.quota),geometry});
+      results.set(crop.id,{status:'error',message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,analysisError:error.analysisError||{message:error.message},quota:Boolean(error.quota),geometry});
     }
     render(crops);
   }

@@ -2,6 +2,21 @@ import {DENOMINATIONS,parseDenomination,independentClues,shortlistDesigns,rankCi
 
 const field=(answer,key)=>String(answer||'').match(new RegExp(`\\b${key}\\s*=\\s*([^;\\n]+)`,'i'))?.[1]?.trim()||'';
 const confidence=answer=>Math.max(0,Math.min(100,Number(field(answer,'CONFIDENCE'))||0));
+export function readSingleDenomination(answer){
+  const original=parseDenomination(answer);
+  const value=field(answer,'DENOM').toLowerCase().replace(/["'`]/g,'').replace(/\s+/g,' ').trim();
+  const aliases={'1':'$1','2':'$2','5':'5c','10':'10c','20':'20c','50':'50c','1 dollar':'$1','one dollar':'$1','2 dollars':'$2','two dollars':'$2','5 cents':'5c','five cents':'5c','10 cents':'10c','ten cents':'10c','20 cents':'20c','twenty cents':'20c','50 cents':'50c','fifty cents':'50c','$ 1':'$1','$ 2':'$2'};
+  const denomination=Object.hasOwn(DENOMINATIONS,value)?value:aliases[value]||original.denomination;
+  const words=field(answer,'WORDS');
+  const readable=[['$1',/\b(?:one|1)\s+dollars?\b/i],['$2',/\b(?:two|2)\s+dollars?\b/i],['5c',/\b(?:five|5)\s+cents?\b/i],['10c',/\b(?:ten|10)\s+cents?\b/i],['20c',/\b(?:twenty|20)\s+cents?\b/i],['50c',/\b(?:fifty|50)\s+cents?\b/i]].filter(([,pattern])=>pattern.test(words));
+  // Only explicit face-value lettering can repair an unknown formatted value.
+  // Neither colour, relative size nor a familiar motif is sufficient.
+  if(readable.length===1){
+    if(denomination!=='unknown'&&denomination!==readable[0][0])return {...original,denomination:'unknown',confidence:0,conflict:true};
+    return {...original,denomination:readable[0][0]};
+  }
+  return {...original,denomination};
+}
 const roos=title=>/^(Five Kangaroos|Mob of Six Roos)$/.test(title);
 const generic=new Set(['unknown','none','coin','coins','australia','australian','dollar','dollars','cent','cents','one','two','five','ten','twenty','fifty','gold','golden','silver','round','metal','colour','coloured','color','design','portrait','year']);
 export function hasDesignClues(clues){return `${clues.words} ${clues.motif}`.toLowerCase().split(/[^a-z]+/).some(word=>word.length>2&&!generic.has(word));}
@@ -49,11 +64,12 @@ async function verifyReferences(designs,request,env,image,answerText){
 
 export async function identifySingleCoin({request,env,body,runVision,answerText,json}){
   const raw=answerText(await runVision(env,body.reverse,'One Australian coin, design side. Describe ONLY visible distinctive lettering and central artwork before seeing any catalogue names. Read FACE VALUE if visible; do not use size alone. If unclear use unknown. Reply: DENOM=5c|10c|20c|50c|$1|$2|unknown; CONFIDENCE=0-100; WORDS=distinctive readable words or unknown; MOTIF=visible objects and arrangement or unknown.',180));
-  const detected=parseDenomination(raw),clues=independentClues(raw);
+  const detected=readSingleDenomination(raw),clues=independentClues(raw);
   const supplied=Object.hasOwn(DENOMINATIONS,body.denomination)?body.denomination:'';
   const denomination=supplied||detected.denomination;
-  const observed={denomination,denomination_confidence:detected.confidence,words:clues.words,motif:clues.motif,year:null,year_confidence:0};
+  const observed={denomination,denomination_confidence:detected.confidence,denomination_reading:field(raw,'DENOM').slice(0,80),words:clues.words,motif:clues.motif,year:null,year_confidence:0};
   const stop=reason=>json({matches:[],uncertain:true,needs_year:false,observed,reason});
+  if(detected.conflict)return stop('The value reading conflicts with the visible lettering. Check the face value or retake the photo.');
   if(supplied&&detected.denomination!=='unknown'&&detected.confidence>=85&&detected.denomination!==supplied){observed.denomination=detected.denomination;return stop(`The photo appears to show ${detected.denomination}, but ${supplied} was selected. Check the face value.`);}
   if(denomination==='unknown'||!supplied&&detected.confidence<75)return stop('Choose the denomination; I could not read the face value reliably.');
   const response=await env.ASSETS.fetch(new URL('/catalogue-v2.json',request.url));

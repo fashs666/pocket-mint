@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import worker from '../src/index.js';
-import {singleCoinCandidates,hasDesignClues} from '../src/identify-single.js';
+import {singleCoinCandidates,hasDesignClues,readSingleDenomination} from '../src/identify-single.js';
 const catalogue=JSON.parse(await readFile('public/catalogue-v2.json','utf8'));
 const legacy=JSON.parse(await readFile('public/catalogue.json','utf8'));
 const reverse='data:image/jpeg;base64,AA==';
@@ -17,6 +17,13 @@ async function identify(answers,{reference=false,...overrides}={}){
   return {status:response.status,data:await response.json(),calls};
 }
 assert.equal(hasDesignClues({words:'TWO DOLLARS',motif:'round gold coin'}),false);
+assert.equal(readSingleDenomination('DENOM=unknown; CONFIDENCE=100; WORDS=ONE DOLLAR QANTAS CENTENARY').denomination,'$1');
+assert.equal(readSingleDenomination('DENOM=$ 2; CONFIDENCE=95; WORDS=unknown').denomination,'$2');
+assert.equal(readSingleDenomination('DENOM=10 cents; CONFIDENCE=95; WORDS=unknown').denomination,'10c');
+assert.equal(readSingleDenomination('DENOM=$2; CONFIDENCE=95; WORDS=ONE DOLLAR').conflict,true);
+assert.equal(readSingleDenomination('DENOM=unknown; CONFIDENCE=95; WORDS=2024; MOTIF=gold small circle').denomination,'unknown');
+const repairedValue=await identify(['DENOM=unknown; CONFIDENCE=100; WORDS=ONE DOLLAR QANTAS CENTENARY; MOTIF=airplane','DESIGN=100 Years of Qantas; CONFIDENCE=95']);
+assert.equal(repairedValue.data.matches[0]?.id,'AU1-2020-QANTAS');
 assert.equal(singleCoinCandidates(catalogue.designs.filter(d=>d.denomination===10),{words:'unknown',motif:'bird with long tail feathers'})[0].title,'Lyrebird');
 assert.ok(singleCoinCandidates(catalogue.designs.filter(d=>d.denomination===20),{words:'unknown',motif:'cricketer holding bat'}).some(d=>d.title==='Sir Donald Bradman'));
 for(const [denom,title,motif] of [['5c','Echidna','spiny anteater'],['10c','Lyrebird','bird tail feathers'],['20c','Platypus','duck bill swimming'],['50c','Commonwealth Coat of Arms (dodecagonal)','coat of arms'],['$1','100 Years of Qantas','Qantas aircraft'],['$2','War Animals Remembrance / Purple Poppy','purple poppy']]){
