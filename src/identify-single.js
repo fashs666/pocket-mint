@@ -91,6 +91,6 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
     if(/^(19|20)\d{2}$/.test(year)&&confidence(yearAnswer)>=80){observed.year=year;observed.year_confidence=confidence(yearAnswer);}
   }
   const result=rankCirculatingDesigns([chosen],denomination,`DESIGN=${chosen.title}; CONFIDENCE=${matchConfidence}`,observed.year);
-  if(result.matches.length){result.matches[0].evidence.push(field(answer,'REASON')||'distinctive artwork checked');if(reference.status==='checked')result.matches[0].evidence.push('catalogue reference image comparison',reference.reason||'matching reverse artwork');}
+  if(result.matches.length){result.matches[0].evidence.push(observed.kangaroo_count_conflict?'Initial animal count was inconsistent; matched by reference artwork':field(answer,'REASON')||'distinctive artwork checked');if(reference.status==='checked')result.matches[0].evidence.push('catalogue reference image comparison',reference.reason||'matching reverse artwork');}
   return json({...result,observed:{...observed,design:chosen.title},reference_match:reference.status==='checked'?reference:null});
 }
