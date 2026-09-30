@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.14.10";
+const IDENTIFY_VERSION = "0.14.11";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null, uncertain:false};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
 
@@ -153,7 +153,7 @@ function setAnalyseStatus(message,isError=false) {
   status.textContent=message; status.classList.toggle("error",isError);
 }
 
-async function analysePhotos() {
+async function analysePhotos(denomination="") {
   if (!identifyState.reverse) return;
   identifyState.visualAttempted=true;
   const button=document.getElementById("identifyAnalyse");
@@ -161,7 +161,7 @@ async function analysePhotos() {
   try {
     const reverse=await makeAnalysisImage(identifyState.reverse.file);
     const requestAnalysis=async obverse=>{
-      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"circulating",single_coin:true,denomination:document.getElementById("identifyPhotoDenomination").value||document.getElementById("identifyDenomination").value,obverse,reverse})});
+      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"circulating",single_coin:true,denomination,obverse,reverse})});
       const result=await response.json();
       if(!response.ok)throw new Error(result.error||"Visual analysis is unavailable");
       return result;
@@ -201,7 +201,7 @@ async function analysePhotos() {
 }
 
 function prefillClues(observed) {
-  if (["5c","10c","20c","50c","$1","$2"].includes(observed.denomination) && (Number(observed.denomination_confidence||0)>=75||document.getElementById("identifyPhotoDenomination").value===observed.denomination)) document.getElementById("identifyDenomination").value=observed.denomination;
+  if (["5c","10c","20c","50c","$1","$2"].includes(observed.denomination) && (Number(observed.denomination_confidence||0)>=75||document.getElementById("identifyDenomination").value===observed.denomination)) document.getElementById("identifyDenomination").value=observed.denomination;
   if (observed.year&&[...document.getElementById("identifyYear").options].some(option=>option.value===String(observed.year))) document.getElementById("identifyYear").value=String(observed.year);
   if (/charles/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="charles";
   if (/elizabeth/i.test(observed.portrait||"")) document.getElementById("identifyPortrait").value="elizabeth";
@@ -379,7 +379,7 @@ async function confirmIdentification(id) {
 function resetIdentification() {
   closeCoinCamera();
   clearIdentifyPhoto("obverse");clearIdentifyPhoto("reverse");identifyState.results=[];identifyState.resultSource="clue";identifyState.lastObserved=null;identifyState.visualAttempted=false;identifyState.usedHelpStep=false;identifyState.fallbackReason="";identifyState.analysisCertain=null;identifyState.uncertain=false;
-  ["identifyDenomination","identifyPhotoDenomination","identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
+  ["identifyDenomination","identifyYear","identifyPortrait","identifyType","identifyWords","identifyMark"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("identifyScope").value="circulation_core";document.getElementById("photoQuality").innerHTML="";
   document.getElementById("identifyFallbackNotice").hidden=true;updateAnalyseButton();resetTestFeedback();setIdentifyStep(1);
 }
@@ -522,13 +522,12 @@ function wireIdentification(years=[]) {
   document.getElementById("identifyReverse").onchange=event=>readIdentifyInput(event.target,"reverse");
   document.getElementById("identifyObverseCamera").onchange=event=>readIdentifyInput(event.target,"obverse");
   document.getElementById("identifyReverseCamera").onchange=event=>readIdentifyInput(event.target,"reverse");
-  document.getElementById("identifyAnalyse").onclick=analysePhotos;
+  document.getElementById("identifyAnalyse").onclick=()=>analysePhotos();
   document.getElementById("identifyNeedHelp").onclick=()=>{identifyState.usedHelpStep=true;identifyState.fallbackReason="Visual analysis skipped by tester";setIdentifyStep(2);};
   document.getElementById("identifyBackPhotos").onclick=()=>setIdentifyStep(1);
   document.getElementById("identifyBackClues").onclick=()=>{identifyState.usedHelpStep=true;if(!identifyState.fallbackReason)identifyState.fallbackReason="Tester changed or added clues";setIdentifyStep(2);};
   document.getElementById("identifyFind").onclick=runIdentification;
-  document.getElementById("identifyRetryValue").onclick=()=>{if(!document.getElementById("identifyDenomination").value)return;document.getElementById("identifyPhotoDenomination").value=document.getElementById("identifyDenomination").value;analysePhotos();};
-  document.getElementById("identifyPhotoDenomination").onchange=event=>{document.getElementById("identifyDenomination").value=event.target.value;};
+  document.getElementById("identifyRetryValue").onclick=()=>{if(!document.getElementById("identifyDenomination").value)return;analysePhotos(document.getElementById("identifyDenomination").value);};
   document.getElementById("identifyReset").onclick=resetIdentification;
   document.getElementById("identifyNoMatch").onclick=openFullCatalogueFromIdentification;
   document.getElementById("saveIdentificationTest").onclick=saveIdentificationTest;
