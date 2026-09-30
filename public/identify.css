@@ -66,6 +66,7 @@
 .catalogueNotice { margin-bottom:12px; }
 .identifyFeedback { margin-top:16px; padding-top:16px; border-top:1px solid #dce3dc; }
 .identifyFeedback h3 { margin:3px 0 6px; }
+#identifyFeedback[hidden],#identifyTestFailed[hidden] { display:none; }
 .outcomeChoices { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:12px 0; }
 .outcomeChoices label { cursor:pointer; }
 .outcomeChoices input { position:absolute; opacity:0; }
