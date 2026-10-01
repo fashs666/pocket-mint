@@ -6,14 +6,14 @@ import {singleCoinCandidates,hasDesignClues,readSingleDenomination,normalizeSing
 const catalogue=JSON.parse(await readFile('public/catalogue-v2.json','utf8'));
 const legacy=JSON.parse(await readFile('public/catalogue.json','utf8'));
 const reverse='data:image/jpeg;base64,AA==';
-async function identify(answers,{reference=false,stableDollar=false,...overrides}={}){
+async function identify(answers,{reference=false,localReferences=false,stableDollar=false,...overrides}={}){
   const calls=[];
   const image=()=>new Response(new Uint8Array([255,216,255,217]),{headers:{'content-type':'image/jpeg'}});
   const response=await worker.fetch(new Request('https://test/api/identify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',single_coin:true,reverse,...overrides})}),{
     ENABLE_STABLE_DOLLAR_MATCHER:stableDollar?'true':'false',
     AI:{run:async(_model,input)=>{calls.push(input);assert.ok(answers.length,'unexpected extra vision call');return {response:answers.shift()};}},
     REFERENCE_FETCH:async()=>reference?image():new Response('',{status:404}),
-    ASSETS:{fetch:async request=>String(request).includes('catalogue-v2')?new Response(JSON.stringify(catalogue)):String(request).includes('catalogue.json')?new Response(JSON.stringify(legacy)):reference?image():new Response('',{status:404})}
+    ASSETS:{fetch:async request=>String(request).includes('catalogue-v2')?new Response(JSON.stringify(catalogue)):String(request).includes('catalogue.json')?new Response(JSON.stringify(legacy)):reference||localReferences?image():new Response('',{status:404})}
   });
   return {status:response.status,data:await response.json(),calls};
 }
@@ -98,6 +98,10 @@ assert.equal(stableConflict.data.matches[0]?.id,'AU1-2008-SCOUTING','independent
 const stableRoosFallback=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=ONE DOLLAR; MOTIF=group of kangaroos','DESIGN=unknown; TYPE=standard; WORDS=ONE DOLLAR; SUBJECT=kangaroos; CONFIDENCE=100','DESIGN=Five Kangaroos; CONFIDENCE=95; KANGAROOS=5'],{stableDollar:true});
 assert.equal(stableRoosFallback.data.observed.matching_engine,'circulating-design');
 assert.equal(stableRoosFallback.data.observed.design,'Five Kangaroos');
+const localBicent=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=ONE DOLLAR; MOTIF=kangaroo','DESIGN=unknown; CONFIDENCE=100','DESIGN=Australian Bicentenary; CONFIDENCE=97; REASON=matching geometric kangaroo artwork'],{localReferences:true});
+assert.equal(localBicent.data.matches[0]?.id,'AU1-1988-BICENTENARY');
+assert.equal(localBicent.data.uncertain,false);
+assert.ok(localBicent.data.observed.reference_designs.includes('Australian Bicentenary'),'official Bicentenary reference stays available even when remote fetches fail');
 const repairedValue=await identify(['DENOM=unknown; CONFIDENCE=100; WORDS=ONE DOLLAR QANTAS CENTENARY; MOTIF=airplane','DESIGN=100 Years of Qantas; CONFIDENCE=95']);
 assert.equal(repairedValue.data.matches[0]?.id,'AU1-2020-QANTAS');
 assert.equal(singleCoinCandidates(catalogue.designs.filter(d=>d.denomination===10),{words:'unknown',motif:'bird with long tail feathers'})[0].title,'Lyrebird');

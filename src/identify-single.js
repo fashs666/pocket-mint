@@ -51,7 +51,7 @@ async function referenceImage(design,request,env){
   // Series illustrations and packaging are not exact design references.
   if(!['exact','catalogue','retailer_circulation_photo'].includes(design.image_status))return null;
   try{
-    const url=design.reference_image;
+    const url=design.id==='D100-AUSTRALIAN-BICENTENARY-BICENTENARY-BICENTENARY-1988'?'coin-images/bicentenary-1988-ram.png':design.reference_image;
     const response=/^https?:/.test(url)
       ?await (env.REFERENCE_FETCH||fetch)(url,{signal:AbortSignal.timeout(5000)})
       :await env.ASSETS.fetch(new URL('/'+url.replace(/^\/+/,''),request.url));
@@ -74,7 +74,7 @@ async function verifyReferences(designs,request,env,image,answerText){
   try{
     const output=await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct',{messages:[{role:'system',content:'Compare images carefully. Do not guess from coin popularity or year.'},{role:'user',content}],temperature:0,max_tokens:140,stream:false});
     const answer=answerText(output),title=field(answer,'DESIGN');
-    return {status:'checked',title:references.find(item=>item.design.title===title)?.design.title||null,confidence:confidence(answer),reason:field(answer,'REASON')};
+    return {status:'checked',title:references.find(item=>item.design.title===title)?.design.title||null,confidence:confidence(answer),reason:field(answer,'REASON'),compared_designs:references.map(item=>item.design.title)};
   }catch(error){if(/4006|daily free allocation/i.test(String(error)))throw error;return {status:'unavailable'};}
 }
 
@@ -152,6 +152,7 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
     else {chosen=null;matchConfidence=0;}
   }
   observed.reference_status=reference.status;
+  observed.reference_designs=reference.compared_designs||[];
   const verifiedArtwork=reference.status==='checked'&&reference.title===chosen?.title&&reference.confidence>=90;
   if(chosen&&roos(chosen.title)){
     const countConflict=Boolean(count&&count!==(chosen.title==='Five Kangaroos'?5:6));
