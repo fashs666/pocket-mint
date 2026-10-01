@@ -96,7 +96,11 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
   observed.retrieved_design_count=candidates.length;
   if(!hasDesignClues(clues))return stop(denomination==='unknown'?'Choose the denomination; I could not read the face value reliably.':'No distinctive artwork or lettering could be read. Retake the design side or search the catalogue.');
   const answer=answerText(await runVision(env,body.reverse,`One Australian coin${denomination==='unknown'?' with unreadable face value':` worth ${denomination}`}. Independent observations: WORDS=${clues.words}; MOTIF=${clues.motif}. Examine the ACTUAL artwork and lettering. Suggested designs (not an exhaustive list): ${candidates.map(design=>design.title).join(' | ')||'none from the first reading'}. If a different Australian design is recognisable, name it instead; the first motif description may be wrong. Do not force a suggestion, guess from popularity, or infer from year. Five Kangaroos and Mob of Six Roos require a clear whole design and an actual count of all animals. Dollar Discovery requires its small A/U/S mark; alphabet coin hunts require the correct letter and subject. If unsure use unknown. Reply: DESIGN=design name or unknown; CONFIDENCE=0-100; KANGAROOS=5|6|unknown; REASON=distinctive visible evidence.`,200));
-  const sameTitle=(a,b)=>text(a).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()===text(b).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const normalizeTitle=value=>text(value).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const sameTitle=(title,reading)=>{
+    const actual=normalizeTitle(title),name=normalizeTitle(reading);
+    return actual===name||name.split(' ').length>=3&&actual.startsWith(name+' ');
+  };
   // Retrieval is a ranking aid, not a hard exclusion. Only catalogue designs
   // within the permitted denomination scope can be nominated.
   const nominated=designs.filter(design=>sameTitle(design.title,field(answer,'DESIGN')));
