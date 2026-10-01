@@ -1,0 +1,206 @@
+{
+  "version": "0.14.15",
+  "source": "Three user exports, observation-only fixtures; no photographs or full model replies",
+  "cases": [
+    {
+      "id": "d26d9f33-4f5b-489a-9cca-3726fd7cb7d8",
+      "outcome": "partial",
+      "expected_coin_id": "AU20-2003-AUSTRALIAS-VOLUNTEERS",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 100,
+        "denomination_reading": "20c",
+        "denomination_uncertain": false,
+        "words": "VOLUNTEERS MAKING A DIFFERENCE",
+        "motif": "group of people.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [
+          "International Year of Volunteers",
+          "Australia’s Volunteers"
+        ],
+        "retrieved_design_count": 2,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "Volunteers Making a Difference",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "c2065541-a9e2-4518-bda5-d081621c602c",
+      "outcome": "wrong",
+      "expected_coin_id": "AU1-2020-QANTAS",
+      "observed": {
+        "denomination": "$1",
+        "denomination_confidence": 100,
+        "denomination_reading": "$1",
+        "denomination_uncertain": false,
+        "words": "ONE DOLLAR",
+        "motif": "large number 100 and small text underneath, exact details unclear.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "stable_dollar_result": {
+          "design": "50th Anniversary of Decimal Currency",
+          "reverse_confidence": 100,
+          "uncertain": false
+        },
+        "matching_engine": "stable-dollar",
+        "design_reading": "50th Anniversary of Decimal Currency",
+        "design_confidence": 100,
+        "reference_status": "not_required",
+        "design": "50th Anniversary of Decimal Currency"
+      }
+    },
+    {
+      "id": "4dc74ccb-0676-4c30-95f2-91709eb190b3",
+      "outcome": "partial",
+      "expected_coin_id": "AU20-2010-CENTENARY-OF-THE-AUSTRALIAN-TAXATION-OFFICE",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 100,
+        "denomination_reading": "20c",
+        "denomination_uncertain": false,
+        "words": "WORKING FOR ALL AUSTRALIANS 100 The Australian Taxation Office Centenary 2010",
+        "motif": "three wavy lines, 20 cents below two overlapping leaves",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [
+          "Centenary of the Australian Taxation Office",
+          "Federation — NSW",
+          "Federation — Victoria",
+          "Federation — Queensland",
+          "Federation — South Australia"
+        ],
+        "retrieved_design_count": 8,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "The Australian Taxation Office Centenary 2010",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "d5e96697-8cb8-40c6-9e63-434ed1955426",
+      "outcome": "wrong",
+      "expected_coin_id": "AU1-2020-QANTAS",
+      "observed": {
+        "denomination": "$1",
+        "denomination_confidence": 100,
+        "denomination_reading": "$1",
+        "denomination_uncertain": false,
+        "words": "ONE DOLLAR",
+        "motif": "stylized 100 with lines and star.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [
+          "Australian Bicentenary",
+          "Year of the Outback"
+        ],
+        "retrieved_design_count": 2,
+        "stable_dollar_result": {
+          "design": "50th Anniversary of Decimal Currency",
+          "reverse_confidence": 100,
+          "uncertain": false
+        },
+        "matching_engine": "stable-dollar",
+        "design_reading": "50th Anniversary of Decimal Currency",
+        "design_confidence": 100,
+        "reference_status": "not_required",
+        "design": "50th Anniversary of Decimal Currency"
+      }
+    },
+    {
+      "id": "11365704-6420-425c-8815-0824dd574790",
+      "outcome": "wrong",
+      "expected_coin_id": "AU1-1993-LANDCARE",
+      "observed": {
+        "denomination": "$1",
+        "denomination_confidence": 100,
+        "denomination_reading": "$1",
+        "denomination_uncertain": false,
+        "words": "DOLLAR",
+        "motif": "tree with wavy lines for leaves, small logo or shape to the right of tree",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [
+          "Great Aussie Coin Hunt 1 — A for Australia Post",
+          "Great Aussie Coin Hunt 1 — B for Boomerang",
+          "Great Aussie Coin Hunt 1 — C for Cricket",
+          "Great Aussie Coin Hunt 1 — D for Didgeridoo",
+          "Great Aussie Coin Hunt 1 — E for Esky"
+        ],
+        "retrieved_design_count": 8,
+        "stable_dollar_result": {
+          "design": null,
+          "reverse_confidence": 60,
+          "uncertain": true
+        },
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "Great Aussie Coin Hunt 1 — H for Hills Hoist",
+        "design_confidence": 100,
+        "reference_status": "unavailable",
+        "reference_designs": [],
+        "design": "Great Aussie Coin Hunt 1 — H for Hills Hoist"
+      }
+    },
+    {
+      "id": "48ded392-7979-44e8-ba83-04496aa2ea2a",
+      "outcome": "partial",
+      "expected_coin_id": "AU20-2003-AUSTRALIAS-VOLUNTEERS",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 100,
+        "denomination_reading": "20c",
+        "denomination_uncertain": false,
+        "words": "AUSTRALIA'S VOLUNTEERS MAKING A DIFFERENCE",
+        "motif": "multiple human faces.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [
+          "International Year of Volunteers",
+          "Australia’s Volunteers"
+        ],
+        "retrieved_design_count": 2,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "Australia's Volunteers Making a Difference",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "226331e5-b9ac-428a-bce6-52744de3a081",
+      "outcome": "wrong",
+      "expected_coin_id": "AU1-1999-OLDER-PERSONS",
+      "observed": {
+        "denomination": "$1",
+        "denomination_confidence": 100,
+        "denomination_reading": "$1",
+        "denomination_uncertain": false,
+        "words": "one dollar",
+        "motif": "central swirl with leaves.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "stable_dollar_result": {
+          "design": "50th Anniversary of Decimal Currency",
+          "reverse_confidence": 100,
+          "uncertain": false
+        },
+        "matching_engine": "stable-dollar",
+        "design_reading": "50th Anniversary of Decimal Currency",
+        "design_confidence": 100,
+        "reference_status": "not_required",
+        "design": "50th Anniversary of Decimal Currency"
+      }
+    }
+  ]
+}

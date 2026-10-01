@@ -151,6 +151,29 @@ render('2024',95);assert.match(element('identifyResults').innerHTML,/AU10-2024-L
 render('2024',45);assert.match(element('identifyResults').innerHTML,/Choose issue/);assert.match(element('identifyResults').innerHTML,/disabled/);
 render('2024',95,true);assert.match(element('identifyResults').innerHTML,/Review candidate/);assert.match(element('identifyResults').innerHTML,/disabled/);assert.doesNotMatch(element('identifyResults').innerHTML,/BEST MATCH/);
 const source=await readFile('public/identify.js','utf8');
+const latestCases=JSON.parse(await readFile('tests/fixtures/single-v01415-observations.json','utf8')).cases;
+for(const fixture of latestCases){
+  const o=fixture.observed,raw=`DENOM=${o.denomination}; CONFIDENCE=${o.denomination_confidence}; WORDS=${o.words}; MOTIF=${o.motif}`;
+  let replies=[raw,`DESIGN=${o.design_reading}; CONFIDENCE=100`];
+  let stableDollar=false;
+  if(o.stable_dollar_result?.design==='50th Anniversary of Decimal Currency'){
+    stableDollar=true;
+    replies=[raw,'DESIGN=50th Anniversary of Decimal Currency; TYPE=commemorative; WORDS=ONE DOLLAR; CONFIDENCE=100','DESIGN=50th Anniversary of Decimal Currency; CONFIDENCE=100'];
+  }
+  const replay=await identify(replies,{stableDollar});
+  assert.equal(replay.status,200);
+  if(stableDollar){
+    assert.equal(replay.data.uncertain,true,'reverse-only Decimal Currency nomination must never be confirmed');
+    assert.notEqual(replay.data.matches[0]?.id,'AU1-2016-DECIMAL-50');
+    assert.equal(replay.data.observed.stable_dollar_result.rejection,'requires_portrait_design_verification');
+  }else if(fixture.expected_coin_id==='AU1-1993-LANDCARE'){
+    assert.equal(replay.data.uncertain,true,'tree alone must not confirm an alphabet letter');
+    assert.ok(replay.data.matches.some(m=>m.id===fixture.expected_coin_id),'Landcare stays available for review');
+  }else{
+    assert.equal(replay.data.matches[0]?.id,fixture.expected_coin_id,'distinctive engraved title aliases resolve to the correct scoped catalogue design');
+    assert.equal(replay.data.uncertain,false);
+  }
+}
 const loadPhoto=source.slice(source.indexOf('async function loadIdentifyPhoto'),source.indexOf('function renderPhotoQuality'));
 assert.ok(loadPhoto.includes('prepareIdentifyPhoto(file)'));assert.ok(!loadPhoto.includes('createCircularSpecimen(file)'));
 console.log('PASS single: six denominations, Roos uncertainty, semantic candidates, image verification, year safety, renderer and intact photo preparation');

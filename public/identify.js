@@ -1,6 +1,7 @@
-const IDENTIFY_VERSION = "0.14.15";
+const IDENTIFY_VERSION = "0.14.16";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null, uncertain:false, analysisError:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
+let coinCameraDiagnostics=null,coinCameraFocusQueue=Promise.resolve();
 
 function setIdentifyStep(step) {
   document.querySelectorAll("[data-identify-step]").forEach(item => item.classList.toggle("on", Number(item.dataset.identifyStep) === step));
@@ -29,7 +30,7 @@ async function inspectIdentifyPhoto(file) {
   const size = 96, canvas = document.createElement("canvas");
   canvas.width = size; canvas.height = size;
   const context = canvas.getContext("2d",{willReadFrequently:true});
-  context.drawImage(bitmap,0,0,size,size); bitmap.close?.();
+  context.drawImage(bitmap,0,0,size,size);
   const pixels = context.getImageData(0,0,size,size).data;
   let brightness = 0, edges = 0, samples = 0;
   const lum = new Float32Array(size*size);
@@ -41,7 +42,28 @@ async function inspectIdentifyPhoto(file) {
   if (brightness<45) warnings.push("photo looks too dark");
   if (brightness>225) warnings.push("photo may have too much glare");
   if (edges/samples<13) warnings.push("photo may be blurry");
-  return {warnings,width,height,bytes:file.size,type:file.type||"unknown"};
+  // Measure fine detail in the centre separately. The rim/background can be
+  // sharp even when the coin's lettering is out of focus; 96px loses that detail.
+  const detailSize=256,crop=Math.min(width,height)*.65;
+  canvas.width=detailSize;canvas.height=detailSize;
+  context.drawImage(bitmap,(width-crop)/2,(height-crop)/2,crop,crop,0,0,detailSize,detailSize);bitmap.close?.();
+  const detail=measureCoinDetail(context.getImageData(0,0,detailSize,detailSize).data,detailSize);
+  if(detail.laplacian_variance<35&&!warnings.includes("photo may be blurry"))warnings.push("coin detail may be out of focus; check the small lettering");
+  if(Math.min(width,height)<512)warnings.push("photo resolution is low");
+  return {warnings,width,height,bytes:file.size,type:file.type||"unknown",detail,quality_check_version:2};
+}
+
+function measureCoinDetail(pixels,size) {
+  const lum=new Float32Array(size*size);
+  for(let i=0;i<lum.length;i++)lum[i]=.2126*pixels[i*4]+.7152*pixels[i*4+1]+.0722*pixels[i*4+2];
+  let sum=0,squared=0,samples=0;
+  for(let y=1;y<size-1;y++)for(let x=1;x<size-1;x++){
+    const i=y*size+x;
+    if(pixels[i*4+3]<240)continue;
+    const value=4*lum[i]-lum[i-1]-lum[i+1]-lum[i-size]-lum[i+size];
+    sum+=value;squared+=value*value;samples++;
+  }
+  return {laplacian_variance:samples?Math.round(Math.max(0,squared/samples-(sum/samples)**2)*100)/100:0,samples};
 }
 
 async function decodeIdentifyPhoto(file) {
@@ -96,7 +118,7 @@ async function prepareIdentifyPhoto(file) {
   return new File([blob], file.name?.replace(/\.[^.]+$/, ".jpg") || "coin-photo.jpg", {type: "image/jpeg", lastModified: Date.now()});
 }
 
-async function loadIdentifyPhoto(side,file) {
+async function loadIdentifyPhoto(side,file,cameraDiagnostics=null) {
   if (!file) return;
   identifyState.analysisCertain=null;
   identifyState.lastObserved=null;
@@ -113,6 +135,7 @@ async function loadIdentifyPhoto(side,file) {
   const url=URL.createObjectURL(specimen);
   try { identifyState[side]={file:prepared,specimenFile:specimen,url,quality:await inspectIdentifyPhoto(prepared)}; }
   catch { identifyState[side]={file:prepared,specimenFile:specimen,url,quality:{warnings:["quality could not be checked on this device"]}}; }
+  if(cameraDiagnostics)identifyState[side].quality.camera=cameraDiagnostics;
   preview.classList.add("hasPhoto"); preview.style.backgroundImage=`url("${url}")`;
   preview.innerHTML=`<strong>${side === "obverse" ? "Portrait side" : "Design side"}</strong><small>Tap for guided retake</small>`;
   renderPhotoQuality();updateAnalyseButton();
@@ -125,8 +148,8 @@ function renderPhotoQuality() {
     : identifyState.analysisCertain===false&&label==="Design"
       ? `<div class="qualityItem warn"><b>May reduce accuracy · ${label}</b><span>Basic checks passed, but the photo did not produce a reliable identification.</span></div>`
       : identifyState.analysisCertain===true&&label==="Design"
-        ? `<div class="qualityItem good"><b>Analysis-ready · ${label}</b><span>Basic checks passed and the design was recognised.</span></div>`
-        : `<div class="qualityItem"><b>Basic checks passed · ${label}</b><span>Resolution, lighting and overall sharpness look usable. Coin detail is checked during identification.</span></div>`).join("");
+        ? `<div class="qualityItem"><b>Candidate found · ${label}</b><span>Check the reference and small lettering. A match does not prove the photo is sharp.</span></div>`
+        : `<div class="qualityItem"><b>No obvious photo warning · ${label}</b><span>These are basic checks, not a focus guarantee. Retake if small lettering looks soft.</span></div>`).join("");
 }
 
 function updateAnalyseButton() {
@@ -441,13 +464,40 @@ async function setCoinCameraZoom(value) {
   try { await coinCameraTrack.applyConstraints({advanced:[{zoom:next}]}); } catch { /* Some cameras advertise zoom before accepting it. */ }
 }
 
-function setupCoinCameraControls() {
+async function setCoinCameraFocus(value) {
+  const track=coinCameraTrack,distance=track?.getCapabilities?.().focusDistance;
+  if(!distance)return;
+  const next=Math.max(distance.min,Math.min(distance.max,Number(value)));
+  try {
+    await track.applyConstraints({focusMode:{exact:"manual"},focusDistance:{exact:next}});
+    if(track!==coinCameraTrack)return;
+    const settings=track.getSettings?.()||{};
+    if(settings.focusMode!=="manual"||!Number.isFinite(settings.focusDistance))throw new Error("Focus settings could not be verified");
+    if(Number.isFinite(settings.focusDistance)&&Math.abs(settings.focusDistance-next)>(distance.step||.01)*1.5)throw new Error("Focus distance was not applied");
+    coinCameraDiagnostics.focus_mode="manual";coinCameraDiagnostics.focus_distance=settings.focusDistance??next;coinCameraDiagnostics.focus_error=null;
+    document.getElementById("coinCameraStatus").textContent="Adjust focus until the small lettering is sharp. Hold still before taking the photo.";
+  } catch {
+    if(track!==coinCameraTrack)return;
+    coinCameraDiagnostics.focus_error="manual_focus_not_applied";
+    document.getElementById("coinCameraFocusRow").hidden=true;
+    document.getElementById("coinCameraStatus").textContent="This camera did not accept manual focus. Move farther away, or use the phone camera below.";
+  }
+}
+
+async function setupCoinCameraControls() {
   const video=document.getElementById("coinCameraVideo"),slider=document.getElementById("coinCameraZoom"),zoomRow=document.getElementById("coinCameraZoomRow");
   coinCameraTrack=coinCameraStream?.getVideoTracks?.()[0]||null;
   const capabilities=coinCameraTrack?.getCapabilities?.()||{},settings=coinCameraTrack?.getSettings?.()||{},zoom=capabilities.zoom,focusModes=capabilities.focusMode||[];
+  const focusRow=document.getElementById("coinCameraFocusRow"),focus=document.getElementById("coinCameraFocus");
+  coinCameraDiagnostics={focus_modes:[...focusModes],focus_mode:settings.focusMode||"unreported",manual_focus_available:Boolean(focusModes.includes("manual")&&capabilities.focusDistance),focus_error:null};
+  focusRow.hidden=!coinCameraDiagnostics.manual_focus_available;
+  if(!focusRow.hidden){const distance=capabilities.focusDistance;focus.min=distance.min;focus.max=distance.max;focus.step=distance.step||.01;focus.value=settings.focusDistance??distance.min;focus.oninput=()=>{const value=focus.value;coinCameraFocusQueue=coinCameraFocusQueue.then(()=>setCoinCameraFocus(value));};}
   zoomRow.hidden=!zoom;
   if(zoom){slider.min=zoom.min;slider.max=zoom.max;slider.step=zoom.step||.1;coinCameraZoomValue=settings.zoom||zoom.min;slider.value=coinCameraZoomValue;document.getElementById("coinCameraZoomValue").value=`${coinCameraZoomValue.toFixed(1)}×`;slider.oninput=()=>setCoinCameraZoom(slider.value);}
-  if(focusModes.includes("continuous"))coinCameraTrack.applyConstraints({advanced:[{focusMode:"continuous"}]}).catch(()=>{});
+  if(focusModes.includes("continuous")){
+    try{await coinCameraTrack.applyConstraints({focusMode:{exact:"continuous"}});coinCameraDiagnostics.focus_mode=coinCameraTrack.getSettings?.().focusMode||"continuous";}
+    catch{coinCameraDiagnostics.focus_error="continuous_focus_not_applied";}
+  }
   video.ontouchstart=event=>{if(event.touches.length===2){event.preventDefault();coinCameraPinchStart=cameraTouchDistance(event.touches);coinCameraPinchZoom=coinCameraZoomValue;}};
   video.ontouchmove=event=>{if(event.touches.length===2&&coinCameraPinchStart){event.preventDefault();setCoinCameraZoom(coinCameraPinchZoom*cameraTouchDistance(event.touches)/coinCameraPinchStart);}};
   video.ontouchend=()=>{coinCameraPinchStart=0;};
@@ -465,8 +515,8 @@ async function openCoinCamera(side) {
     video.srcObject=coinCameraStream;
     await new Promise((resolve,reject)=>{video.onloadedmetadata=resolve;video.onerror=reject;});
     await video.play();
-    setupCoinCameraControls();
-    camera.classList.add("ready");status.textContent="Hold still and keep the full rim inside the circle.";
+    await setupCoinCameraControls();
+    camera.classList.add("ready");status.textContent=coinCameraDiagnostics.manual_focus_available?"Keep the full rim inside the circle. If lettering stays soft, adjust Focus or use the phone camera.":"Move farther away if lettering is soft; use zoom instead of moving too close. The phone camera below has its own focus controls.";
   } catch(error) {
     if(coinCameraStream)coinCameraStream.getTracks().forEach(track=>track.stop());
     coinCameraStream=null;coinCameraTrack=null;video.srcObject=null;camera.classList.add("fallback");
@@ -492,6 +542,7 @@ async function captureGuidedCoin() {
   if(!video.videoWidth||!video.videoHeight)return;
   shutter.disabled=true;status.textContent="Cleaning up the coin image…";
   try {
+    await coinCameraFocusQueue;
     const videoRect=video.getBoundingClientRect(),guideRect=guide.getBoundingClientRect();
     const scale=Math.max(videoRect.width/video.videoWidth,videoRect.height/video.videoHeight);
     const displayedWidth=video.videoWidth*scale,displayedHeight=video.videoHeight*scale;
@@ -507,7 +558,7 @@ async function captureGuidedCoin() {
     catch { blob=await canvasBlob(canvas,"image/png"); }
     const extension=blob.type==="image/png"?"png":"webp";
     const file=new File([blob],`guided-${coinCameraSide}-${Date.now()}.${extension}`,{type:blob.type||`image/${extension}`,lastModified:Date.now()});
-    const side=coinCameraSide;closeCoinCamera();await loadIdentifyPhoto(side,file);
+    const side=coinCameraSide,diagnostics={...coinCameraDiagnostics};closeCoinCamera();await loadIdentifyPhoto(side,file,diagnostics);
   } catch(error) {
     status.textContent="That photo could not be prepared. Please try again.";
   } finally { shutter.disabled=false; }

@@ -25,6 +25,7 @@ export function readSingleDenomination(answer){
   return {...original,denomination};
 }
 const roos=title=>/^(Five Kangaroos|Mob of Six Roos)$/.test(title);
+const reverseAliases=design=>design.title==='Australia’s Volunteers'?['Australia’s Volunteers Making a Difference','Volunteers Making a Difference']:design.title==='Centenary of the Australian Taxation Office'?['The Australian Taxation Office Centenary 2010','Australian Taxation Office Centenary']:[];
 const generic=new Set(['unknown','none','coin','coins','australia','australian','dollar','dollars','cent','cents','one','two','five','ten','twenty','fifty','gold','golden','silver','round','metal','colour','coloured','color','design','portrait','year']);
 export function hasDesignClues(clues){return `${clues.words} ${clues.motif}`.toLowerCase().split(/[^a-z]+/).some(word=>word.length>2&&!generic.has(word));}
 
@@ -39,9 +40,10 @@ export function singleCoinCandidates(designs,clues){
   const nonDistinctive=new Set(['the','and','with','text','lines','line','above','below','large','small','shape','figure','stylized','abstract','wavy','like','similar','holding']);
   const tokens=value=>[...new Set(text(value).toLowerCase().split(/[^a-z]+/).filter(word=>word.length>=3&&!generic.has(word)&&!nonDistinctive.has(word)))];
   const score=design=>{
-    const labels=tokens([design.title,...(design.searchAliases||[]),visualHints(design)]);
+    const labels=tokens([design.title,...(design.searchAliases||[]),...reverseAliases(design),visualHints(design)]);
     const hits=value=>tokens(value).filter(token=>labels.some(label=>label===token||label.length>=5&&token.length>=5&&(label.startsWith(token)||token.startsWith(label)))).length;
-    return hits(clues.words)*10+hits(clues.motif);
+    const landcare=design.title==='Landcare Australia'&&/\btree\b/i.test(clues.motif)&&/\b(wavy|waves|water)\b/i.test(clues.motif)?5:0;
+    return hits(clues.words)*10+hits(clues.motif)+landcare;
   };
   return designs.filter(design=>score(design)>0).sort((a,b)=>score(b)-score(a)).slice(0,8);
 }
@@ -119,7 +121,12 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
     const textCandidates=singleCoinCandidates(designs,{words:clues.words,motif:''});
     const textConflict=textCandidates.length&&!textCandidates.some(design=>design.id===chosen?.id);
     const sameUnresolvedDesign=chosen&&legacy.needs_year&&first?.confidence>=.7&&legacy.matches.every(match=>chosen.yearVariants.some(variant=>variant.id===match.id));
-    if(chosen&&!roos(chosen.title)&&!textConflict&&!legacy.uncertain&&(first.confidence>=.8||sameUnresolvedDesign)&&legacy.observed?.design===chosen.title&&legacy.observed?.side_confidence?.reverse>=80){
+    // A special portrait-side issue cannot be proved by a reverse-only read.
+    const obverseOnly=chosen?.reference_image_kind==='obverse';
+    if(obverseOnly)observed.stable_dollar_result.rejection='requires_portrait_design_verification';
+    const alphabetLetter=chosen?.title.match(/Coin Hunt \d+ — ([A-Z]) for /)?.[1];
+    const missingLetter=alphabetLetter&&!new RegExp(`\\b(?:letter\\s+)?${alphabetLetter}\\b`,'i').test(clues.words);
+    if(chosen&&!obverseOnly&&!missingLetter&&!roos(chosen.title)&&!textConflict&&!legacy.uncertain&&(first.confidence>=.8||sameUnresolvedDesign)&&legacy.observed?.design===chosen.title&&legacy.observed?.side_confidence?.reverse>=80){
       observed.matching_engine='stable-dollar';
       observed.design_reading=chosen.title;
       observed.design_confidence=legacy.observed.side_confidence.reverse;
@@ -138,7 +145,7 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
   };
   // Retrieval is a ranking aid, not a hard exclusion. Only catalogue designs
   // within the permitted denomination scope can be nominated.
-  const nominated=designs.filter(design=>sameTitle(design.title,field(answer,'DESIGN')));
+  const nominated=designs.filter(design=>design.reference_image_kind!=='obverse'&&[design.title,...reverseAliases(design)].some(title=>sameTitle(title,field(answer,'DESIGN'))));
   let chosen=nominated.length===1?nominated[0]:undefined;
   const count=/^[56]$/.test(field(answer,'KANGAROOS'))?Number(field(answer,'KANGAROOS')):null;
   observed.kangaroo_count=count;
@@ -154,6 +161,11 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
   observed.reference_status=reference.status;
   observed.reference_designs=reference.compared_designs||[];
   const verifiedArtwork=reference.status==='checked'&&reference.title===chosen?.title&&reference.confidence>=90;
+  // The nomination saying "H" is not evidence that the photograph showed H.
+  // Alphabet issues need a letter independently read from the image, or an
+  // actual matching-reference comparison; a tree alone is not Hills Hoist.
+  const alphabetLetter=chosen?.title.match(/Coin Hunt \d+ — ([A-Z]) for /)?.[1];
+  if(alphabetLetter&&!verifiedArtwork&&!new RegExp(`\\b(?:letter\\s+)?${alphabetLetter}\\b`,'i').test(clues.words))matchConfidence=0;
   if(chosen&&roos(chosen.title)){
     const countConflict=Boolean(count&&count!==(chosen.title==='Five Kangaroos'?5:6));
     // Counting overlapping animals is unreliable. A strong direct comparison
