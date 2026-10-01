@@ -78,7 +78,7 @@ async function verifyReferences(designs,request,env,image,answerText){
   }catch(error){if(/4006|daily free allocation/i.test(String(error)))throw error;return {status:'unavailable'};}
 }
 
-export async function identifySingleCoin({request,env,body,runVision,answerText,json}){
+export async function identifySingleCoin({request,env,body,runVision,answerText,json,legacyIdentify}){
   const raw=answerText(await runVision(env,body.reverse,'One Australian coin, design side. Describe ONLY visible distinctive lettering and central artwork before seeing any catalogue names. Read FACE VALUE if visible; do not use size alone. For DENOM choose exactly one value from 5c, 10c, 20c, 50c, $1, $2, unknown. Never return alternatives. CONFIDENCE describes the face-value reading only. Transcribe lettering even if the value is unreadable. Reply with four semicolon-separated fields: DENOM=value; CONFIDENCE=0-100; WORDS=distinctive readable words or unknown; MOTIF=visible objects and arrangement or unknown.',180));
   const normalized=normalizeSingleObservation(raw),detected=readSingleDenomination(raw),clues={words:normalized.words,motif:normalized.motif};
   const supplied=Object.hasOwn(DENOMINATIONS,body.denomination)?body.denomination:'';
@@ -94,6 +94,41 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
   const candidates=singleCoinCandidates(designs,clues);
   observed.retrieved_designs=candidates.slice(0,5).map(design=>design.title);
   observed.retrieved_design_count=candidates.length;
+  const finish=async(chosen,matchConfidence,evidence,reference=null)=>{
+    if(body.obverse){
+      const yearAnswer=answerText(await runVision(env,body.obverse,'Read ONLY the four digits physically stamped on this Australian coin portrait side. Do not infer from the portrait or design. If any digit is unclear use unknown. Reply: YEAR=four digits or unknown; CONFIDENCE=0-100.',70));
+      const year=field(yearAnswer,'YEAR');
+      if(/^(19|20)\d{2}$/.test(year)&&confidence(yearAnswer)>=80){observed.year=year;observed.year_confidence=confidence(yearAnswer);}
+    }
+    const result=rankCirculatingDesigns([chosen],denomination,`DESIGN=${chosen.title}; CONFIDENCE=${matchConfidence}`,observed.year);
+    if(result.matches.length)result.matches[0].evidence.push(...evidence);
+    return json({...result,observed:{...observed,design:chosen.title},reference_match:reference});
+  };
+  // The earlier dollar recogniser still works on designs for which the new
+  // caption/nomination path regressed. Keep its positive design evidence,
+  // validate against the active circulating catalogue, and read years using
+  // the current strict portrait reader. An optional reference failure cannot
+  // erase this positive result.
+  if(denomination==='$1'&&legacyIdentify&&env.ENABLE_STABLE_DOLLAR_MATCHER!=='false'){
+    const legacyResponse=await legacyIdentify({reverseOnly:true});
+    const legacy=await legacyResponse.json();
+    if(!legacyResponse.ok)return json({...legacy,observed},legacyResponse.status);
+    observed.stable_dollar_result={design:legacy.observed?.design||null,reverse_confidence:legacy.observed?.side_confidence?.reverse||0,uncertain:Boolean(legacy.uncertain)};
+    const first=legacy.matches?.[0];
+    const chosen=designs.find(design=>design.yearVariants.some(variant=>variant.id===first?.id));
+    const textCandidates=singleCoinCandidates(designs,{words:clues.words,motif:''});
+    const textConflict=textCandidates.length&&!textCandidates.some(design=>design.id===chosen?.id);
+    const sameUnresolvedDesign=chosen&&legacy.needs_year&&first?.confidence>=.7&&legacy.matches.every(match=>chosen.yearVariants.some(variant=>variant.id===match.id));
+    if(chosen&&!roos(chosen.title)&&!textConflict&&!legacy.uncertain&&(first.confidence>=.8||sameUnresolvedDesign)&&legacy.observed?.design===chosen.title&&legacy.observed?.side_confidence?.reverse>=80){
+      observed.matching_engine='stable-dollar';
+      observed.design_reading=chosen.title;
+      observed.design_confidence=legacy.observed.side_confidence.reverse;
+      observed.reference_status='not_required';
+      if(denominationUncertain)return json({matches:[{id:first.id,confidence:.5,evidence:['Recognised dollar design; confirm the face value before adding']}],uncertain:true,needs_year:true,observed:{...observed,design:chosen.title},reason:'Design recognised. Confirm the face value and issue before adding.'});
+      return finish(chosen,Math.max(80,Math.round(first.confidence*100)),first.evidence||[]);
+    }
+  }
+  observed.matching_engine='circulating-design';
   if(!hasDesignClues(clues))return stop(denomination==='unknown'?'Choose the denomination; I could not read the face value reliably.':'No distinctive artwork or lettering could be read. Retake the design side or search the catalogue.');
   const answer=answerText(await runVision(env,body.reverse,`One Australian coin${denomination==='unknown'?' with unreadable face value':` worth ${denomination}`}. Independent observations: WORDS=${clues.words}; MOTIF=${clues.motif}. Examine the ACTUAL artwork and lettering. Suggested designs (not an exhaustive list): ${candidates.map(design=>design.title).join(' | ')||'none from the first reading'}. If a different Australian design is recognisable, name it instead; the first motif description may be wrong. Do not force a suggestion, guess from popularity, or infer from year. Five Kangaroos and Mob of Six Roos require a clear whole design and an actual count of all animals. Dollar Discovery requires its small A/U/S mark; alphabet coin hunts require the correct letter and subject. If unsure use unknown. Reply: DESIGN=design name or unknown; CONFIDENCE=0-100; KANGAROOS=5|6|unknown; REASON=distinctive visible evidence.`,200));
   const normalizeTitle=value=>text(value).toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -131,12 +166,7 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
     const review=chosen?[chosen,...candidates.filter(design=>design.id!==chosen.id)].slice(0,5):candidates.slice(0,5);
     return json({matches:review.map(design=>({id:design.yearVariants.at(-1).id,confidence:.5,evidence:['Candidate for manual comparison; design not confirmed']})),uncertain:true,needs_year:true,observed,reason:!review.length?'No design could be confirmed from the visible details. Retake the design side or search the catalogue.':denominationUncertain?'Possible design found. Confirm the coin value and compare the candidate artwork before choosing the year.':'The exact design is uncertain. Compare the candidate images, retake the photo, or use visible clues.'});
   }
-  if(body.obverse){
-    const yearAnswer=answerText(await runVision(env,body.obverse,'Read ONLY the four digits physically stamped on this Australian coin portrait side. Do not infer from the portrait or design. If any digit is unclear use unknown. Reply: YEAR=four digits or unknown; CONFIDENCE=0-100.',70));
-    const year=field(yearAnswer,'YEAR');
-    if(/^(19|20)\d{2}$/.test(year)&&confidence(yearAnswer)>=80){observed.year=year;observed.year_confidence=confidence(yearAnswer);}
-  }
-  const result=rankCirculatingDesigns([chosen],denomination,`DESIGN=${chosen.title}; CONFIDENCE=${matchConfidence}`,observed.year);
-  if(result.matches.length){result.matches[0].evidence.push(observed.kangaroo_count_conflict?'Initial animal count was inconsistent; matched by reference artwork':field(answer,'REASON')||'distinctive artwork checked');if(reference.status==='checked')result.matches[0].evidence.push('catalogue reference image comparison',reference.reason||'matching reverse artwork');}
-  return json({...result,observed:{...observed,design:chosen.title},reference_match:reference.status==='checked'?reference:null});
+  const evidence=[observed.kangaroo_count_conflict?'Initial animal count was inconsistent; matched by reference artwork':field(answer,'REASON')||'distinctive artwork checked'];
+  if(reference.status==='checked')evidence.push('catalogue reference image comparison',reference.reason||'matching reverse artwork');
+  return finish(chosen,matchConfidence,evidence,reference.status==='checked'?reference:null);
 }

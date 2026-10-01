@@ -6,10 +6,11 @@ import {singleCoinCandidates,hasDesignClues,readSingleDenomination,normalizeSing
 const catalogue=JSON.parse(await readFile('public/catalogue-v2.json','utf8'));
 const legacy=JSON.parse(await readFile('public/catalogue.json','utf8'));
 const reverse='data:image/jpeg;base64,AA==';
-async function identify(answers,{reference=false,...overrides}={}){
+async function identify(answers,{reference=false,stableDollar=false,...overrides}={}){
   const calls=[];
   const image=()=>new Response(new Uint8Array([255,216,255,217]),{headers:{'content-type':'image/jpeg'}});
   const response=await worker.fetch(new Request('https://test/api/identify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',single_coin:true,reverse,...overrides})}),{
+    ENABLE_STABLE_DOLLAR_MATCHER:stableDollar?'true':'false',
     AI:{run:async(_model,input)=>{calls.push(input);assert.ok(answers.length,'unexpected extra vision call');return {response:answers.shift()};}},
     REFERENCE_FETCH:async()=>reference?image():new Response('',{status:404}),
     ASSETS:{fetch:async request=>String(request).includes('catalogue-v2')?new Response(JSON.stringify(catalogue)):String(request).includes('catalogue.json')?new Response(JSON.stringify(legacy)):reference?image():new Response('',{status:404})}
@@ -80,6 +81,23 @@ assert.equal(shortScouting.data.matches[0]?.id,'AU1-2008-SCOUTING');
 assert.equal(shortScouting.data.uncertain,false);
 const vagueName=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=ONE DOLLAR; MOTIF=kangaroo','DESIGN=Five; CONFIDENCE=100']);
 assert.equal(vagueName.data.uncertain,true,'a vague partial name cannot identify a design');
+// Restore the independently exercised pre-regression dollar recognition path.
+// Its exact catalogue design survives an unavailable optional comparison.
+for(const [words,title,id] of [['Centenary of Scouting Australia 1 dollar','Centenary of Scouting in Australia','AU1-2008-SCOUTING'],['ONE DOLLAR','Year of the Outback','AU1-2002-OUTBACK'],['Donation Dollar','Donation Dollar','AU1-2025-DONATION']]){
+  const stable=await identify([`DENOM=$1; CONFIDENCE=100; WORDS=${words}; MOTIF=emblem`,`DESIGN=${title}; TYPE=commemorative; WORDS=${words}; SUBJECT=visible artwork; KANGAROOS=unknown; CONFIDENCE=100`],{stableDollar:true});
+  assert.equal(stable.data.uncertain,false);
+  assert.equal(stable.data.observed.matching_engine,'stable-dollar');
+  assert.equal(stable.calls.length,2,'no extra nomination or mandatory reference veto');
+  assert.ok(catalogue.designs.find(d=>d.title===title&&d.denomination===100).yearVariants.some(v=>v.id===stable.data.matches[0]?.id));
+  assert.equal(stable.data.observed.year,null);
+}
+const stableWrongYear=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=Outback; MOTIF=map','DESIGN=Year of the Outback; TYPE=commemorative; WORDS=OUTBACK; CONFIDENCE=100','YEAR=2008; CONFIDENCE=100'],{stableDollar:true,obverse:reverse});
+assert.equal(stableWrongYear.data.matches.length,0,'restoration must retain the current stamped-year check');
+const stableConflict=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=Centenary of Scouting Scouts; MOTIF=fleur-de-lis','DESIGN=100 Years of Qantas; TYPE=commemorative; WORDS=QANTAS; CONFIDENCE=100','DESIGN=Centenary of Scouting in Australia; CONFIDENCE=95'],{stableDollar:true});
+assert.equal(stableConflict.data.matches[0]?.id,'AU1-2008-SCOUTING','independent distinctive text must reject an inconsistent legacy design');
+const stableRoosFallback=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=ONE DOLLAR; MOTIF=group of kangaroos','DESIGN=unknown; TYPE=standard; WORDS=ONE DOLLAR; SUBJECT=kangaroos; CONFIDENCE=100','DESIGN=Five Kangaroos; CONFIDENCE=95; KANGAROOS=5'],{stableDollar:true});
+assert.equal(stableRoosFallback.data.observed.matching_engine,'circulating-design');
+assert.equal(stableRoosFallback.data.observed.design,'Five Kangaroos');
 const repairedValue=await identify(['DENOM=unknown; CONFIDENCE=100; WORDS=ONE DOLLAR QANTAS CENTENARY; MOTIF=airplane','DESIGN=100 Years of Qantas; CONFIDENCE=95']);
 assert.equal(repairedValue.data.matches[0]?.id,'AU1-2020-QANTAS');
 assert.equal(singleCoinCandidates(catalogue.designs.filter(d=>d.denomination===10),{words:'unknown',motif:'bird with long tail feathers'})[0].title,'Lyrebird');
