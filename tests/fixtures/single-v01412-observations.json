@@ -1,0 +1,10 @@
+{
+  "source": "pocket-mint-identification-tests-2026-10-01.json",
+  "scope": "Saved vision observations only; original photos and subsequent model replies are absent from the export.",
+  "cases": [
+    {"name":"bird", "observed":{"denomination":"$1","denomination_confidence":80,"denomination_reading":"$1|unknown","words":"ONE DOLLAR","motif":"bird-like figure or unknown."}},
+    {"name":"scouting", "observed":{"denomination":"$1","denomination_confidence":50,"denomination_reading":"$1|unknown","words":"Centenary of Scouting 1 Dollar","motif":"fleur-de-lis or similar stylized flower and lines or unknown"}},
+    {"name":"wavy-lines", "observed":{"denomination":"$1","denomination_confidence":100,"denomination_reading":"$1| CONFIDENCE=100","words":"1 DOLLAR","motif":"abstract wavy lines, large numeral 1, small logo or icon"}},
+    {"name":"tree", "observed":{"denomination":"unknown","denomination_confidence":100,"denomination_reading":"$1|unknown","words":"DOLLAR","motif":"tree and wavy lines or unknown."}}
+  ]
+}

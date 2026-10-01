@@ -1,19 +1,26 @@
-import {DENOMINATIONS,parseDenomination,independentClues,shortlistDesigns,rankCirculatingDesigns} from './identify-circulating.js';
+import {DENOMINATIONS,parseDenomination,shortlistDesigns,rankCirculatingDesigns} from './identify-circulating.js';
 
-const field=(answer,key)=>String(answer||'').match(new RegExp(`\\b${key}\\s*=\\s*([^;\\n]+)`,'i'))?.[1]?.trim()||'';
+const field=(answer,key)=>String(answer||'').match(new RegExp(`\\b${key}\\s*=\\s*([^;\\n]+)`,'i'))?.[1]?.split(/\|\s*[A-Z_]+\s*=/i)[0]?.trim()||'';
 const confidence=answer=>Math.max(0,Math.min(100,Number(field(answer,'CONFIDENCE'))||0));
+const text=value=>Array.isArray(value)?value.map(text).filter(Boolean).join(' '):String(value||'').trim();
+export function normalizeSingleObservation(answer){
+  if(answer&&typeof answer==='object')return {denomination_reading:text(answer.denomination_reading||answer.denomination),denomination_confidence:Number(answer.denomination_confidence??answer.confidence)||0,words:text(answer.words),motif:text(answer.motif)};
+  return {denomination_reading:field(answer,'DENOM'),denomination_confidence:confidence(answer),words:field(answer,'WORDS'),motif:field(answer,'MOTIF')};
+}
 export function readSingleDenomination(answer){
-  const original=parseDenomination(answer);
-  const value=field(answer,'DENOM').toLowerCase().replace(/["'`]/g,'').replace(/\s+/g,' ').trim();
+  const observation=normalizeSingleObservation(answer);
+  const original={...parseDenomination(answer),confidence:Math.max(0,Math.min(100,observation.denomination_confidence))};
+  const value=observation.denomination_reading.toLowerCase().replace(/["'`]/g,'').replace(/\s+/g,' ').trim();
   const aliases={'1':'$1','2':'$2','5':'5c','10':'10c','20':'20c','50':'50c','1 dollar':'$1','one dollar':'$1','2 dollars':'$2','two dollars':'$2','5 cents':'5c','five cents':'5c','10 cents':'10c','ten cents':'10c','20 cents':'20c','twenty cents':'20c','50 cents':'50c','fifty cents':'50c','$ 1':'$1','$ 2':'$2'};
-  const denomination=Object.hasOwn(DENOMINATIONS,value)?value:aliases[value]||original.denomination;
-  const words=field(answer,'WORDS');
+  const alternatives=[...new Set(value.split('|').map(part=>part.trim()).map(part=>Object.hasOwn(DENOMINATIONS,part)?part:aliases[part]).filter(Boolean))];
+  const denomination=alternatives.length===1?alternatives[0]:original.denomination;
+  const words=observation.words;
   const readable=[['$1',/\b(?:one|1)\s+dollars?\b/i],['$2',/\b(?:two|2)\s+dollars?\b/i],['5c',/\b(?:five|5)\s+cents?\b/i],['10c',/\b(?:ten|10)\s+cents?\b/i],['20c',/\b(?:twenty|20)\s+cents?\b/i],['50c',/\b(?:fifty|50)\s+cents?\b/i]].filter(([,pattern])=>pattern.test(words));
   // Only explicit face-value lettering can repair an unknown formatted value.
   // Neither colour, relative size nor a familiar motif is sufficient.
   if(readable.length===1){
     if(denomination!=='unknown'&&denomination!==readable[0][0])return {...original,denomination:'unknown',confidence:0,conflict:true};
-    return {...original,denomination:readable[0][0]};
+    return {...original,denomination:readable[0][0],face_value_read:true};
   }
   return {...original,denomination};
 }
@@ -22,12 +29,19 @@ const generic=new Set(['unknown','none','coin','coins','australia','australian',
 export function hasDesignClues(clues){return `${clues.words} ${clues.motif}`.toLowerCase().split(/[^a-z]+/).some(word=>word.length>2&&!generic.has(word));}
 
 export function singleCoinCandidates(designs,clues){
+  clues={words:text(clues.words),motif:text(clues.motif)};
   if(!hasDesignClues(clues))return [];
   const hints={Echidna:'spiny spines anteater',Lyrebird:'bird tail feathers',Platypus:'duck bill swimming', 'Commonwealth Coat of Arms (dodecagonal)':'shield emu kangaroo coat arms', 'Aboriginal Elder':'aboriginal indigenous man elder stars', 'Five Kangaroos':'kangaroos roos group mob', 'Mob of Six Roos':'kangaroos roos group mob'};
   const expanded=designs.map(design=>({...design,searchAliases:[...(design.searchAliases||[]),hints[design.title]||'']}));
   const shortlist=shortlistDesigns(expanded,clues);
   // Wording is a ranking aid, not a reason to exclude every possible design.
-  return shortlist.length?shortlist:designs;
+  const tokens=value=>[...new Set(text(value).toLowerCase().split(/[^a-z]+/).filter(word=>word.length>=4&&!generic.has(word)))];
+  const score=design=>{
+    const labels=tokens([design.title,...(design.searchAliases||[]),hints[design.title]||'']);
+    const hits=value=>tokens(value).filter(token=>labels.some(label=>label===token||label.length>=5&&token.length>=5&&(label.startsWith(token)||token.startsWith(label)))).length;
+    return hits(clues.words)*10+hits(clues.motif);
+  };
+  return (shortlist.length?shortlist:designs).slice().sort((a,b)=>score(b)-score(a));
 }
 
 async function referenceImage(design,request,env){
@@ -64,24 +78,29 @@ async function verifyReferences(designs,request,env,image,answerText){
 
 export async function identifySingleCoin({request,env,body,runVision,answerText,json}){
   const raw=answerText(await runVision(env,body.reverse,'One Australian coin, design side. Describe ONLY visible distinctive lettering and central artwork before seeing any catalogue names. Read FACE VALUE if visible; do not use size alone. If unclear use unknown. Reply: DENOM=5c|10c|20c|50c|$1|$2|unknown; CONFIDENCE=0-100; WORDS=distinctive readable words or unknown; MOTIF=visible objects and arrangement or unknown.',180));
-  const detected=readSingleDenomination(raw),clues=independentClues(raw);
+  const normalized=normalizeSingleObservation(raw),detected=readSingleDenomination(raw),clues={words:normalized.words,motif:normalized.motif};
   const supplied=Object.hasOwn(DENOMINATIONS,body.denomination)?body.denomination:'';
   const denomination=supplied||detected.denomination;
-  const observed={denomination,denomination_confidence:detected.confidence,denomination_reading:field(raw,'DENOM').slice(0,80),words:clues.words,motif:clues.motif,year:null,year_confidence:0};
+  const denominationUncertain=!supplied&&detected.confidence<75;
+  const observed={denomination,denomination_confidence:detected.confidence,denomination_reading:normalized.denomination_reading.slice(0,80),denomination_uncertain:denominationUncertain,words:clues.words,motif:clues.motif,year:null,year_confidence:0};
   const stop=reason=>json({matches:[],uncertain:true,needs_year:false,observed,reason});
   if(detected.conflict)return stop('The value reading conflicts with the visible lettering. Check the face value or retake the photo.');
   if(supplied&&detected.denomination!=='unknown'&&detected.confidence>=85&&detected.denomination!==supplied){observed.denomination=detected.denomination;return stop(`The photo appears to show ${detected.denomination}, but ${supplied} was selected. Check the face value.`);}
-  if(denomination==='unknown'||!supplied&&detected.confidence<75)return stop('Choose the denomination; I could not read the face value reliably.');
+  if(denomination==='unknown')return stop('Choose the denomination; I could not read the face value reliably.');
   const response=await env.ASSETS.fetch(new URL('/catalogue-v2.json',request.url));
   if(!response.ok)throw new Error('Circulating catalogue unavailable');
   const catalogue=await response.json(),designs=catalogue.designs.filter(design=>design.denomination===DENOMINATIONS[denomination]);
   const candidates=singleCoinCandidates(designs,clues);
+  observed.retrieved_designs=candidates.slice(0,5).map(design=>design.title);
+  observed.retrieved_design_count=candidates.length;
   if(!candidates.length)return stop('No distinctive artwork or lettering could be read. Retake the design side or search the catalogue.');
   const answer=answerText(await runVision(env,body.reverse,`One Australian ${denomination} coin. Independent observations: WORDS=${clues.words}; MOTIF=${clues.motif}. Compare the ACTUAL image to these catalogue designs: ${candidates.map(design=>design.title).join(' | ')}. Pick an EXACT title only when supported. Do not infer from year. Five Kangaroos and Mob of Six Roos require a clear whole design and an actual count of all animals. Dollar Discovery requires its small A/U/S mark; alphabet coin hunts require the correct letter and subject. If unsure use unknown. Reply: DESIGN=exact title or unknown; CONFIDENCE=0-100; KANGAROOS=5|6|unknown; REASON=distinctive visible evidence.`,200));
   let chosen=candidates.find(design=>design.title===field(answer,'DESIGN'));
   const count=/^[56]$/.test(field(answer,'KANGAROOS'))?Number(field(answer,'KANGAROOS')):null;
   observed.kangaroo_count=count;
   let matchConfidence=confidence(answer);
+  observed.design_reading=field(answer,'DESIGN');
+  observed.design_confidence=matchConfidence;
   const referenceChoices=chosen?[chosen,...candidates.filter(design=>design.id!==chosen.id)]:candidates.length<=3?candidates:[];
   const reference=referenceChoices.length?await verifyReferences(referenceChoices,request,env,body.reverse,answerText):{status:'unavailable'};
   if(reference.status==='checked'){
@@ -97,9 +116,12 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
     if(countConflict&&verifiedArtwork){observed.kangaroo_count=null;observed.kangaroo_count_conflict=true;}
     else if(countConflict||!count&&!verifiedArtwork)chosen=null;
   }
-  if(!chosen||matchConfidence<80){
-    const review=candidates.length<=5?candidates:chosen?[chosen]:[];
-    return json({matches:review.map(design=>({id:design.yearVariants.at(-1).id,confidence:.5,evidence:['Candidate for manual comparison; design not confirmed']})),uncertain:true,needs_year:true,observed,reason:'The exact design is uncertain. Compare the candidate images, retake the photo, or use visible clues.'});
+  if(!chosen||matchConfidence<80||denominationUncertain){
+    // Keep retrieved text matches even when value/design confidence is weak.
+    // A generic motif with no retrieval hits cannot justify arbitrary cards.
+    const retrieved=shortlistDesigns(candidates,clues);
+    const review=chosen?[chosen,...retrieved.filter(design=>design.id!==chosen.id)].slice(0,5):retrieved.length?retrieved.slice(0,5):candidates.length<=5?candidates:[];
+    return json({matches:review.map(design=>({id:design.yearVariants.at(-1).id,confidence:.5,evidence:['Candidate for manual comparison; design not confirmed']})),uncertain:true,needs_year:true,observed,reason:denominationUncertain?'Possible design found. Confirm the coin value and compare the candidate artwork before choosing the year.':'The exact design is uncertain. Compare the candidate images, retake the photo, or use visible clues.'});
   }
   if(body.obverse){
     const yearAnswer=answerText(await runVision(env,body.obverse,'Read ONLY the four digits physically stamped on this Australian coin portrait side. Do not infer from the portrait or design. If any digit is unclear use unknown. Reply: YEAR=four digits or unknown; CONFIDENCE=0-100.',70));

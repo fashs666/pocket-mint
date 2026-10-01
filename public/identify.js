@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.14.12";
+const IDENTIFY_VERSION = "0.14.13";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null, uncertain:false, analysisError:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
 

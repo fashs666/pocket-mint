@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import worker from '../src/index.js';
-import {singleCoinCandidates,hasDesignClues,readSingleDenomination} from '../src/identify-single.js';
+import {singleCoinCandidates,hasDesignClues,readSingleDenomination,normalizeSingleObservation} from '../src/identify-single.js';
 const catalogue=JSON.parse(await readFile('public/catalogue-v2.json','utf8'));
 const legacy=JSON.parse(await readFile('public/catalogue.json','utf8'));
 const reverse='data:image/jpeg;base64,AA==';
@@ -22,6 +22,32 @@ assert.equal(readSingleDenomination('DENOM=$ 2; CONFIDENCE=95; WORDS=unknown').d
 assert.equal(readSingleDenomination('DENOM=10 cents; CONFIDENCE=95; WORDS=unknown').denomination,'10c');
 assert.equal(readSingleDenomination('DENOM=$2; CONFIDENCE=95; WORDS=ONE DOLLAR').conflict,true);
 assert.equal(readSingleDenomination('DENOM=unknown; CONFIDENCE=95; WORDS=2024; MOTIF=gold small circle').denomination,'unknown');
+assert.equal(readSingleDenomination('DENOM=$1|unknown; CONFIDENCE=100; WORDS=DOLLAR').denomination,'$1');
+assert.equal(readSingleDenomination('DENOM=$1|$2|unknown; CONFIDENCE=100; WORDS=DOLLAR').denomination,'unknown');
+assert.equal(normalizeSingleObservation({words:['Centenary','of Scouting'],confidence:50}).words,'Centenary of Scouting');
+const exportedCases=JSON.parse(await readFile('tests/fixtures/single-v01412-observations.json','utf8')).cases;
+for(const fixture of exportedCases){
+  const observed=fixture.observed;
+  const raw=`DENOM=${observed.denomination_reading}; CONFIDENCE=${observed.denomination_confidence}; WORDS=${observed.words}; MOTIF=${observed.motif}`;
+  // The export lacks later vision replies. Deliberately return unknown to
+  // verify retrieval survives uncertainty without inventing a correct match.
+  const replay=await identify([raw,'DESIGN=unknown; CONFIDENCE=0']);
+  assert.equal(replay.status,200);
+  assert.equal(replay.calls.length,2,`${fixture.name}: must reach design matching`);
+  assert.equal(replay.data.observed.denomination,'$1');
+  assert.equal(replay.data.uncertain,true);
+  assert.doesNotMatch(replay.data.reason,/could not read the face value/);
+  if(fixture.name==='scouting'){
+    assert.equal(replay.data.observed.denomination_confidence,50);
+    assert.equal(replay.data.observed.denomination_uncertain,true);
+    assert.ok(replay.data.matches.some(match=>catalogue.designs.find(design=>design.title==='Centenary of Scouting in Australia').yearVariants.some(variant=>variant.id===match.id)),'Scouting must remain a review candidate');
+  }
+}
+const broad=singleCoinCandidates(catalogue.designs.filter(design=>design.denomination===100),{words:['Centenary of Scouting','1 Dollar'],motif:'Australian emblem'});
+assert.equal(broad[0].title,'Centenary of Scouting in Australia');
+const weakValue=await identify(['DENOM=$1; CONFIDENCE=50; WORDS=Centenary of Scouting 1 Dollar; MOTIF=fleur-de-lis','DESIGN=Centenary of Scouting in Australia; CONFIDENCE=95']);
+assert.equal(weakValue.data.uncertain,true,'weak denomination must not turn into a confirmed result');
+assert.ok(weakValue.data.matches.length);
 const repairedValue=await identify(['DENOM=unknown; CONFIDENCE=100; WORDS=ONE DOLLAR QANTAS CENTENARY; MOTIF=airplane','DESIGN=100 Years of Qantas; CONFIDENCE=95']);
 assert.equal(repairedValue.data.matches[0]?.id,'AU1-2020-QANTAS');
 assert.equal(singleCoinCandidates(catalogue.designs.filter(d=>d.denomination===10),{words:'unknown',motif:'bird with long tail feathers'})[0].title,'Lyrebird');
