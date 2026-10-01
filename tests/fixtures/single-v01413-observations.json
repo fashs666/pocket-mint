@@ -1,0 +1,10 @@
+{
+  "source": "pocket-mint-identification-tests-2026-10-01(1).json",
+  "scope": "Saved observations only; no original photographs or raw subsequent model replies.",
+  "cases": [
+    {"name":"scouting-unreadable-value","expected_coin_id":"AU1-2008-SCOUTING","observed":{"denomination_reading":"unknown","denomination_confidence":100,"words":"Centenary of Scouting Scouts","motif":"fleur-de-lis with star and text below."}},
+    {"name":"outback-map","expected_coin_id":"AU1-2002-OUTBACK","observed":{"denomination_reading":"$1|unknown","denomination_confidence":100,"words":"ONE DOLLAR","motif":"boat and map or unknown."}},
+    {"name":"unlabelled-wavy-lines","expected_coin_id":null,"observed":{"denomination_reading":"$1|unknown","denomination_confidence":100,"words":"1 DOLLAR","motif":"abstract wavy lines above text or unknown."}},
+    {"name":"bicentenary-kangaroo-star","expected_coin_id":"AU1-1988-BICENTENARY","observed":{"denomination_reading":"$1|unknown","denomination_confidence":100,"words":"ONE DOLLAR","motif":"kangaroo, star shape"}}
+  ]
+}

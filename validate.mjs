@@ -105,7 +105,7 @@ const referenceComparePayload=await referenceCompareResponse.json();
 await Promise.all([...new Set(catalogue.coins.map(coin => coin.reference_image).filter(Boolean))].map(file => /^https?:\/\//.test(file) ? Promise.resolve() : access(path.join(root, file))));
 
 const checks = [
-  [app.includes('APP_VERSION = "0.14.13"') && identify.includes('IDENTIFY_VERSION = "0.14.13"') && html.includes("Pocket Mint v0.14.13"), "catalogue and six-denomination Identify versioned consistently"],
+  [app.includes('APP_VERSION = "0.14.14"') && identify.includes('IDENTIFY_VERSION = "0.14.14"') && html.includes("Pocket Mint v0.14.14"), "catalogue and six-denomination Identify versioned consistently"],
   [(html.match(/<nav class="bottomNav"[\s\S]*?<\/nav>/)?.[0].match(/data-nav=/g) || []).length === 3, "three-item primary navigation"],
   [html.includes('<button data-nav="wishlistView"><span>♡</span><b>Wishlist</b>') && html.includes('<button data-nav="statsView"><span>▥</span><b>Stats</b>'), "Wishlist and Stats grouped inside My Mint"],
   [html.includes('data-open-collection="owned"') && html.includes("Your collection"), "Collection grouped under My Mint"],
@@ -159,7 +159,7 @@ const checks = [
   [identify.includes("data.uncertain||data.needs_year") && identify.includes("requestAnalysis(null)"), "portrait side is analysed only after an uncertain design or unresolved year"],
   [html.includes('id="toastRegion"') && app.includes("showToast") && !identify.includes("added to your collection with its photos"), "in-app add confirmation replaces browser alert"],
   [worker.includes("env.AI.run") && worker.includes("llama-4-scout") && worker.includes("llama-3.2-11b-vision-instruct") && worker.includes("env.ASSETS.fetch"), "primary and fallback vision models plus static assets binding"],
-  [sw.includes("pocket-mint-v0.14.13-single-observation-retrieval") && sw.includes("./identification-report.js") && sw.includes("./catalogue-v2.json") && sw.includes("./pm-visual.css") && sw.includes("./pm-stars.svg") && sw.includes("./pm-crescent.svg") && sw.includes("./pm-wordmark.webp") && sw.includes("./companions.js") && sw.includes("./characters/grim-walk.webp") && sw.includes("./characters/noxel-scuttle.webp") && sw.includes("./characters/noxel-peek.webp") && sw.includes("./characters/grim-noxel-high-five.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, circulating catalogue, visual assets and companions"],
+  [sw.includes("pocket-mint-v0.14.14-single-bounded-discovery") && sw.includes("./identification-report.js") && sw.includes("./catalogue-v2.json") && sw.includes("./pm-visual.css") && sw.includes("./pm-stars.svg") && sw.includes("./pm-crescent.svg") && sw.includes("./pm-wordmark.webp") && sw.includes("./companions.js") && sw.includes("./characters/grim-walk.webp") && sw.includes("./characters/noxel-scuttle.webp") && sw.includes("./characters/noxel-peek.webp") && sw.includes("./characters/grim-noxel-high-five.webp") && sw.includes("!/^https?") && sw.includes("./icons/character-512.png"), "matching service-worker cache, circulating catalogue, visual assets and companions"],
   [["grim-walk-sheet.webp", "grim-clue-sheet.webp", "noxel-walk-sheet.webp", "noxel-discovery-sheet.webp"].every(file => sw.includes(`./characters/${file}`)), "character animation sheets cached offline"],
   [sw.includes("./progress.css") && sw.includes("./progress.js"), "progress assets cached offline"],
   [sw.includes("./identify.css") && sw.includes("./identify.js"), "identification assets cached offline"],

@@ -48,6 +48,33 @@ assert.equal(broad[0].title,'Centenary of Scouting in Australia');
 const weakValue=await identify(['DENOM=$1; CONFIDENCE=50; WORDS=Centenary of Scouting 1 Dollar; MOTIF=fleur-de-lis','DESIGN=Centenary of Scouting in Australia; CONFIDENCE=95']);
 assert.equal(weakValue.data.uncertain,true,'weak denomination must not turn into a confirmed result');
 assert.ok(weakValue.data.matches.length);
+const newCases=JSON.parse(await readFile('tests/fixtures/single-v01413-observations.json','utf8')).cases;
+for(const fixture of newCases){
+  const o=fixture.observed;
+  const replay=await identify([`DENOM=${o.denomination_reading}; CONFIDENCE=${o.denomination_confidence}; WORDS=${o.words}; MOTIF=${o.motif}`,'DESIGN=unknown; CONFIDENCE=100']);
+  assert.equal(replay.status,200);
+  assert.equal(replay.calls.length,2);
+  assert.ok(replay.data.observed.retrieved_design_count<=8);
+  assert.equal(replay.data.observed.design_confidence,0,'confidence in unknown cannot be design certainty');
+  assert.equal(replay.data.uncertain,true);
+  if(fixture.expected_coin_id)assert.ok(replay.data.matches.some(match=>match.id===fixture.expected_coin_id),`${fixture.name}: known design must remain available for comparison`);
+  else assert.equal(replay.data.matches.length,0,'vague lines must not produce arbitrary catalogue cards');
+  if(fixture.name==='scouting-unreadable-value'){
+    assert.equal(replay.data.observed.denomination,'unknown');
+    assert.equal(replay.data.observed.denomination_uncertain,true);
+    assert.doesNotMatch(replay.data.reason,/could not read the face value/);
+  }
+}
+const bicentCandidates=singleCoinCandidates(catalogue.designs.filter(d=>d.denomination===100),{words:'ONE DOLLAR',motif:'kangaroo, star shape'});
+assert.equal(bicentCandidates[0].title,'Australian Bicentenary');
+// A faulty first motif cannot hard-exclude a later image-backed nomination.
+const outsideHints=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=ONE DOLLAR; MOTIF=bird','DESIGN=Year of the Outback; CONFIDENCE=95; REASON=visible map and inscription']);
+assert.equal(outsideHints.data.matches[0]?.id,'AU1-2002-OUTBACK');
+assert.ok(!outsideHints.calls[1].messages[1].content[0].text.includes('Five Kangaroos | International Year of Peace'),'no arbitrary catalogue-order list');
+const unknownValue=await identify(['DENOM=unknown; CONFIDENCE=100; WORDS=Centenary of Scouting Scouts; MOTIF=fleur-de-lis','DESIGN=Centenary of Scouting in Australia; CONFIDENCE=95']);
+assert.equal(unknownValue.data.uncertain,true);
+assert.equal(unknownValue.data.observed.denomination,'unknown');
+assert.equal(unknownValue.data.matches[0]?.id,'AU1-2008-SCOUTING');
 const repairedValue=await identify(['DENOM=unknown; CONFIDENCE=100; WORDS=ONE DOLLAR QANTAS CENTENARY; MOTIF=airplane','DESIGN=100 Years of Qantas; CONFIDENCE=95']);
 assert.equal(repairedValue.data.matches[0]?.id,'AU1-2020-QANTAS');
 assert.equal(singleCoinCandidates(catalogue.designs.filter(d=>d.denomination===10),{words:'unknown',motif:'bird with long tail feathers'})[0].title,'Lyrebird');
