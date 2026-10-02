@@ -1,7 +1,7 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.16";
-const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView"]);
+const APP_VERSION = "0.14.17";
+const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView", "seriesView", "milestonesView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
   seal: {name: "Pocket Mint Seal", manifest: "manifest.webmanifest"},
@@ -127,6 +127,7 @@ async function loadLocal() {
   const photos = await getAll("personalPhotos");
   identificationTests = (await getAll("identificationTests")).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   state = new Map(records.map(record => [record.coin_id, record]));
+  await loadMilestoneHistory();
   photoMap = new Map();
   for (const photo of photos) {
     if (!photoMap.has(photo.coin_id)) photoMap.set(photo.coin_id, []);
@@ -138,9 +139,15 @@ function baseRec(id) {
   return {coin_id: id, quantity: 0, wishlist: false, favourite: false, condition: "", notes: "", date_added: "", updated_at: new Date().toISOString()};
 }
 
-async function saveRec(id, patch) {
+let collectionWriteQueue=Promise.resolve();
+function saveRec(id,patch){
+  const write=collectionWriteQueue.then(()=>saveCollectionRecord(id,patch));
+  collectionWriteQueue=write.catch(()=>{});
+  return write;
+}
+async function saveCollectionRecord(id, patch) {
   const previous = {...baseRec(id), ...(state.get(id) || {})};
-  const next = {...previous, ...patch};
+  const next = {...previous, ...(typeof patch==='function'?patch(previous):patch)};
   next.quantity = Math.max(0, Number(next.quantity) || 0);
   if (previous.quantity === 0 && next.quantity > 0) {
     next.wishlist = false;
@@ -151,9 +158,10 @@ async function saveRec(id, patch) {
   next.favourite = Boolean(next.favourite);
   next.wishlist = Boolean(next.wishlist);
   next.updated_at = new Date().toISOString();
+  const completions=await persistCollectionRecord(next);
   state.set(id, next);
-  await put("myMint", next);
   renderAll();
+  queueSeriesCelebrations(completions);
   return next;
 }
 
@@ -172,7 +180,7 @@ function seriesHtml(coin) {
     return `<button type="button" class="seriesCoin" data-series-coin="${esc(item.id)}"><b>${item.year} ${esc(item.title)}</b><span>${status}${record.favourite ? " · ★" : ""}</span></button>`;
   }).join("");
   const seriesTitle=coin.seriesId?catalogueSeries.find(item=>item.id===coin.seriesId)?.title:human(coin.series_id);
-  return `<section class="seriesBox"><div class="eyebrow">SERIES</div><h3>${esc(seriesTitle)}</h3><p><strong>${owned} / ${coins.length} collected</strong></p><div class="progress"><i style="width:${Math.round(owned / coins.length * 100)}%"></i></div>${related ? `<h3 class="seriesMore">More coins from this series</h3><div class="seriesList">${related}</div>` : ""}</section>`;
+  return `<section class="seriesBox"><div class="eyebrow">SERIES</div><button type="button" class="seriesTitleLink" data-series-id="${esc(coin.seriesId||coin.series_id)}">${esc(seriesTitle)} <span aria-hidden="true">›</span></button><p><strong>${owned} / ${coins.length} collected</strong></p><div class="progress"><i style="width:${Math.round(owned / coins.length * 100)}%"></i></div>${related ? `<h3 class="seriesMore">More coins from this series</h3><div class="seriesList">${related}</div>` : ""}</section>`;
 }
 
 function referenceLabel(coin) {
@@ -195,7 +203,7 @@ function coinImageHtml(coin, {preferPersonal = true, className = "coinArtwork"} 
 function card(coin, mode = "browse") {
   const record = {...baseRec(coin.id), ...(state.get(coin.id) || {})};
   const variants = designVariants(coin);
-  const catalogueMode = mode === "catalogue";
+  const catalogueMode = mode === "catalogue"||mode === "series";
   const multiYear = catalogueMode && variants.length > 1;
   const variantRecords = variants.map(item => state.get(item.id)).filter(Boolean);
   const ownedYears = variantRecords.filter(item => item.quantity > 0).length;
@@ -207,13 +215,13 @@ function card(coin, mode = "browse") {
     : multiYear
       ? `<div class="coinControls"><span class="ownedMark">${ownedYears ? `✓ ${ownedYears} issue${ownedYears === 1 ? "" : "s"} owned` : `${variants.length} issues`}</span><button data-action="plus" class="addCoin">Choose issue</button></div>`
     : `<div class="coinControls">${owned ? '<span class="ownedMark">✓ Owned</span>' : `<button data-action="plus" class="addCoin">${multiYear ? "Choose year" : "Add"}</button>`}<button data-action="wish" class="heart ${record.wishlist ? "on" : ""}" aria-label="Toggle Wishlist">♡</button><button data-action="favourite" class="star ${record.favourite ? "on" : ""}" aria-label="Toggle Favourite">★</button></div>`;
-  const yearLabel = catalogueMode ? (document.getElementById("yearFilter")?.value ? String(coin.year) : issueYearLabel(coin)) : String(coin.year);
+  const yearLabel = catalogueMode ? (mode==='catalogue'&&document.getElementById("yearFilter")?.value ? String(coin.year) : issueYearLabel(coin)) : String(coin.year);
   element.innerHTML = `<button class="coinMain" type="button">${coinImageHtml(coin)}<span class="coinCopy"><span class="meta">${esc(coin.denomination_display||'$1')} · ${esc(yearLabel)}</span><h3>${esc(coin.title)}</h3>${record.quantity > 1 ? `<span class="quantityBadge">×${record.quantity}</span>` : ""}</span></button>${controls}`;
   element.querySelector(".coinMain").onclick = () => openCoin(coin);
-  element.querySelector('[data-action="plus"]')?.addEventListener("click", () => multiYear ? openCoin(coin) : saveRec(coin.id, {quantity: record.quantity + 1}));
-  element.querySelector('[data-action="minus"]')?.addEventListener("click", () => saveRec(coin.id, {quantity: Math.max(0, record.quantity - 1)}));
-  element.querySelector('[data-action="wish"]')?.addEventListener("click", () => saveRec(coin.id, {wishlist: !record.wishlist}));
-  element.querySelector('[data-action="favourite"]')?.addEventListener("click", () => saveRec(coin.id, {favourite: !record.favourite}));
+  element.querySelector('[data-action="plus"]')?.addEventListener("click", () => multiYear ? openCoin(coin) : saveRec(coin.id, previous=>({quantity: previous.quantity + 1})));
+  element.querySelector('[data-action="minus"]')?.addEventListener("click", () => saveRec(coin.id, previous=>({quantity: Math.max(0, previous.quantity - 1)})));
+  element.querySelector('[data-action="wish"]')?.addEventListener("click", () => saveRec(coin.id, previous=>({wishlist: !previous.wishlist})));
+  element.querySelector('[data-action="favourite"]')?.addEventListener("click", () => saveRec(coin.id, previous=>({favourite: !previous.favourite})));
   return element;
 }
 
@@ -294,14 +302,7 @@ function renderHome() {
 }
 
 function renderHomeSeries() {
-  const groups = new Map();
-  groupCatalogueCoins(browseCatalogue).forEach(coin => { if (coin.seriesId) (groups.get(coin.seriesId) || groups.set(coin.seriesId, []).get(coin.seriesId)).push(coin); });
-  const series = [...groups.entries()].map(([id, coins]) => ({id, coins, owned: coins.filter(coin => recordForDesign(coin).some(record=>record.quantity>0)).length})).sort((a, b) => Number(b.owned > 0) - Number(a.owned > 0) || b.owned - a.owned)[0];
-  const root = document.getElementById("homeSeries");
-  if (!series?.owned) return root.innerHTML = '<div class="pm-cream-card pm-empty-state"><p>Collect a coin from a series to see its progress here.</p><span class="pm-chip">Find a series to begin ✦</span></div>';
-  const percent = Math.round(series.owned / series.coins.length * 100);
-  root.innerHTML = `<button class="seriesContinue pm-cream-card pm-cream-card--small" type="button" data-series-id="${esc(series.id)}"><span class="pm-progress-ring pm-series-ring" style="--pm-progress:${percent}%" aria-hidden="true"><strong>${percent}%</strong></span><span class="pm-series-copy"><b>${esc(catalogueSeries.find(item=>item.id===series.id)?.title||series.id)}</b><small>${series.owned} of ${series.coins.length} collected</small></span><span aria-hidden="true">›</span></button>`;
-  root.querySelector("button").onclick = () => { document.getElementById("catalogueSearch").value = series.id; showFindTab("catalogue"); navigate("findView"); renderCatalogue(); };
+  renderContinueSeries();
 }
 
 function renderWishlist() {
@@ -316,8 +317,7 @@ function renderStats() {
   const favourites = records.filter(r => r.favourite).length, extras = records.reduce((n, r) => n + Math.max(0, (r.quantity || 0) - 1), 0), designOwned=catalogueDesigns.filter(design=>design.yearVariants.some(v=>state.get(v.id)?.quantity>0)).length, percent = catalogueDesigns.length ? Math.round(designOwned / catalogueDesigns.length * 100) : 0;
   document.getElementById("statsSummary").innerHTML = stats([[owned,"Coins collected"],[catalogueDesigns.length,"Total designs"],[`${percent}%`,"Complete"],[wishlist,"Wishlist"]]);
   document.getElementById("statsProgress").innerHTML = `<p>${designOwned} of ${catalogueDesigns.length} designs</p><div class="progress"><i style="width:${percent}%"></i></div>`;
-  const groups = new Map(); groupCatalogueCoins(browseCatalogue).forEach(coin => { if (coin.seriesId) (groups.get(coin.seriesId) || groups.set(coin.seriesId, []).get(coin.seriesId)).push(coin); });
-  document.getElementById("statsSeries").innerHTML = [...groups.entries()].slice(0,4).map(([id, coins]) => { const count=coins.filter(coin=>recordForDesign(coin).some(r=>r.quantity>0)).length; return `<div class="statSeries"><b>${esc(catalogueSeries.find(s=>s.id===id)?.title||id)}</b><span>${count} of ${coins.length}</span><div class="progress"><i style="width:${Math.round(count/coins.length*100)}%"></i></div></div>`; }).join("") || '<p class="muted">Series progress will appear here.</p>';
+  renderSeriesDirectory();
   document.getElementById("statsPersonal").innerHTML = stats([[favourites,"Favourites"],[extras,"Duplicate extras"]]);
 }
 
@@ -354,7 +354,7 @@ function renderIdentificationTestLog() {
   }).join("");
 }
 
-function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderWishlist(); renderStats(); renderDiag(); renderIdentificationTestLog(); }
+function renderAll() { renderHome(); renderCatalogue(); renderMint(); renderWishlist(); renderStats(); renderDiag(); renderIdentificationTestLog(); renderSeriesView(); renderMilestones(); }
 
 function isInstalledApp() {
   return window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -512,13 +512,13 @@ function renderCoin(coin) {
 }
 
 function openCoin(coin) {
-  history.pushState({view: currentView(), coinId: coin.id}, "", `#coin/${encodeURIComponent(coin.id)}`);
+  history.pushState({...history.state,view: currentView(), coinId: coin.id}, "", `#coin/${encodeURIComponent(coin.id)}`);
   renderCoin(coin);
   document.getElementById("coinDialog").showModal();
 }
 
 function replaceCoin(coin) {
-  history.replaceState({view: currentView(), coinId: coin.id}, "", `#coin/${encodeURIComponent(coin.id)}`);
+  history.replaceState({...history.state,view: currentView(), coinId: coin.id}, "", `#coin/${encodeURIComponent(coin.id)}`);
   renderCoin(coin);
 }
 
@@ -636,15 +636,17 @@ function showFindTab(tab, options={}) {
 function showView(view) {
   const safeView = VIEW_IDS.has(view) ? view : "homeView";
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item.id === safeView));
-  const navView = ["wishlistView", "statsView", "collectionView", "settingsView"].includes(safeView) ? "myMintView" : safeView;
+  const navView = safeView==='seriesView'?'findView':["wishlistView", "statsView", "collectionView", "settingsView", "milestonesView"].includes(safeView) ? "myMintView" : safeView;
   document.querySelectorAll(".bottomNav button").forEach(button => button.classList.toggle("active", button.dataset.nav === navView));
   scrollTo(0, 0);
   window.PocketMintCompanions?.setView(safeView);
+  if(safeView==='seriesView')renderSeriesView();
+  if(safeView==='milestonesView')renderMilestones();
 }
 
 function navigate(view) {
   if (view === currentView() && !document.getElementById("coinDialog").open) return;
-  history.pushState({view}, "", routeForView(view));
+  history.pushState({view,fromView:currentView()}, "", routeForView(view));
   showView(view);
 }
 
@@ -735,14 +737,18 @@ function wire() {
   window.addEventListener("online", updateNetwork);
   window.addEventListener("offline", updateNetwork);
   window.addEventListener("popstate", event => {
+    const celebration=document.getElementById('seriesCelebration');
+    if(celebration.open)celebration.close();
     const dialog = document.getElementById("coinDialog");
     if (dialog.open) dialog.close();
     const route = event.state || {view: "homeView"};
+    if(route.seriesId){activeSeriesId=route.seriesId;document.getElementById('seriesDenomination').value=route.seriesFilters?.denomination||'';document.getElementById('seriesState').value=route.seriesFilters?.status||'';}
     showView(route.view || "homeView");
     if (route.coinId) {
       const coin = coinById(route.coinId);
       if (coin) { renderCoin(coin); dialog.showModal(); }
     }
+    setTimeout(showNextSeriesCelebration,0);
   });
   window.addEventListener("beforeinstallprompt", event => {
     event.preventDefault();
@@ -778,6 +784,7 @@ async function addConfirmedBatchCoins(items) {
 window.PocketMintBatchCollection={addConfirmedBatchCoins};
 
 async function init() {
+  if(document.readyState==='loading')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
   const [response,browseResponse] = await Promise.all([fetch("./catalogue.json",{cache:"no-cache"}),fetch("./catalogue-v2.json",{cache:"no-cache"})]);
   if (!response.ok||!browseResponse.ok) throw new Error(`Catalogue request failed: ${response.status} / ${browseResponse.status}`);
   const [payload,browsePayload] = await Promise.all([response.json(),browseResponse.json()]);
@@ -798,6 +805,7 @@ async function init() {
   })));
   catMeta = browsePayload.meta || {};
   await loadLocal();
+  await initialiseExistingSeriesHistory();
   await put("appMeta", {key: "catalogue_version", value: catMeta.catalogue_version});
   const years=[...new Set(browseCatalogue.map(coin => coin.year))].sort((a,b)=>b-a);
   const yearSelect = document.getElementById("yearFilter");
@@ -809,13 +817,17 @@ async function init() {
     document.getElementById('releaseFilter').add(new Option(`${parent?.title||release.seriesId} · ${release.title}`,release.id));
   }
   wire();
+  wireSeriesExperience();
   if(typeof wireIdentification==="function") wireIdentification([...new Set(browseCatalogue.map(coin=>coin.year))].sort((a,b)=>b-a));
+  setupCameraEntry();
   const hash=location.hash.slice(1)||"home";
   const legacyTabs={identify:"identify",catalogue:"catalogue",search:"catalogue"};
   const hashView = `${hash}View`;
-  const initialView = legacyTabs[hash] ? "findView" : VIEW_IDS.has(hashView) ? hashView : "homeView";
+  const seriesHash=hash.match(/^series\/(.+)$/);
+  if(seriesHash){try{activeSeriesId=decodeURIComponent(seriesHash[1]);}catch{activeSeriesId=null;}}
+  const initialView = seriesProgressFor(activeSeriesId)?'seriesView':legacyTabs[hash] ? "findView" : VIEW_IDS.has(hashView) ? hashView : "homeView";
   if(legacyTabs[hash]) findTab=legacyTabs[hash];
-  history.replaceState({view: initialView}, "", routeForView(initialView));
+  history.replaceState({view: initialView,...(initialView==='seriesView'?{seriesId:activeSeriesId}:{})}, "", initialView==='seriesView'?`#series/${encodeURIComponent(activeSeriesId)}`:routeForView(initialView));
   showView(initialView);
   showFindTab(findTab);
   renderAll();

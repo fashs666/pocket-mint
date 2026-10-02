@@ -1,0 +1,42 @@
+/* Shared album-like framing: decoration lives on edges, never over content. */
+:root{--pm-frame-tan:#c5a16f;--pm-frame-light:#fff9e9;--pm-frame-shadow:#b98d5860}
+.pm-frame,.pm-cream-card,.statsCard,.menuCard,.stat,.coinCard,.seriesBox,.identifyPanel,.editBlock{border:2px solid var(--pm-frame-tan);border-radius:24px 29px 25px 28px;background:var(--pm-cream);color:var(--pm-ink);box-shadow:inset 0 0 0 4px var(--pm-frame-light),inset 0 -7px 12px #b98d5810,0 5px 0 var(--pm-frame-shadow),0 12px 26px #02071730}
+.pm-frame-hero,.findHero{border:2px solid #d2b276;border-radius:29px 34px 28px 35px;box-shadow:inset 0 0 0 3px #fff4dd55,0 0 0 2px #68d9e92b,0 0 20px #a98bec25,0 8px 0 #18162f66}
+.pm-frame-detail,.identifyPanel,.editBlock{border-radius:21px;border-width:1px;box-shadow:inset 0 0 0 3px #fff9e980,0 5px 14px #02071720}
+.pm-stat-card{border:2px solid #d0ae7c;border-radius:19px 22px 18px 23px;padding:13px 10px;background:linear-gradient(150deg,#fff6e6,#ebdbbe);box-shadow:inset 0 0 0 3px #fff9e7,0 4px 0 #b8915840;gap:9px;min-height:80px}
+.pm-stat-icon{border:1px solid #cfad76;border-radius:15px 17px 14px 18px;background:#e7d3ac;box-shadow:inset 0 2px 4px #805d2520;color:#58432f;flex-shrink:0}
+.pm-home-completion{padding:16px 13px;border:1px solid #d3b582;border-radius:20px;background:#fff7e6;box-shadow:inset 0 0 0 3px #f3e7cd}
+.coinCard{border-radius:21px 25px 20px 24px;overflow:hidden;padding:0;margin-bottom:4px}
+.coinCard .coinMain{padding:13px 13px 9px;gap:13px;min-width:0}
+.coinCard .coinArtwork{border:1px solid #d3b785;border-radius:17px;background:radial-gradient(ellipse,#fffaf0,#e9d6b5);box-shadow:inset 0 0 0 3px #fff9e5,0 2px 4px #8d63351a;flex-shrink:0}
+.coinCard .coinCopy{min-width:0}.coinCard h3{line-height:1.25;font-size:.96rem;overflow-wrap:anywhere}
+.coinCard .coinControls{background:#eddfc6;border-top:1px solid #d5ba8c;padding:8px 6px!important;gap:2px;min-height:52px;flex-wrap:wrap}
+.coinCard .coinControls button{min-width:44px;min-height:44px;border-radius:14px;border-color:#c6a373}
+.pm-chip,.badge,.ownedMark,.quantityBadge,.pm-capsule{display:inline-flex;align-items:center;border:1px solid #c8a972;border-radius:999px;padding:4px 9px;font-size:.7rem;font-weight:800;line-height:1.3;background:#fff5dc;color:#5c4529;max-width:100%}
+.pm-capsule.complete{background:#d7ebd6;color:#30573a;border-color:#9bb79a}
+.pm-series-card{width:100%;display:flex;align-items:center;gap:13px;text-align:left;padding:18px 16px;min-height:105px;position:relative;overflow:hidden}
+.pm-series-card .pm-series-copy{flex:1;min-width:0}.pm-series-copy b{display:block;font-size:1rem;line-height:1.3;overflow-wrap:anywhere}.pm-series-copy small{display:block;margin:6px 0;color:#695c4b;line-height:1.4}
+.pm-series-card.is-complete{border-color:#b49956;background:linear-gradient(135deg,#fff7df,#eee0be)}
+.pm-series-card.is-complete::after{content:'✧';position:absolute;top:7px;right:14px;color:#a78638;font-size:20px;pointer-events:none}
+.seriesHeader{display:flex;gap:18px;align-items:center;padding:23px 18px;margin:15px 0 20px}.seriesHeader h2{margin:5px 0 8px;font-size:1.4rem;overflow-wrap:anywhere}.seriesHeader p{margin:5px 0;font-size:.86rem;color:#655846}.seriesHeader .pm-progress-ring{width:84px;height:84px;flex-shrink:0}.seriesHeaderCopy{min-width:0}
+.seriesFilters{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 17px}.seriesFilters label{font-size:.78rem;color:var(--pm-on-dark)}.seriesFilters select{width:100%;margin-top:6px;min-height:46px}.seriesResultLine{display:flex;justify-content:space-between;align-items:center;margin:12px 0;color:var(--pm-muted-dark);font-size:.8rem}
+.seriesDirectory,.milestoneList{display:grid;gap:14px}.milestoneList .pm-series-card{margin-bottom:6px}.milestoneHint{font-size:.85rem;line-height:1.55;color:var(--pm-muted-dark)}
+.seriesBack,.milestonesLink{min-height:46px;padding:10px 16px}.milestonesLink{width:100%;display:flex;align-items:center;justify-content:space-between;font-weight:800}.statsCard .pm-series-card{margin:12px 0;box-shadow:inset 0 0 0 3px #fff9e980,0 3px 0 #b8915840}
+#seriesCelebration{width:min(92vw,420px);padding:0;border:0;background:transparent;max-height:calc(100dvh - 40px);overflow:auto;color:var(--pm-ink)}
+#seriesCelebration::backdrop{background:#070c20b8;backdrop-filter:blur(4px)}
+.seriesCelebrationCard{text-align:center;padding:24px 22px 22px;position:relative}.seriesCelebrationCard h2{margin:8px 0 12px;font-size:1.65rem}.seriesCelebrationCard p{line-height:1.5;font-size:.9rem;color:#655543}.seriesCelebrationCard .pm-progress-ring{margin:18px auto 10px;width:84px;height:84px}.seriesCelebrationArt{display:block;width:130px;height:86px;object-fit:contain;margin:0 auto 6px}.seriesCelebrationActions{display:grid;gap:10px;margin-top:18px}.seriesCelebrationActions button{min-height:46px}.seriesDismiss{position:absolute;top:9px;right:9px;border:0;background:transparent;min-width:44px;min-height:44px;font-size:1.4rem;color:#6d5537}
+body:has(#seriesCelebration[open]) #homeCompanions{visibility:hidden}body:has(#seriesCelebration[open]){overflow:hidden}
+.statsCard h3{margin-top:5px}.pm-frame :focus-visible,.pm-series-card:focus-visible{outline:3px solid #875bab;outline-offset:3px}
+@media(max-width:380px){.pm-stat-card{padding:11px 8px;gap:7px}.pm-stat-icon{width:34px;height:34px}.pm-stat-copy>span{font-size:.68rem}.pm-stat-arrow{display:none}.seriesHeader{gap:12px;padding:19px 13px}.seriesHeader h2{font-size:1.22rem}.seriesHeader .pm-progress-ring{width:72px;height:72px}.coinCard .coinMain{gap:10px;padding:11px 10px 8px}.coinCard h3{font-size:.9rem}}
+@media(prefers-reduced-motion:reduce){.pm-frame,.pm-series-card{animation:none;transition:none}}
+/* Match the existing screen-scoped selectors without altering their layout. */
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard{border:2px solid var(--pm-frame-tan);border-radius:21px 25px 20px 24px;background:var(--pm-cream);box-shadow:inset 0 0 0 4px var(--pm-frame-light),0 5px 0 var(--pm-frame-shadow),0 12px 26px #02071730}
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinArtwork{border:1px solid #d3b785;border-radius:17px;background:radial-gradient(ellipse,#fffaf0,#e9d6b5);box-shadow:inset 0 0 0 3px #fff9e5,0 2px 4px #8d63351a}
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls button{min-width:44px;min-height:44px;border-radius:14px}
+.coinControls .qty{flex-shrink:0}.coinControls .ownedMark{flex-shrink:0}
+body #homeView .pm-stat-card{border:2px solid #d0ae7c;border-radius:19px 22px 18px 23px;padding:13px 10px;background:linear-gradient(150deg,#fff6e6,#ebdbbe);box-shadow:inset 0 0 0 3px #fff9e7,0 4px 0 #b8915840;min-height:80px}
+body #homeView .pm-stat-icon{background:#e7d3ac;color:#58432f;border-radius:15px 17px 14px 18px}
+body #homeView .findHero{border:2px solid #d2b276;border-radius:29px 34px 28px 35px;box-shadow:inset 0 0 0 3px #fff4dd25,0 0 0 2px #68d9e92b,0 0 20px #a98bec35,0 8px 0 #18162f66}
+.seriesTitleLink{background:transparent;border:0;color:var(--pm-ink);font-weight:800;font-size:1.1rem;min-height:46px;padding:8px 0;text-align:left}
+body .view:is(#statsView,#milestonesView) .statsCard{border:2px solid var(--pm-frame-tan);border-radius:24px 29px 25px 28px;box-shadow:inset 0 0 0 4px var(--pm-frame-light),0 5px 0 var(--pm-frame-shadow),0 12px 26px #02071730}
+@media(max-width:380px){body #homeView .pm-stat-card{padding:11px 8px;gap:7px}.milestonesLink{gap:7px;font-size:.8rem}.milestonesLink span:nth-child(2){font-weight:400;font-size:.72rem}}
