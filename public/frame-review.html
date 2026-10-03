@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pocket Mint — phone-width visual review</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:20px;background:#101326;color:#f6ead1;font:15px system-ui}
+h1{font-size:20px}p{max-width:850px;color:#cbc5da}nav{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}button{min-height:44px;padding:10px 16px;background:#f2e4c8;border:1px solid #c6a777;border-radius:14px;color:#222139;font:inherit}
+.phones{display:flex;align-items:flex-start;gap:22px;width:max-content}.phone{margin:0}figcaption{margin:0 0 10px;color:#efddaf}iframe{display:block;height:780px;border:1px solid #a8895c;border-radius:16px;background:#090d20}
+</style>
+<h1>Pocket Mint · visual review only</h1>
+<p>Live app in 360, 390 and 430px CSS viewports. These are layout checks, not Android/iPhone hardware tests. The three frames share this preview origin’s local collection; they do not use the normal test site’s data.</p>
+<nav aria-label="Review screen">
+<button data-route="home">Home</button><button data-route="find">Browse</button><button data-route="series/outback">Outback series</button><button data-route="stats">Stats</button><button data-route="milestones">Milestones</button><button data-route="coin/AU1-2002-OUTBACK">Coin details</button><button data-route="wishlist">Wishlist</button><button data-route="collection">Collection</button>
+</nav>
+<div class="phones">
+<figure class="phone"><figcaption>360px · compact phone</figcaption><iframe title="Pocket Mint at 360 pixels" width="360" src="/#home"></iframe></figure>
+<figure class="phone"><figcaption>390px · medium phone</figcaption><iframe title="Pocket Mint at 390 pixels" width="390" src="/#home"></iframe></figure>
+<figure class="phone"><figcaption>430px · large phone</figcaption><iframe title="Pocket Mint at 430 pixels" width="430" src="/#home"></iframe></figure>
+</div>
+<script>
+document.querySelector('nav').addEventListener('click',event=>{
+  const route=event.target.dataset.route;
+  if(route)document.querySelectorAll('iframe').forEach(frame=>{frame.src='/#'+route;});
+});
+</script>
+</html>

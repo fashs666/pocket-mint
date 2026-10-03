@@ -40,3 +40,193 @@ body #homeView .findHero{border:2px solid #d2b276;border-radius:29px 34px 28px 3
 .seriesTitleLink{background:transparent;border:0;color:var(--pm-ink);font-weight:800;font-size:1.1rem;min-height:46px;padding:8px 0;text-align:left}
 body .view:is(#statsView,#milestonesView) .statsCard{border:2px solid var(--pm-frame-tan);border-radius:24px 29px 25px 28px;box-shadow:inset 0 0 0 4px var(--pm-frame-light),0 5px 0 var(--pm-frame-shadow),0 12px 26px #02071730}
 @media(max-width:380px){body #homeView .pm-stat-card{padding:11px 8px;gap:7px}.milestonesLink{gap:7px;font-size:.8rem}.milestonesLink span:nth-child(2){font-weight:400;font-size:.72rem}}
+
+/* Visual-only refinement. Rails and pressed edges never intercept controls.
+   Keep the established grids, padding, artwork sizes and mascot anchors. */
+:root {
+  --pm-plaque-paper: #f2e5ca;
+  --pm-plaque-top: #f9efd9;
+  --pm-plaque-bottom: #eaddbd;
+  --pm-plaque-rim: #bea073;
+  --pm-plaque-pressed: #99774b;
+  --pm-plaque-shape: 30px 25px 32px 24px / 24px 32px 25px 31px;
+  --pm-plaque-depth: inset 0 1px 0 #fff9e7, inset 0 0 0 4px #fff5df99,
+    inset 0 -5px 9px #9e794a12, 0 3px 0 #8d704c80, 0 9px 18px #02061738;
+}
+body :is(.pm-frame, .pm-cream-card, .statsCard, .menuCard, .stat) {
+  position: relative;
+  border-color: var(--pm-plaque-rim);
+  border-radius: var(--pm-plaque-shape);
+  background: linear-gradient(155deg, var(--pm-plaque-top), var(--pm-plaque-paper) 58%, var(--pm-plaque-bottom));
+  box-shadow: var(--pm-plaque-depth);
+}
+/* A second hand-shaped rail: more like a pressed album cover than a border.
+   Absolute decoration adds no layout size and has no hit-testing surface. */
+body :is(.pm-home-hero, .pm-series-card, .seriesHeader, .statsCard, .menuCard, .seriesCelebrationCard)::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid #ba996454;
+  border-radius: 24px 20px 27px 19px / 18px 27px 20px 25px;
+  box-shadow: 0 1px 0 #fff9e7cc;
+  pointer-events: none;
+}
+body #homeView .pm-home-hero {
+  border-radius: 33px 28px 35px 27px / 27px 35px 28px 34px;
+  box-shadow: var(--pm-plaque-depth), 0 0 0 1px #65d8df40, 0 0 14px #65d8df0d;
+}
+/* The tiny shoulders are part of the frame, not extra content or mascots. */
+body #homeView .pm-home-hero:not(.pm-companion-grim-clue):not(.pm-companion-noxel-idea)::after {
+  content: '';
+  position: absolute;
+  width: 30px;
+  height: 6px;
+  left: calc(50% - 15px);
+  top: -4px;
+  border: 1px solid var(--pm-plaque-rim);
+  border-bottom: 0;
+  border-radius: 60% 45% 0 0 / 100% 100% 0 0;
+  background: var(--pm-plaque-top);
+  box-shadow: 0 -1px 0 #6bdbdf40;
+  pointer-events: none;
+}
+body #homeView .pm-stat-card {
+  border-radius: 22px 17px 23px 18px / 18px 23px 17px 22px;
+  border-color: #c3a273;
+  background: linear-gradient(145deg, #f9efd9, #eddfc0);
+  box-shadow: inset 0 0 0 3px #fff6e0, inset 0 0 0 4px #c7aa7759,
+    inset 0 -3px 5px #9673430d, 0 3px 0 #a4875b59, 0 5px 8px #4837290a;
+}
+body #homeView .pm-stat-card:nth-child(even) {
+  border-radius: 18px 23px 17px 22px / 23px 18px 22px 17px;
+}
+body #homeView .pm-stat-icon {
+  border-radius: 42% 48% 44% 47%;
+  background: radial-gradient(circle at 45% 40%, #f6e8c9, #d9bf91);
+  border-color: #bea06f;
+  color: #544362;
+  box-shadow: inset 0 2px 4px #89662c22, inset 0 -1px 0 #fff6dc, 0 0 0 2px #fff6df80;
+}
+body #homeView .pm-stat-copy b { letter-spacing: -.035em; color: #22213c; }
+body #homeView .pm-stat-copy > span { color: #51465e; }
+body #homeView .pm-stat-arrow { color: #856846; }
+body #homeView .pm-home-completion {
+  border-radius: 25px 19px 26px 20px / 19px 25px 20px 26px;
+  background: linear-gradient(150deg, #f9efd8, #eee1c4);
+  border-color: #c4a77a;
+  box-shadow: inset 0 0 0 3px #fff4db, inset 0 0 0 4px #c7aa7754, inset 0 2px 6px #aa84451c;
+}
+body .pm-progress-ring, body #homeView .pm-progress-ring {
+  box-shadow: 0 0 0 2px #fff3d8, 0 0 0 3px #c5a26a, 0 3px 0 3px #9e7c4933, 0 0 12px #69d8dc20;
+}
+body .pm-progress-ring::before {
+  background: radial-gradient(circle at 45% 35%, #fff3d9, #ecdcbc);
+  box-shadow: inset 0 1px 3px #82603120, 0 0 0 1px #fdf5dd;
+}
+body #homeView .findHero {
+  position: relative;
+  border-radius: 28px 23px 31px 24px / 23px 31px 24px 29px;
+  border-color: #d6b787;
+  background: linear-gradient(115deg, #19192f, #322443);
+  box-shadow: inset 0 0 0 3px #e9cf9b1c, inset 0 -4px 8px #090b2066,
+    0 0 0 1px #ed9dda99, 0 0 0 3px #69dce336, 0 3px 0 3px #080b2180, 0 0 17px #d790df29;
+}
+body #homeView .findHero::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid #dbb7ce38;
+  border-radius: 22px 18px 25px 19px / 18px 25px 19px 23px;
+  pointer-events: none;
+}
+body #homeView .findHeroIcon {
+  border-radius: 43% 49% 45% 47%;
+  background: #63dfe914;
+  box-shadow: inset 0 0 0 1px #74dfdc50, 0 1px 0 #d5b78760;
+}
+body .pm-series-card, body .seriesHeader {
+  border-radius: 31px 23px 32px 24px / 23px 31px 24px 32px;
+  box-shadow: var(--pm-plaque-depth), 0 0 0 1px #76d6d51c;
+}
+body .pm-series-card > span:last-child {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 32px;
+  border: 1px solid #c4a477;
+  border-radius: 45% 48% 42% 49%;
+  background: #fff2d6;
+  color: #625074;
+  box-shadow: inset 0 1px 0 #fff9e7, 0 2px 0 #b4956040;
+}
+body .pm-series-card.is-complete {
+  background: linear-gradient(155deg, #f9efd4, #eddeba);
+  border-color: #b79a60;
+}
+body .pm-series-card.is-complete::after { font-size: 14px; top: 6px; right: 13px; }
+/* Artwork becomes an arched display well. Image scale and card density stay put. */
+body #homeView .recentCoins .coinCard,
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard {
+  position: relative;
+  border-color: #c1a172;
+  border-radius: 25px 21px 23px 20px / 23px 27px 20px 25px;
+  background: linear-gradient(145deg, #f9eed6, #eee0c2);
+  box-shadow: inset 0 0 0 3px #fff4dcaa, inset 0 0 0 4px #cbb07b45,
+    0 3px 0 #9c7b4e80, 0 8px 16px #02061733;
+}
+body #homeView .recentCoins .coinCard .coinArtwork,
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinArtwork {
+  border: 1px solid #c6a878;
+  border-radius: 43% 46% 22% 25% / 36% 39% 20% 23%;
+  background: radial-gradient(ellipse at 50% 42%, #fff5df 48%, #e4d0aa 94%);
+  box-shadow: inset 0 0 0 3px #fff5df, inset 0 0 0 4px #c9ac7770,
+    inset 0 3px 8px #86623112, 0 2px 0 #b2956440;
+}
+body .coinCard .coinCopy .meta { color: #665174; letter-spacing: .025em; }
+body .coinCard h3 { color: #22213a; }
+body .coinCard .coinControls {
+  background: linear-gradient(#e9d9b8, #efdfbf);
+  border-top-color: #c5a875;
+  box-shadow: inset 0 1px 0 #fff6e4bb;
+}
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls button,
+body .pm-frame :is(.smallBtn,.secondary,.pm-secondary-button),
+body #coinDialog .dialogActions #doneDetail {
+  border: 1px solid #bda074;
+  border-radius: 15px 12px 16px 13px / 12px 16px 13px 15px;
+  background: linear-gradient(#fff3d9, #e9d7b4);
+  color: #443a55;
+  box-shadow: inset 0 1px 0 #fff9e8, inset 0 0 0 2px #fff3dc80, 0 2px 0 #a3865b59;
+}
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .heart.on {
+  background: #eed7e7; color: #633b67; border-color: #b68aae;
+}
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .star.on {
+  background: #f1dfac; color: #63491e; border-color: #bc9e5e;
+}
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .addCoin {
+  color: #274d4c; border-color: #a6bca0;
+}
+body :is(.pm-chip,.ownedMark,.quantityBadge,.pm-capsule) {
+  box-shadow: inset 0 1px 0 #fff9e780, 0 1px 0 #af8f5c26;
+}
+/* Dense data stays calm: no neon, no shoulder ornaments, narrow pressed rail. */
+body .identifyPanel,
+body #coinDialog :is(.pm-detail-heading,.pm-detail-information,.seriesBox,.editBlock) {
+  border: 1px solid #bea174;
+  border-radius: 23px 20px 24px 21px / 20px 24px 21px 23px;
+  background: linear-gradient(150deg, #f6ead2, #eedfc3);
+  box-shadow: inset 0 0 0 3px #fff4df80, inset 0 0 0 4px #c5a97630, 0 4px 10px #02061722;
+}
+body #coinDialog .detailGrid > div {
+  border-radius: 13px 16px 12px 15px;
+  background: #e8d8b9;
+  box-shadow: inset 0 1px 2px #a3824c0f, 0 1px 0 #fff7e1;
+}
+/* Contact shadow only; keep companion dimensions, positions and animations. */
+.pm-companion img { filter: drop-shadow(0 3px 2px #39233238); }
+@media(max-width:380px) {
+  body .pm-series-card { gap: 10px; }
+  body .pm-series-card > span:last-child { width: 22px; }
+}
