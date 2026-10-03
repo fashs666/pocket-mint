@@ -21,7 +21,7 @@ h1{font-size:20px}p{max-width:850px;color:#cbc5da}nav{display:flex;flex-wrap:wra
 <script>
 document.querySelector('nav').addEventListener('click',event=>{
   const route=event.target.dataset.route;
-  if(route)document.querySelectorAll('iframe').forEach(frame=>{frame.src='/#'+route;});
+  if(route)document.querySelectorAll('iframe').forEach(frame=>{frame.src='/?frame-review='+encodeURIComponent(route)+'#'+route;});
 });
 </script>
 </html>
