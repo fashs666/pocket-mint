@@ -370,3 +370,56 @@ body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .co
   background:transparent;box-shadow:none;border-top:1px solid #c5a87570;
   margin:0 6px 7px;
 }
+
+/* Use the same drawn gold/cream rail for the remaining cream panels.
+   The background alone is shaped, leaving content and focus rings unclipped. */
+body :is(.view, #coinDialog, #seriesCelebration) :is(
+  .card:not(.coinCard), .pm-cream-card:not(.pm-home-hero), .statsCard,
+  .menuCard, .statsGrid .stat, .identifyPanel, .batchPanel, .matchCard, .seriesBox,
+  .editBlock, .seriesHeader, .seriesCelebrationCard, .empty
+) {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+body :is(.view, #coinDialog, #seriesCelebration) :is(
+  .card:not(.coinCard), .pm-cream-card:not(.pm-home-hero), .statsCard,
+  .menuCard, .statsGrid .stat, .identifyPanel, .batchPanel, .matchCard, .seriesBox,
+  .editBlock, .seriesHeader, .seriesCelebrationCard, .empty
+)::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border: 0;
+  border-radius: 0;
+  background: url('frames/plaque-wobble.svg') center / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 3px 0 #92714560) drop-shadow(0 5px 7px #05091c30);
+  pointer-events: none;
+}
+/* Taller panels use the portrait frame so their side waves stay gentle. */
+body :is(.view, #coinDialog) :is(.settings, .menuCard, .editBlock)::before {
+  background-image: url('frames/coin-wobble.svg');
+}
+body .view .menuCard {
+  overflow: visible;
+  padding: 8px;
+}
+body .view .menuCard button {
+  border-radius: 14px;
+}
+/* Album cards sit directly on the night sky, with no enclosing cream card. */
+.statsAlbums {
+  margin-top: 24px;
+}
+.statsAlbums > h3 {
+  margin: 0 0 16px;
+  color: var(--pm-on-dark);
+}
+.statsAlbums .seriesDirectory {
+  gap: 18px;
+  padding: 0 3px 5px;
+}
