@@ -309,14 +309,14 @@ body .pm-series-card[data-series-id="outback"]::after {
   content: '';
   position:absolute;
   right: 7px;
-  bottom: 14px;
+  bottom: 8px;
   width: 72px;
-  height: 78px;
+  height: 55px;
   background: url('artwork/outback-windmill.png') center / contain no-repeat;
   pointer-events:none;
 }
 body .pm-series-card[data-series-id="outback"] > span:last-child { position:absolute;right:24px;top:7px;width:32px;height:32px; }
 @media(max-width:380px) {
   body .pm-series-card[data-series-id="outback"] { padding-right:72px; }
-  body .pm-series-card[data-series-id="outback"]::after { width:62px;height:68px;right:4px;bottom:10px; }
+  body .pm-series-card[data-series-id="outback"]::after { width:62px;height:48px;right:4px;bottom:8px; }
 }

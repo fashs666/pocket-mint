@@ -23,6 +23,19 @@ worker, companion animation or identification implementation changed.
 
 ## Limits / remaining verification
 
+### Stronger wobble revision (3 Oct)
+
+The first polish was too subtle. The revision adds two drawn SVG silhouettes,
+pastel bubble controls and generated Outback windmill artwork (360x240 PNG).
+The windmill prompt requested a transparent, compact storybook windmill/water
+tank vignette with muted gold, rust-red soil, sage shrubs and aqua accents.
+Asset generation used the built-in image-generation tool; only size was reduced
+for the app. Decorative frame layers never clip real content or hit targets.
+`node tests/frame-visual.mjs` and `npm run check` pass. Protected app files remain
+unchanged. Refreshed visual QA is pending: Cloudflare preview builds failed and
+the browser cannot access the local HTTP review server. Earlier screenshots
+are not proof of this stronger revision.
+
 - These are CSS viewport checks, not physical Android/iPhone hardware tests.
 - Existing roaming companions can briefly cross headings/coin artwork. Their
   positions and motion were deliberately not changed in this visual-only pass.
