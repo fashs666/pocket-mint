@@ -395,16 +395,16 @@ body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .co
   z-index: -1;
   border: 16px solid transparent;
   border-radius: 0;
-  border-image: url('frames/plaque-wobble.svg') 24 fill stretch;
+  border-image: url('frames/plaque-wobble.svg') 20% 8% fill stretch;
   background: none;
   box-shadow: none;
   filter: drop-shadow(0 3px 0 #92714560) drop-shadow(0 5px 7px #05091c30);
   pointer-events: none;
 }
 /* Nine-slice rails keep the waves and corner thickness steady on tall panels. */
-:root body :is(.view, #coinDialog) :is(.settings, .menuCard, .editBlock)::before {
+:root body :is(.view, #coinDialog) :is(.settings.card, .menuCard, .editBlock)::before {
   border-image-source: url('frames/coin-wobble.svg');
-  border-image-slice: 26 fill;
+  border-image-slice: 9% 15% fill;
 }
 :root body #myMintView .menuCard {
   overflow: visible;
