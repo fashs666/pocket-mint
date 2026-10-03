@@ -271,12 +271,14 @@ body #homeView .pm-home-hero::before {
   filter: drop-shadow(0 4px 0 #89694780) drop-shadow(0 0 7px #6be0da28);
 }
 body #homeView .pm-home-hero:not(.pm-companion-grim-clue):not(.pm-companion-noxel-idea)::after { content: none; }
-body #homeView .pm-stat-card:nth-child(2)::before { filter: hue-rotate(315deg) drop-shadow(0 3px 0 #92714560); }
-body #homeView .pm-stat-card:nth-child(3)::before { filter: hue-rotate(15deg) drop-shadow(0 3px 0 #92714560); }
-body #homeView .pm-stat-icon { background: #cff0e5; color: #265c64; border-color: #91c7b9; }
-body #homeView .pm-stat-card:nth-child(2) .pm-stat-icon { background: #f5d3e7; color: #884b79; border-color: #d998bd; }
-body #homeView .pm-stat-card:nth-child(3) .pm-stat-icon { background: #e1d4f6; color: #705394; border-color: #b39acc; }
-body #homeView .pm-stat-card:nth-child(4) .pm-stat-icon { background: #f5dda6; color: #77552b; border-color: #d2b36d; }
+body #homeView .pm-stat-icon { background: radial-gradient(circle at 35% 25%,#18384c,#10152e); color:#73e8ed; border-color:#c9aa6b; box-shadow:inset 0 0 0 2px #fff1ce30,0 2px 0 #a1815480,0 0 8px #65e4e329; }
+body #homeView .pm-stat-card:nth-child(2) .pm-stat-icon { color:#f48cd3; }
+body #homeView .pm-stat-card:nth-child(3) .pm-stat-icon { color:#f6d574; }
+body #homeView .pm-stat-card:nth-child(4) .pm-stat-icon { color:#80e8d7; }
+body #homeView .pm-stat-icon { font-size:0;background-image:url('frames/icon-owned.svg'),radial-gradient(circle at 35% 25%,#18384c,#10152e);background-size:24px 24px,100% 100%;background-position:center;background-repeat:no-repeat; }
+body #homeView .pm-stat-card:nth-child(2) .pm-stat-icon { background-image:url('frames/icon-wishlist.svg'),radial-gradient(circle at 35% 25%,#18384c,#10152e); }
+body #homeView .pm-stat-card:nth-child(3) .pm-stat-icon { background-image:url('frames/icon-favourites.svg'),radial-gradient(circle at 35% 25%,#18384c,#10152e); }
+body #homeView .pm-stat-card:nth-child(4) .pm-stat-icon { background-image:url('frames/icon-duplicates.svg'),radial-gradient(circle at 35% 25%,#18384c,#10152e); }
 /* Bubble controls: pastel tops, biscuit rims and a small illustrated lower lip. */
 body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls button,
 body #homeView .pm-home-collection-link,
@@ -304,19 +306,67 @@ body #homeView .findHero {
 body #homeView .findHeroIcon { background:#a7ece2; color:#313c56; border:2px solid #eed6a0; box-shadow:0 3px 0 #87679c; }
 /* One small themed vignette, behind a reserved illustration column.
    No new interaction or changes to series membership/navigation. */
-body .pm-series-card[data-series-id="outback"] { padding-right: 84px; overflow: visible; }
-body .pm-series-card[data-series-id="outback"]::after {
+body .pm-series-card[data-series-id] { padding-right: 78px; overflow: visible; }
+body .pm-series-card.is-complete { background:transparent; }
+body .pm-series-card[data-series-id]::after {
   content: '';
   position:absolute;
   right: 7px;
   bottom: 8px;
   width: 72px;
   height: 55px;
-  background: url('artwork/outback-windmill.png') center / contain no-repeat;
+  background: var(--pm-series-art) center / contain no-repeat;
   pointer-events:none;
 }
-body .pm-series-card[data-series-id="outback"] > span:last-child { position:absolute;right:24px;top:7px;width:32px;height:32px; }
+body .pm-series-card[data-series-id] > span:last-child { position:absolute;right:24px;top:7px;width:32px;height:32px; }
 @media(max-width:380px) {
-  body .pm-series-card[data-series-id="outback"] { padding-right:72px; }
-  body .pm-series-card[data-series-id="outback"]::after { width:62px;height:48px;right:4px;bottom:8px; }
+  body .pm-series-card[data-series-id] { padding-right:66px;gap:10px; }
+  body .pm-series-card[data-series-id]::after { width:58px;height:48px;right:4px;bottom:8px; }
+  body .pm-series-card .pm-series-ring { width:64px;height:64px;flex-shrink:0; }
+  body .pm-series-card .pm-series-ring::before { width:44px;height:44px; }
+}
+body #homeView .findHero { isolation:isolate;background:transparent;border-color:transparent;box-shadow:none;border-radius:24px; }
+body #homeView .findHero::before { inset:-2px;z-index:-1;background:url('frames/neon-wobble.svg') center / 100% 100% no-repeat;border:0;border-radius:0;filter:drop-shadow(0 0 5px #dc6fcd88); }
+body #homeView .findHeroIcon { background:#10203e;color:#7ee6ed;border-color:#78e0e5;box-shadow:0 0 10px #64d8e955; }
+body .pm-series-card[data-series-id="bicentenary"] { --pm-series-art: url('artwork/series/bicentenary.png'); }
+body .pm-series-card[data-series-id="federation"] { --pm-series-art: url('artwork/series/federation.png'); }
+body .pm-series-card[data-series-id="outback"] { --pm-series-art: url('artwork/series/outback.png'); }
+body .pm-series-card[data-series-id="volunteers2003"] { --pm-series-art: url('artwork/series/volunteers2003.png'); }
+body .pm-series-card[data-series-id="wwii60"] { --pm-series-art: url('artwork/series/wwii60.png'); }
+body .pm-series-card[data-series-id="anzac"] { --pm-series-art: url('artwork/series/anzac.png'); }
+body .pm-series-card[data-series-id="decimal50"] { --pm-series-art: url('artwork/series/decimal50.png'); }
+body .pm-series-card[data-series-id="olympic"] { --pm-series-art: url('artwork/series/olympic.png'); }
+body .pm-series-card[data-series-id="possum"] { --pm-series-art: url('artwork/series/possum.png'); }
+body .pm-series-card[data-series-id="goldcoast"] { --pm-series-art: url('artwork/series/goldcoast.png'); }
+body .pm-series-card[data-series-id="discovery"] { --pm-series-art: url('artwork/series/discovery.png'); }
+body .pm-series-card[data-series-id="squiggle"] { --pm-series-art: url('artwork/series/squiggle.png'); }
+body .pm-series-card[data-series-id="gach"] { --pm-series-art: url('artwork/series/gach.png'); }
+body .pm-series-card[data-series-id="dinosaurs"] { --pm-series-art: url('artwork/series/dinosaurs.png'); }
+body .pm-series-card[data-series-id="commonwealth_team"] { --pm-series-art: url('artwork/series/commonwealth_team.png'); }
+body .pm-series-card[data-series-id="wiggles"] { --pm-series-art: url('artwork/series/wiggles.png'); }
+body .pm-series-card[data-series-id="afl"] { --pm-series-art: url('artwork/series/afl.png'); }
+body .pm-series-card[data-series-id="vegemite"] { --pm-series-art: url('artwork/series/vegemite.png'); }
+body .pm-series-card[data-series-id="matildas"] { --pm-series-art: url('artwork/series/matildas.png'); }
+body .pm-series-card[data-series-id="big_things"] { --pm-series-art: url('artwork/series/big_things.png'); }
+body .pm-series-card[data-series-id="bluey"] { --pm-series-art: url('artwork/series/bluey.png'); }
+body .pm-series-card[data-series-id="nrl"] { --pm-series-art: url('artwork/series/nrl.png'); }
+body .pm-series-card[data-series-id="australian_open"] { --pm-series-art: url('artwork/series/australian_open.png'); }
+body .pm-series-card[data-series-id="rugby"] { --pm-series-art: url('artwork/series/rugby.png'); }
+
+/* Album-card edges use the same drawn language, inside the existing footprint. */
+body #homeView .recentCoins .coinCard,
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard {
+  background:transparent;border-color:transparent;isolation:isolate;
+  box-shadow:none;
+}
+body #homeView .recentCoins .coinCard::before,
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard::before {
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:url('frames/coin-wobble.svg') center / 100% 100% no-repeat;
+  filter:drop-shadow(0 2px 0 #8d673d60);
+}
+body #homeView .recentCoins .coinCard .coinControls,
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls {
+  background:transparent;box-shadow:none;border-top:1px solid #c5a87570;
+  margin:0 6px 7px;
 }

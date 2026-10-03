@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 300" preserveAspectRatio="none">
+ <defs><linearGradient id="paper" x2=".3" y2="1"><stop stop-color="#fff0d5"/><stop offset="1" stop-color="#ead7b4"/></linearGradient></defs>
+ <path id="edge" d="M22 6 C38 1 56 10 74 6 S110 9 129 6 Q160 0 172 18 C178 32 169 45 173 61 S169 92 174 111 S169 146 174 163 S169 197 173 216 S168 252 173 269 Q177 291 156 294 C135 298 116 290 95 295 S56 291 35 295 Q12 299 7 278 C2 261 11 244 7 226 S11 194 6 174 S11 141 7 124 S11 89 7 71 S11 42 7 25 Q5 11 22 6Z" fill="url(#paper)" stroke="#dcad67" stroke-width="4"/>
+ <use href="#edge" fill="none" stroke="#aa7c4d" stroke-width="1"/>
+ <path d="M23 11 C40 6 56 15 75 11 S110 14 129 11 Q157 5 167 20 C173 32 164 45 168 61 S164 92 169 111 S164 146 169 163 S164 197 168 216 S163 252 168 269 Q172 286 155 289 C135 293 116 285 95 290 S56 286 35 290 Q17 294 12 277 C7 261 16 244 12 226 S16 194 11 174 S16 141 12 124 S16 89 12 71 S16 42 12 25 Q10 16 23 11Z" fill="none" stroke="#fff7e6" stroke-width="1.5"/>
+</svg>

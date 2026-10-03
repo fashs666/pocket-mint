@@ -1,0 +1,127 @@
+{
+  "reference": "Pocket Mint: Cosmic Collection Dashboard.png (supplied by user)",
+  "method": "Built-in image generation",
+  "postprocessing": "Trim transparent padding and resize to fit 240x180; preserve original generated image",
+  "prompts": [
+    {
+      "id": "bicentenary",
+      "asset": "public/artwork/series/bicentenary.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"bicentenary\". Subject: a cheerful flowering golden wattle sprig beside a small folded map of Australia. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "federation",
+      "asset": "public/artwork/series/federation.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"federation\". Subject: a little ornate Australian federation-era pavilion with a gold sun behind it. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "outback",
+      "asset": "public/artwork/series/outback.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"outback\". Subject: a rustic outback windmill, timber water tank, red rocks and two tiny green shrubs. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "volunteers2003",
+      "asset": "public/artwork/series/volunteers2003.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"volunteers2003\". Subject: two friendly hands holding a little pink heart, small sage leaves. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "wwii60",
+      "asset": "public/artwork/series/wwii60.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"wwii60\". Subject: a red remembrance poppy with a small folded peace ribbon and sage leaves. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "anzac",
+      "asset": "public/artwork/series/anzac.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"anzac\". Subject: a red remembrance poppy with a sprig of rosemary, calm respectful illustration. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "decimal50",
+      "asset": "public/artwork/series/decimal50.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"decimal50\". Subject: a cute retro change purse with tiny gold and silver blank coins peeking out. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "olympic",
+      "asset": "public/artwork/series/olympic.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"olympic\". Subject: a gold medal on a green and gold ribbon with a little laurel sprig. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "possum",
+      "asset": "public/artwork/series/possum.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"possum\". Subject: a tiny adorable grey Australian possum sitting on a eucalyptus branch with a small magical sparkle. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "goldcoast",
+      "asset": "public/artwork/series/goldcoast.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"goldcoast\". Subject: a sunny surfboard beside a little wave and a gold sports medal. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "discovery",
+      "asset": "public/artwork/series/discovery.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"discovery\". Subject: a tiny magnifying glass investigating a gold blank coin with a little aqua sparkle. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "squiggle",
+      "asset": "public/artwork/series/squiggle.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"squiggle\". Subject: a whimsical sketch pencil beside a small moon and a curling colourful drawn line. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "gach",
+      "asset": "public/artwork/series/gach.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"gach\". Subject: a rolled Australian map beside a small gold blank coin and a little explorer compass. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "dinosaurs",
+      "asset": "public/artwork/series/dinosaurs.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"dinosaurs\". Subject: a cute chunky teal Australian dinosaur with a tiny fern and red rock. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "commonwealth_team",
+      "asset": "public/artwork/series/commonwealth_team.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"commonwealth_team\". Subject: a friendly gold sports medal with green and gold pennants and a laurel sprig. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "wiggles",
+      "asset": "public/artwork/series/wiggles.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"wiggles\". Subject: a tiny toy music keyboard with four colourful musical notes in red yellow blue purple. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "afl",
+      "asset": "public/artwork/series/afl.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"afl\". Subject: an Australian rules football beside two tall and two short goalposts with a tiny green grass tuft. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "vegemite",
+      "asset": "public/artwork/series/vegemite.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"vegemite\". Subject: a cute slice of toast with dark savoury spread, small butter curl and a sunny sparkle, no branded packaging. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "matildas",
+      "asset": "public/artwork/series/matildas.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"matildas\". Subject: a soccer ball beside a green and gold jersey and a tiny golden laurel leaf. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "big_things",
+      "asset": "public/artwork/series/big_things.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"big_things\". Subject: a cheerful oversized pineapple beside a miniature red roadside sign, no text. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "bluey",
+      "asset": "public/artwork/series/bluey.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"bluey\". Subject: a playful blue pawprint sticker beside a little orange toy ball and green grass, no character. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "nrl",
+      "asset": "public/artwork/series/nrl.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"nrl\". Subject: a rugby league ball beside a small green field with two upright posts and a horizontal crossbar. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "australian_open",
+      "asset": "public/artwork/series/australian_open.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"australian_open\". Subject: a tennis racket and yellow tennis ball with a little blue court corner. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    },
+    {
+      "id": "rugby",
+      "asset": "public/artwork/series/rugby.png",
+      "prompt": "Create ONE brand-new transparent illustration asset, not a UI screenshot. The attached dashboard is a STYLE REFERENCE ONLY; do not reproduce its layout, text, cats, buttons or cards. Asset for Pocket Mint series \"rugby\". Subject: a rugby union ball beside a pair of little green and gold boots. Match the reference’s tiny charming storybook series artwork: warm biscuit/gold outline, softly painted volume, chunky cute silhouettes, warm muted colours with small aqua/lilac highlights. Compact horizontal vignette, readable at 72px wide. Completely transparent surrounding background, no glow fog, no rectangular backdrop, no labels, no lettering, no watermark. Keep all elements together in the middle with little empty margin. Finished cute collectible scrapbook sticker, restrained detail."
+    }
+  ]
+}

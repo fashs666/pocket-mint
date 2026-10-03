@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120" preserveAspectRatio="none">
+ <defs><linearGradient id="night"><stop stop-color="#121d3c"/><stop offset="1" stop-color="#2d1a42"/></linearGradient></defs>
+ <path id="frame" d="M26 7 C47 1 64 11 86 6 S128 3 151 7 S194 2 215 6 S255 1 277 8 Q295 12 292 29 C287 42 298 50 292 63 S297 90 288 104 Q285 115 266 113 C243 118 222 109 200 114 S157 111 135 114 S90 109 68 114 S32 117 17 109 Q5 104 8 88 C13 73 3 62 8 49 S3 26 12 15 Q16 8 26 7Z" fill="url(#night)" stroke="#79e9eb" stroke-width="5"/>
+ <use href="#frame" fill="none" stroke="#ef8edb" stroke-width="2"/>
+ <path d="M29 15 Q47 9 68 16 T110 15 T152 15 T194 15 T236 15 Q280 6 283 27 Q287 48 283 69 Q291 104 265 105 Q245 109 225 104 T183 106 T141 105 T99 105 T57 105 Q21 112 18 90 Q23 68 17 49 Q10 22 29 15Z" fill="none" stroke="#fff4db" stroke-opacity=".5" stroke-width="1"/>
+</svg>
