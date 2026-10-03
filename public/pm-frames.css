@@ -238,3 +238,85 @@ body .view:not(#homeView) .statsGrid .stat {
   body .pm-series-card { gap: 10px; }
   body .pm-series-card > span:last-child { width: 22px; }
 }
+
+/* Clearly drawn, gently undulating edges: not rounded-rectangle substitutes.
+   Only decorative layers are shaped; text, buttons and focus outlines stay whole. */
+body #homeView .pm-home-hero,
+body #homeView .pm-stat-card,
+body #homeView .pm-home-completion,
+body .pm-series-card {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+body #homeView .pm-home-hero::before,
+body #homeView .pm-stat-card::before,
+body #homeView .pm-home-completion::before,
+body .pm-series-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border: 0;
+  border-radius: 0;
+  background: url('frames/plaque-wobble.svg') center / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 3px 0 #92714560) drop-shadow(0 5px 7px #05091c30);
+  pointer-events: none;
+}
+body #homeView .pm-home-hero::before {
+  background-image: url('frames/album-wobble.svg');
+  filter: drop-shadow(0 4px 0 #89694780) drop-shadow(0 0 7px #6be0da28);
+}
+body #homeView .pm-home-hero:not(.pm-companion-grim-clue):not(.pm-companion-noxel-idea)::after { content: none; }
+body #homeView .pm-stat-card:nth-child(2)::before { filter: hue-rotate(315deg) drop-shadow(0 3px 0 #92714560); }
+body #homeView .pm-stat-card:nth-child(3)::before { filter: hue-rotate(15deg) drop-shadow(0 3px 0 #92714560); }
+body #homeView .pm-stat-icon { background: #cff0e5; color: #265c64; border-color: #91c7b9; }
+body #homeView .pm-stat-card:nth-child(2) .pm-stat-icon { background: #f5d3e7; color: #884b79; border-color: #d998bd; }
+body #homeView .pm-stat-card:nth-child(3) .pm-stat-icon { background: #e1d4f6; color: #705394; border-color: #b39acc; }
+body #homeView .pm-stat-card:nth-child(4) .pm-stat-icon { background: #f5dda6; color: #77552b; border-color: #d2b36d; }
+/* Bubble controls: pastel tops, biscuit rims and a small illustrated lower lip. */
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls button,
+body #homeView .pm-home-collection-link,
+body .pm-series-card > span:last-child,
+body .statsCard .milestonesLink,
+body .seriesBack {
+  border: 2px solid #bc9968;
+  border-radius: 42% 35% 40% 33% / 36% 44% 32% 42%;
+  background: linear-gradient(#fdf2dc, #ead4ac);
+  box-shadow: inset 0 2px 0 #fff9e9, 0 3px 0 #aa8053, 0 0 0 1px #e5bded70;
+  color: #493654;
+}
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .heart { background: linear-gradient(#fbe3ef,#efbfdb); border-color:#c089aa; }
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .star { background: linear-gradient(#fff0c4,#ebd299); border-color:#c3a064; }
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .addCoin { background: linear-gradient(#dff8eb,#adddcf); border-color:#83b6ab; }
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .heart.on { background: #ecaad1; color:#60315c; }
+body .view:is(#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinControls .star.on { background: #efd17c; color:#654716; }
+body #homeView .findHero {
+  border-radius: 33% 18% 27% 16% / 24% 35% 22% 38%;
+  background: linear-gradient(110deg,#354b64,#483054 65%,#653b64);
+  border-color: #ecd5a6;
+  box-shadow: inset 0 2px 0 #ffffff40, inset 0 -4px 0 #16152c55,
+    0 4px 0 #19162f, 0 0 0 2px #ef93d6, 0 0 0 4px #70d9db40, 0 0 17px #d796ec35;
+}
+body #homeView .findHeroIcon { background:#a7ece2; color:#313c56; border:2px solid #eed6a0; box-shadow:0 3px 0 #87679c; }
+/* One small themed vignette, behind a reserved illustration column.
+   No new interaction or changes to series membership/navigation. */
+body .pm-series-card[data-series-id="outback"] { padding-right: 84px; overflow: visible; }
+body .pm-series-card[data-series-id="outback"]::after {
+  content: '';
+  position:absolute;
+  right: 7px;
+  bottom: 14px;
+  width: 72px;
+  height: 78px;
+  background: url('artwork/outback-windmill.png') center / contain no-repeat;
+  pointer-events:none;
+}
+body .pm-series-card[data-series-id="outback"] > span:last-child { position:absolute;right:24px;top:7px;width:32px;height:32px; }
+@media(max-width:380px) {
+  body .pm-series-card[data-series-id="outback"] { padding-right:72px; }
+  body .pm-series-card[data-series-id="outback"]::after { width:62px;height:68px;right:4px;bottom:10px; }
+}
