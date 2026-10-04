@@ -30,3 +30,8 @@ for(const [name,count,texture,ellipse] of [['plain',3,false,false],['mixed table
   if(texture&&count)for(const region of found)assert(source.centers.some(([x,y])=>Math.hypot(region.centreX-x,region.centreY-y)<12),`${name}: no phantom circles`);
   console.log(`PASS ${name}: ${found.length} regions (${Date.now()-start}ms)`);
 }
+const stableContext={window:{},crypto:{randomUUID:()=> 'test'},setTimeout,Uint8Array,Uint16Array,Int32Array,Math};
+vm.runInNewContext(code,stableContext);
+const renumbered=stableContext.window.BatchCoins.updateRelativeDiameters([{width:20,height:20,detectionNumber:1},{width:30,height:30,detectionNumber:3}]);
+assert.deepEqual(Array.from(renumbered,r=>r.detectionNumber),[1,3],'Removing an outline must preserve physical coin numbers');
+console.log('PASS stable outline numbers after removal');

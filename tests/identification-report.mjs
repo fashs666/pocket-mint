@@ -36,9 +36,10 @@ const classified=batchContext.window.BatchIdentificationCore.classify({matches:[
 assert.equal(classified.predictedCoinId,two.id);
 assert.equal(classified.choices[0].coin.denomination_display,'$2');
 assert.equal(classified.status,'confident');
+assert.equal(classified.ready,false,'Prediction must never confirm a physical coin');
 const noMatch=batchContext.window.BatchIdentificationCore.classify({matches:[],uncertain:true,observed:{denomination:'unknown'}});
 assert.equal(noMatch.predictedCoinId,null);
-assert.match(await readFile('public/batch-identification.js','utf8'),/mode:'circulating',obverse:null,reverse/);
+assert.match(await readFile('public/batch-identification.js','utf8'),/batch_coin:true/);
 console.log('PASS single and batch value, design, issue scoring; six-denomination batch routing; no-match recording');
 
 // The correct-result shortcut can save without the denomination, title, or
