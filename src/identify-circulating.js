@@ -40,6 +40,7 @@ export function rankCirculatingDesigns(designs,denomination,answer,year=null) {
 }
 
 export async function identifyCirculating({request,env,body,runVision,answerText,json,legacyIdentify}) {
+  if(body.batch_check===true||body.batch_coin===true)return identifyBatchCoin({request,env,body,runVision,answerText,json,legacyIdentify});
   if(body.single_coin===true)return identifySingleCoin({request,env,body,runVision,answerText,json,legacyIdentify});
   const raw=answerText(await runVision(env,body.reverse,
     'This is one Australian circulating coin, photographed from the design side. Before seeing any catalogue names, describe only what is actually visible: distinctive readable words and a recognisable object or emblem. Read the FACE VALUE only if visible. Colour and outer shape are secondary: $1 and $2 are gold-coloured; 5c and $2 have similar diameters; 50c is usually twelve-sided. If unclear say unknown. Reply exactly: DENOM=5c|10c|20c|50c|$1|$2|unknown; CONFIDENCE=0-100; WORDS=visible distinctive words or unknown; MOTIF=recognisable object or emblem or unknown.',130));
@@ -84,4 +85,26 @@ export async function identifyCirculating({request,env,body,runVision,answerText
   }
   const result=rankCirculatingDesigns(shortlist,denomination,answer,year);
   return json({...result,observed:{...result.observed,denomination_confidence:detected.confidence,words:clues.words,motif:clues.motif}});
+}
+
+
+// Batch preflight is isolated from single Identify and the legacy API.
+export function parseBatchCheck(answer) {
+  const field=key=>String(answer||'').match(new RegExp(`(?:^|[;\\n])\\s*${key}\\s*=\\s*([^;\\n]+)`,'i'))?.[1]?.trim().toLowerCase();
+  const coin=field('COIN'),side=field('SIDE'),quality=field('QUALITY');
+  const count=Number(field('COUNT'));
+  const confidence=Math.max(0,Math.min(100,Number(field('CONFIDENCE'))||0));
+  return {coin:['yes','no'].includes(coin)?coin:'unknown',side:['design','portrait'].includes(side)?side:'unknown',quality:['clear','poor'].includes(quality)?quality:'unknown',count:Number.isInteger(count)&&count>=0?count:null,confidence};
+}
+async function identifyBatchCoin(context) {
+  const {env,body,runVision,answerText,json}=context;
+  const raw=answerText(await runVision(env,body.reverse,
+    'Examine this crop without assuming it contains a coin. Is the central object a real metal coin? Reject buttons, bottle caps, washers, table patterns, shadows and printed circles. Count visible physical coins; ignore rings and artwork inside a coin. State whether the central coin shows a portrait/head or a design. State whether its artwork is sharp enough to inspect. Use unknown when unsure. Reply exactly: COIN=yes|no|unknown; COUNT=integer or unknown; SIDE=design|portrait|unknown; QUALITY=clear|poor|unknown; CONFIDENCE=0-100.',140));
+  const check=parseBatchCheck(raw);
+  const reason=check.coin==='no'&&check.confidence>=80?'This object does not appear to be a coin. Remove this outline.':check.count!==null&&check.count>1?'This crop contains multiple coins. Adjust the outline or separate the coins.':check.coin!=='yes'||check.confidence<80||check.count!==1?'Check that this crop contains one real coin. Adjust the outline or take a closer photo.':check.quality!=='clear'?'The coin details are not clear enough. Take a closer photo of this coin.':check.side!=='design'?'Photograph the design side of this coin to match its artwork.':'';
+  const status=check.coin==='no'&&check.confidence>=80?'not_coin':check.count!==null&&check.count>1?'multiple_coins':check.coin!=='yes'||check.confidence<80||check.count!==1?'check_coin':check.quality!=='clear'?'low_quality':check.side!=='design'?'needs_other_side':'ready';
+  if(body.batch_check===true||status!=='ready')return json({check,status,matches:[],uncertain:true,needs_year:false,reason,observed:{side:check.side,quality:check.quality,coin_check:check}});
+  const response=await identifySingleCoin(context);
+  const payload=await response.json();
+  return json({...payload,check,observed:{...payload.observed,side:check.side,quality:check.quality,coin_check:check}},response.status);
 }

@@ -30,7 +30,7 @@ function regionAt(x,y,rx,ry,confidence=0,manual=false) {
 }
 function updateRelativeDiameters(regions) {
   const largest=Math.max(1,...regions.map(r=>Math.max(r.width,r.height)));
-  return regions.map((r,index)=>({...r,detectionNumber:index+1,relativeDiameter:Math.max(r.width,r.height)/largest}));
+  return regions.map((r,index)=>({...r,detectionNumber:r.detectionNumber||index+1,relativeDiameter:Math.max(r.width,r.height)/largest}));
 }
 async function detectCoins(source) {
   const scale=Math.min(1,BATCH_CONFIG.analysisSide/Math.max(source.width,source.height));
@@ -160,16 +160,16 @@ async function detectCoins(source) {
     if(c.kind==='ring'&&(evidence.contrast<24||evidence.polarity<BATCH_CONFIG.minRingPolarity||
       evidence.surfaceDifference<BATCH_CONFIG.minRingSurfaceDifference||evidence.surfaceConsistency<BATCH_CONFIG.minRingSurfaceConsistency))continue;
     if(accepted.some(previous=>Math.hypot(previous.x-c.x,previous.y-c.y)<Math.max(previous.rx,previous.ry,c.rx,c.ry)*.9))continue;
-    accepted.push(c);
+    accepted.push({...c,evidence});
   }
-  return updateRelativeDiameters(accepted.sort((a,b)=>a.y-b.y||a.x-b.x).map(c=>regionAt(c.x/scale,c.y/scale,c.rx/scale,c.ry/scale,Math.min(1,c.score/65))));
+  return updateRelativeDiameters(accepted.sort((a,b)=>a.y-b.y||a.x-b.x).map(c=>({...regionAt(c.x/scale,c.y/scale,c.rx/scale,c.ry/scale,Math.min(1,c.evidence.coverage*c.evidence.polarity)),detectionStatus:'unchecked',reviewed:false,rimEvidence:c.evidence})));
 }
 async function cropCoins(source,regions) {
   const crops=[];
   for(const region of updateRelativeDiameters(regions)) {
     // Voting can catch an inner ring rather than the outer edge of a coin.
     // Give automatic crops extra room; manual selections keep the tighter pad.
-    const padding=region.manual?BATCH_CONFIG.padding:Math.max(BATCH_CONFIG.padding,.25);
+    const padding=region.manual?BATCH_CONFIG.padding:Math.max(BATCH_CONFIG.padding,.16);
     const diameter=Math.max(region.width,region.height)*(1+padding*2);
     const side=Math.min(768,Math.max(256,Math.ceil(diameter)));
     const canvas=document.createElement('canvas');canvas.width=side;canvas.height=side;
