@@ -98,8 +98,11 @@ export function parseBatchCheck(answer) {
 }
 async function identifyBatchCoin(context) {
   const {env,body,runVision,answerText,json}=context;
+  // Once the user reviews the outlines, the ordinary design matcher judges
+  // the crop. Do not run a second count/quality gate on a confirmed specimen.
+  if(body.batch_coin===true&&body.batch_reviewed===true)return identifySingleCoin(context);
   const raw=answerText(await runVision(env,body.reverse,
-    'Examine this crop without assuming it contains a coin. Is the central object a real metal coin? Reject buttons, bottle caps, washers, table patterns, shadows and printed circles. Count visible physical coins; ignore rings and artwork inside a coin. State whether the central coin shows a portrait/head or a design. State whether its artwork is sharp enough to inspect. Use unknown when unsure. Reply exactly: COIN=yes|no|unknown; COUNT=integer or unknown; SIDE=design|portrait|unknown; QUALITY=clear|poor|unknown; CONFIDENCE=0-100.',140));
+    'Examine the CENTRAL selected object in this crop without assuming it is a coin. Is it a real metal coin? Reject buttons, bottle caps, washers, table patterns, shadows and printed circles. COUNT refers only to complete central target coins, never a neighbouring coin fragment at the edge. Ignore rings and artwork inside a coin. State whether the target shows a portrait/head or a design and whether its artwork is sharp enough to inspect. Use unknown when unsure. Reply exactly: COIN=yes|no|unknown; COUNT=integer or unknown; SIDE=design|portrait|unknown; QUALITY=clear|poor|unknown; CONFIDENCE=0-100.',140));
   const check=parseBatchCheck(raw);
   const reason=check.coin==='no'&&check.confidence>=80?'This object does not appear to be a coin. Remove this outline.':check.count!==null&&check.count>1?'This crop contains multiple coins. Adjust the outline or separate the coins.':check.coin!=='yes'||check.confidence<80||check.count!==1?'Check that this crop contains one real coin. Adjust the outline or take a closer photo.':check.quality!=='clear'?'The coin details are not clear enough. Take a closer photo of this coin.':check.side!=='design'?'Photograph the design side of this coin to match its artwork.':'';
   const status=check.coin==='no'&&check.confidence>=80?'not_coin':check.count!==null&&check.count>1?'multiple_coins':check.coin!=='yes'||check.confidence<80||check.count!==1?'check_coin':check.quality!=='clear'?'low_quality':check.side!=='design'?'needs_other_side':'ready';

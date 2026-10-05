@@ -78,11 +78,15 @@
   function render(nextCrops){
     crops=nextCrops;
     const root=$('batchResultList');root.replaceChildren();
-    $('batchIdentifyAll').disabled=busy||!crops.some(crop=>crop.reviewed);
-    $('batchIdentifyAll').textContent=busy?'Identifying coins…':`Identify ${crops.filter(crop=>crop.reviewed).length} confirmed coin${crops.filter(crop=>crop.reviewed).length===1?'':'s'}`;
+    $('batchIdentifyAll').disabled=busy||!crops.length;
+    $('batchIdentifyAll').textContent=busy?'Identifying coins…':`Outlines look right · identify ${crops.length} coin${crops.length===1?'':'s'}`;
+    for(const id of ['batchSaveTests','batchExportTests']){const button=$(id);if(button){button.hidden=!results.size;button.disabled=busy;}}
     for(const crop of crops){
       const result=results.get(crop.id);
-      const card=document.createElement('article');card.className='batchResult pm-cream-card';card.dataset.regionId=crop.id;
+      if(!result)continue;
+      const card=document.createElement('details');card.className='batchResult pm-cream-card';card.dataset.regionId=crop.id;card.open=Boolean(result.expanded);
+      card.ontoggle=()=>{result.expanded=card.open;};
+      const cardSummary=document.createElement('summary');cardSummary.className='batchCompactSummary';card.append(cardSummary);
       const heading=document.createElement('h4');heading.textContent=`Coin ${crop.detectionNumber}`;card.append(heading);
       const thumbnail=document.createElement('img');thumbnail.src=result?.reverse||crop.cropUrl;thumbnail.alt=`Coin ${crop.detectionNumber} crop`;thumbnail.onclick=()=>window.BatchReview?.select(crop.id);thumbnail.tabIndex=0;thumbnail.setAttribute('role','button');thumbnail.setAttribute('aria-label',`Locate coin ${crop.detectionNumber} in photo`);thumbnail.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();window.BatchReview?.select(crop.id);}};card.append(thumbnail);
       const summary=document.createElement('p');summary.className='batchResultSummary';
@@ -93,6 +97,7 @@
       else if(['no_match','not_coin','multiple_coins','check_coin','low_quality','needs_other_side'].includes(result.status))summary.textContent=result.message||'No reliable match. Retry or compare with the catalogue.';
       else summary.textContent=result.status==='manual'?(result.message||'Check the catalogue artwork and choose the exact issue.'):result.status==='confident'?'Likely design and issue: check before adding.':result.status==='year_uncertain'?'Design found · choose the issue year.':'Design uncertain · choose the matching design and issue.';
       card.append(summary);
+      cardSummary.append(heading,thumbnail,summary);
       if(!result||result.status==='manual'&&!result.choices?.length){const identify=document.createElement('button');identify.type='button';identify.textContent='Identify this coin';identify.disabled=busy||!crop.reviewed;identify.onclick=()=>identifyOne(crop);card.append(identify);}
       if(result&&['error','no_match','not_coin','multiple_coins','check_coin','low_quality','needs_other_side'].includes(result.status)){
         const retry=document.createElement('button');retry.type='button';retry.textContent='Retry this coin';retry.disabled=busy||!crop.reviewed;retry.onclick=()=>identifyOne(crop);card.append(retry);
@@ -155,7 +160,7 @@
   }
   function renderTestReport(card,result,crop){
     const section=document.createElement('section');section.className='batchTestReport';
-    const title=document.createElement('strong');title.textContent='Test report · did it get the value and coin right?';section.append(title);
+    const title=document.createElement('strong');title.textContent='Test feedback';section.append(title);
     if(result.testSaved){const saved=document.createElement('p');saved.textContent='Test saved locally in Settings. This did not add the coin to My Mint.';section.append(saved);card.append(section);return;}
     const suggested=coinById(result.predictedCoinId);
     if(suggested&&(result.status==='confident'||result.status==='year_uncertain')){
@@ -178,7 +183,7 @@
     const expectedLabel=document.createElement('label');expectedLabel.textContent='Actual coin (choose a catalogue suggestion)';expectedLabel.append(expected,options);correction.append(expectedLabel);
     const save=document.createElement('button');save.type='button';save.textContent='Save test report';
     const status=document.createElement('p');status.setAttribute('role','status');
-    async function saveReport(quick=false,failed=false){
+    async function saveReport(quick=false,failed=false,outcomeOverride=null){
       if(result.testSaving||result.testSaved)return;
       const actual=quick?coinById(result.coinId||result.predictedCoinId):window.PocketMintIdentificationReport.resolveExpected(expected.value,browseCatalogue.filter(coin=>coin.denomination_display===denomination.value));
       if(!actual&&!failed){status.textContent='Choose a denomination and exact catalogue issue to compare.';return;}
@@ -188,18 +193,21 @@
         const fields=window.PocketMintIdentificationReport.fields({flow:'batch',expectedLabel:quick?`${actual.year} ${actual.title}`:expected.value.trim(),expectedCoin:actual,predictedCoin:predicted,predictedDenomination:result.observed?.denomination,context:{detection_number:crop.detectionNumber,relative_diameter:crop.relativeDiameter??null}});
         if(quick&&result.status==='year_uncertain'&&!result.coinId){fields.issue_correct=null;fields.expected_coin_id=null;fields.expected_label=`${actual.title} · year not checked`;}
         const test={id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:APP_VERSION,catalogue_version:catMeta.catalogue_version||'',...fields,
-          outcome:failed?result.status==='error'?'error':'no_match':quick?'correct':fields.issue_correct?'correct':fields.denomination_correct?'partial':'wrong',result_source:'batch_visual',
+          outcome:outcomeOverride||(failed?result.status==='error'?'error':'no_match':quick?'correct':fields.issue_correct?'correct':fields.denomination_correct?'partial':'wrong'),result_source:'batch_visual',
+          result_status:result.status,region_id:crop.id||null,crop_bounds:{x:crop.x,y:crop.y,width:crop.width,height:crop.height},
           expected_denomination:actual?.denomination_display||denomination.value||null,
           candidates:result.predictedChoices||[],observed:result.observed||null,analysis_error:result.analysisError||null,fallback_reason:result.message||'',note:''};
-        await put('identificationTests',test);identificationTests.unshift(test);result.testSaved=true;renderAll();render(crops);
+        await put('identificationTests',test);identificationTests.unshift(test);result.testSaved=true;result.testId=test.id;renderAll();render(crops);
       }catch(error){save.disabled=false;status.textContent=`Could not save report: ${error.message}`;}
       finally{result.testSaving=false;}
     }
+    result.saveReport=saveReport;
     save.onclick=()=>saveReport(false);
-    if(result.status==='error'||result.status==='no_match'){
+    if(!result.choices?.length||result.status==='error'){
       const failed=document.createElement('button');failed.type='button';failed.className='batchQuickReport';failed.textContent='Save failed test';
       failed.onclick=()=>saveReport(false,true);section.append(failed,status);
     }
+    else{const wrong=document.createElement('button');wrong.type='button';wrong.textContent='Wrong match · save test';wrong.onclick=()=>saveReport(false,true,'wrong');section.append(wrong);}
     correction.append(save);if(result.status==='error'||result.status==='no_match')section.append(status);else correction.append(status);
     section.append(correction);card.append(section);
   }
@@ -228,7 +236,7 @@
     try{
       const reverse=previous.reverse||await fileDataUrl(crop.crop);
       if(revision!==generation)return;
-      const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',obverse:previous.obverse||null,reverse,batch_coin:true,denomination:previous.denomination||''})});
+      const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',obverse:previous.obverse||null,reverse,batch_coin:true,batch_reviewed:true,denomination:previous.denomination||''})});
       const data=await response.json();
       if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429,analysisError:{status:response.status,diagnostic_code:data.diagnostic_code||null,request_id:data.request_id||null,message:data.error||'Identification unavailable'}});
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
@@ -242,7 +250,12 @@
   }
   $('batchIdentifyAll').onclick=async()=>{
     if(busy||!crops.length)return;
-    busy=true;const revision=generation,queue=[...crops].filter(crop=>crop.reviewed&&!results.get(crop.id)?.added&&!results.get(crop.id)?.choices?.length);
+    busy=true;const revision=generation;
+    if(window.BatchReview?.approveAll){
+      try{const approved=await window.BatchReview.approveAll();if(!approved||revision!==generation){if(revision===generation){busy=false;render(crops);}return;}}
+      catch(error){if(revision===generation){busy=false;$('batchIdentifyStatus').textContent=`Could not prepare crops: ${error.message}`;render(crops);}return;}
+    }
+    const queue=[...crops].filter(crop=>crop.reviewed&&!results.get(crop.id)?.added&&!results.get(crop.id)?.choices?.length);
     if(!queue.length){busy=false;$('batchIdentifyStatus').textContent='All remaining crops have results. Review them or retry a coin individually.';render(crops);return;}
     for(let index=0;index<queue.length;index++){
       if(revision!==generation)break;
@@ -255,6 +268,26 @@
     if(!$('batchIdentifyStatus').textContent.includes('allowance'))$('batchIdentifyStatus').textContent='Review each result, select uncertain designs or years, then confirm the coins you want to add.';
     render(crops);
   };
+  async function saveBatchTests(exportFile=false){
+    if(busy)return;
+    const revision=generation,sourceCrops=[...crops];busy=true;render(crops);
+    try{
+      for(const crop of sourceCrops){if(revision!==generation)return;const result=results.get(crop.id);if(!result||result.status==='loading')continue;
+        if(!result.testSaved)await result.saveReport?.(false,true,result.status==='error'?'error':result.choices?.length?'unreviewed':'no_match');
+        if(!result.testSaved)throw new Error(`Coin ${crop.detectionNumber}: test could not be saved`);
+      }
+      if(revision!==generation)return;
+      const ids=new Set(sourceCrops.map(crop=>results.get(crop.id)?.testId).filter(Boolean));
+      const tests=identificationTests.filter(test=>ids.has(test.id));
+      if(exportFile){const payload={format:'pocket-mint-identification-tests',version:1,flow:'batch',exported_at:new Date().toISOString(),app_version:APP_VERSION,catalogue_version:catMeta.catalogue_version,total_outlines:sourceCrops.length,unprocessed:sourceCrops.length-tests.length,tests};
+        const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`pocket-mint-batch-tests-${new Date().toISOString().slice(0,10)}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      }
+      $('batchIdentifyStatus').textContent=`${tests.length} batch tests saved${exportFile?' and exported':''}. No coins were added. Unreviewed matches are not scored as correct.`;
+    }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=`Could not finish saving tests: ${error.message}`;}
+    finally{if(revision===generation){busy=false;render(crops);}}
+  }
+  if($('batchSaveTests'))$('batchSaveTests').onclick=()=>saveBatchTests(false);
+  if($('batchExportTests'))$('batchExportTests').onclick=()=>saveBatchTests(true);
   $('batchAddConfirmed').onclick=async()=>{
     if(busy)return;
     const items=crops.filter(crop=>{const result=results.get(crop.id);return crop.reviewed&&result?.ready&&result.coinId&&!result.added;}).map(crop=>({regionId:crop.id,coinId:results.get(crop.id).coinId,crop:results.get(crop.id).reverseBlob||crop.crop}));

@@ -1,5 +1,5 @@
 /* Local detector. Regions use coordinates in the downscaled source image. */
-const BATCH_CONFIG = Object.freeze({maxSide:900, analysisSide:480, maxCoins:10, minRadius:12, maxRadiusFraction:.19, padding:.13,
+const BATCH_CONFIG = Object.freeze({maxSide:2400, analysisSide:480, maxCoins:24, minRadius:12, maxRadiusFraction:.19, padding:.06,
   minShapeRimCoverage:.46, minRingRimCoverage:.70, minRimContrast:17,
   minRingPolarity:.70, minRingSurfaceDifference:10, minRingSurfaceConsistency:.60});
 const batchPause = () => new Promise(resolve => setTimeout(resolve,0));
@@ -79,20 +79,28 @@ async function detectCoins(source) {
   const gray=new Uint8Array(width*height);
   for(let i=0;i<gray.length;i++)gray[i]=Math.round(.299*rgba[i*4]+.587*rgba[i*4+1]+.114*rgba[i*4+2]);
   function rimEvidence({x,y,rx,ry}) {
-    let hits=0,contrast=0,positive=0,negative=0,surface=0,surfacePositive=0,surfaceNegative=0;
+    let hits=0,contrast=0,positive=0,negative=0,surface=0,surfacePositive=0,surfaceNegative=0,radialHits=0;
     const quarters=[0,0,0,0];
     // A real coin has a continuous edge all around its perimeter. A textured
     // table can generate centre votes but usually fails this angular check.
     for(let angle=0;angle<48;angle++){
       const theta=angle*Math.PI/24,ux=Math.cos(theta),uy=Math.sin(theta);
       let strongest=0,signed=0;
+      let radial=false;
       for(const adjustment of [.94,1,1.06]){
+        const ex=Math.round(x+ux*rx*adjustment),ey=Math.round(y+uy*ry*adjustment);
+        if(ex>0&&ey>0&&ex<width-1&&ey<height-1){
+          const index=ey*width+ex,gx=gray[index+1]-gray[index-1],gy=gray[index+width]-gray[index-width],strength=Math.hypot(gx,gy);
+          const nx=ux/rx,ny=uy/ry,alignment=strength?Math.abs(gx*nx+gy*ny)/(strength*Math.hypot(nx,ny)):0;
+          if(strength>=12&&alignment>=.75)radial=true;
+        }
         const insideX=Math.round(x+ux*rx*(adjustment-.10)),insideY=Math.round(y+uy*ry*(adjustment-.10));
         const outsideX=Math.round(x+ux*rx*(adjustment+.10)),outsideY=Math.round(y+uy*ry*(adjustment+.10));
         if(insideX<1||outsideX<1||insideY<1||outsideY<1||insideX>=width-1||outsideX>=width-1||insideY>=height-1||outsideY>=height-1)continue;
         const difference=gray[outsideY*width+outsideX]-gray[insideY*width+insideX];
         if(Math.abs(difference)>strongest){strongest=Math.abs(difference);signed=difference;}
       }
+      if(radial)radialHits++;
       if(strongest>=BATCH_CONFIG.minRimContrast){hits++;quarters[Math.floor(angle/12)]++;contrast+=strongest;if(signed>0)positive++;else negative++;}
       // A real disk has a consistent inside/outside appearance across its rim.
       // Periodic tabletop grain can cast strong edge votes without this signal.
@@ -103,7 +111,7 @@ async function detectCoins(source) {
         surface+=Math.abs(difference);if(difference>6)surfacePositive++;else if(difference< -6)surfaceNegative++;
       }
     }
-    return {coverage:hits/48,balanced:quarters.every(count=>count>=5),contrast:hits?contrast/hits:0,polarity:hits?Math.max(positive,negative)/hits:0,
+    return {coverage:hits/48,radialCoverage:radialHits/48,balanced:quarters.every(count=>count>=5),contrast:hits?contrast/hits:0,polarity:hits?Math.max(positive,negative)/hits:0,
       surfaceDifference:surface/48,surfaceConsistency:Math.max(surfacePositive,surfaceNegative)/48};
   }
   const radii=[];for(let r=Math.max(12,Math.round(Math.min(width,height)*.029));r<=Math.min(width,height)*BATCH_CONFIG.maxRadiusFraction;r+=Math.max(4,Math.round(r*.12)))radii.push(r);
@@ -156,6 +164,9 @@ async function detectCoins(source) {
       if(rim.balanced&&rim.coverage>=BATCH_CONFIG.minRingRimCoverage&&rim.coverage*rim.contrast>evidence.coverage*evidence.contrast*1.06){c=wider;evidence=rim;}
     }
     if(!evidence.balanced||evidence.coverage<(c.kind==='shape'?BATCH_CONFIG.minShapeRimCoverage:BATCH_CONFIG.minRingRimCoverage))continue;
+    // Fabric edges may cross a circular path without pointing toward its
+    // centre. A coin's outer-rim gradients should follow the ellipse normal.
+    if(evidence.radialCoverage<(c.kind==='shape'?.36:.52))continue;
     if(c.kind==='shape'&&(evidence.polarity<.62||evidence.surfaceConsistency<.58))continue;
     if(c.kind==='ring'&&(evidence.contrast<24||evidence.polarity<BATCH_CONFIG.minRingPolarity||
       evidence.surfaceDifference<BATCH_CONFIG.minRingSurfaceDifference||evidence.surfaceConsistency<BATCH_CONFIG.minRingSurfaceConsistency))continue;
@@ -169,13 +180,19 @@ async function cropCoins(source,regions) {
   for(const region of updateRelativeDiameters(regions)) {
     // Voting can catch an inner ring rather than the outer edge of a coin.
     // Give automatic crops extra room; manual selections keep the tighter pad.
-    const padding=region.manual?BATCH_CONFIG.padding:Math.max(BATCH_CONFIG.padding,.16);
+    const padding=BATCH_CONFIG.padding;
     const diameter=Math.max(region.width,region.height)*(1+padding*2);
     const side=Math.min(768,Math.max(256,Math.ceil(diameter)));
     const canvas=document.createElement('canvas');canvas.width=side;canvas.height=side;
     const ctx=canvas.getContext('2d');ctx.fillStyle='#f3f0e9';ctx.fillRect(0,0,side,side);
     const sampling=diameter;
+    // Mask background and neighbouring coins before sending this specimen to
+    // vision. Keep a small tolerance outside the selected rim (including 50c).
+    ctx.save();ctx.beginPath();
+    ctx.ellipse(side/2,side/2,region.radiusX/sampling*side*1.05,region.radiusY/sampling*side*1.05,0,0,Math.PI*2);
+    ctx.clip();
     ctx.drawImage(source,region.centreX-sampling/2,region.centreY-sampling/2,sampling,sampling,0,0,side,side);
+    ctx.restore();
     const blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('Unable to crop photo')),'image/jpeg',.9));
     canvas.width=0;canvas.height=0;
     crops.push({...region,crop:blob,cropUrl:URL.createObjectURL(blob)});

@@ -14,6 +14,16 @@
   }
   function leave(){resetPhoto();stage('entry',false);}
   function choose(id){$(id).click();}
+  function selectRegion(id){
+    state.adding=false;state.selected=state.selected===id?null:id;
+    overlay.classList.remove('adding');$('batchAdd').textContent='Add missed coin';$('batchAdd').classList.remove('selected');
+    for(const button of overlay.children)button.classList.toggle('selected',button.dataset.regionId===state.selected);
+    for(const card of grid.children)card.classList.toggle('selected',card.dataset.regionId===state.selected);
+    const active=state.regions.find(r=>r.id===state.selected);
+    $('batchRemove').disabled=!active;$('batchClearSelection').hidden=!active;$('batchSizeRow').hidden=!active;
+    if(active){$('batchSize').max=Math.round(Math.min(state.source.width,state.source.height)*.48);$('batchSize').value=Math.round(active.width);$('batchSizeValue').textContent=`${Math.round(active.width)} px`;}
+    status.textContent=active?`Coin ${active.detectionNumber} selected. Adjust its size or remove it.`:'Selection cleared.';
+  }
   function render(){
     const list=BatchCoins.updateRelativeDiameters(state.regions);state.regions=list;
     $('batchCount').textContent=`${list.length} outline${list.length===1?'':'s'} · ${list.filter(r=>!r.reviewed).length} need checking`;
@@ -23,7 +33,16 @@
       button.style.left=`${region.x/state.source.width*100}%`;button.style.top=`${region.y/state.source.height*100}%`;
       button.style.width=`${region.width/state.source.width*100}%`;button.style.height=`${region.height/state.source.height*100}%`;
       button.textContent=String(region.detectionNumber);button.setAttribute('aria-label',`Select coin ${region.detectionNumber}`);
-      button.onclick=event=>{event.stopPropagation();state.adding=false;state.selected=state.selected===region.id?null:region.id;render();status.textContent=state.selected?`Coin ${region.detectionNumber} selected. Adjust its size, remove it, or tap again to unselect.`:'Selection cleared.';};overlay.append(button);
+      button.dataset.regionId=region.id;
+      let drag=null,suppressClick=false;
+      button.onpointerdown=event=>{if(event.button!==0)return;drag={x:event.clientX,y:event.clientY,cx:region.centreX,cy:region.centreY,moved:false};button.setPointerCapture(event.pointerId);};
+      button.onpointermove=event=>{if(!drag)return;const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<6)return;drag.moved=true;const rect=overlay.getBoundingClientRect();if(state.selected!==region.id)selectRegion(region.id);
+        region.centreX=Math.max(region.radiusX,Math.min(state.source.width-region.radiusX,drag.cx+dx/rect.width*state.source.width));region.centreY=Math.max(region.radiusY,Math.min(state.source.height-region.radiusY,drag.cy+dy/rect.height*state.source.height));region.x=region.centreX-region.radiusX;region.y=region.centreY-region.radiusY;region.reviewed=false;
+        button.style.left=`${region.x/state.source.width*100}%`;button.style.top=`${region.y/state.source.height*100}%`;
+      };
+      const finishDrag=()=>{if(!drag)return;const moved=drag.moved;drag=null;if(moved){suppressClick=true;refreshCrops();status.textContent=`Coin ${region.detectionNumber} moved. Check its crop.`;}};
+      button.onpointerup=finishDrag;button.onpointercancel=finishDrag;
+      button.onclick=event=>{event.stopPropagation();if(suppressClick){suppressClick=false;return;}selectRegion(region.id);};overlay.append(button);
     }
     $('batchCheckCoins').disabled=state.checking||window.BatchIdentification?.isBusy?.()||!list.length;
     $('batchCheckCoins').textContent=state.checking?'Checking objects…':'Check detected objects';
@@ -42,11 +61,8 @@
       const title=document.createElement('strong');title.textContent=`Coin ${coin.detectionNumber}`;
       const picture=document.createElement('img');picture.src=coin.cropUrl;picture.alt=`Crop of coin ${coin.detectionNumber}`;
       const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.onclick=()=>removeRegion(coin.id);
-      const select=document.createElement('button');select.type='button';select.className='batchCropSelect';select.append(picture);select.setAttribute('aria-label',`Select outline ${coin.detectionNumber}`);select.onclick=()=>{state.selected=coin.id;render();};
-      const note=document.createElement('p');note.textContent=coin.checkMessage||(!coin.reviewed?'Check this object before identifying.':'Coin confirmed for identification.');
-      const label=document.createElement('label');label.className='batchReady';const checked=document.createElement('input');checked.type='checkbox';checked.checked=Boolean(coin.reviewed);checked.disabled=state.checking;
-      checked.onchange=()=>{const region=state.regions.find(r=>r.id===coin.id);if(region){region.reviewed=checked.checked;refreshCrops();}};label.append(checked,document.createTextNode('This outline contains one coin'));
-      card.append(title,select,note,label,remove);grid.append(card);
+      const select=document.createElement('button');select.type='button';select.className='batchCropSelect';select.append(picture);select.setAttribute('aria-label',`Select outline ${coin.detectionNumber}`);select.onclick=()=>selectRegion(coin.id);
+      card.append(title,select,remove);grid.append(card);
     }
   }
   async function refreshCrops(){window.BatchIdentification?.sync(state.regions);const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();}
@@ -75,13 +91,13 @@
   $('batchToReview').onclick=()=>stage('review');
   $('batchRetake').onclick=()=>{resetPhoto();stage('capture');};
   $('batchRemove').onclick=()=>{if(state.selected)removeRegion(state.selected);};
-  $('batchClearSelection').onclick=()=>{state.selected=null;render();status.textContent='Selection cleared.';};
-  $('batchSize').oninput=event=>{const coin=state.regions.find(r=>r.id===state.selected);if(!coin)return;const size=Number(event.target.value),aspect=coin.height/coin.width;coin.reviewed=false;coin.detectionStatus='unchecked';coin.checkMessage='Outline changed · check this crop again.';coin.width=size;coin.height=size*aspect;coin.radiusX=size/2;coin.radiusY=coin.height/2;coin.radius=(coin.radiusX+coin.radiusY)/2;coin.x=coin.centreX-coin.radiusX;coin.y=coin.centreY-coin.radiusY;render();};
+  $('batchClearSelection').onclick=()=>selectRegion(state.selected);
+  $('batchSize').oninput=event=>{const coin=state.regions.find(r=>r.id===state.selected);if(!coin)return;const size=Number(event.target.value),aspect=coin.height/coin.width;coin.reviewed=false;coin.detectionStatus='unchecked';coin.checkMessage='Outline changed · check this crop again.';coin.width=size;coin.height=size*aspect;coin.radiusX=size/2;coin.radiusY=coin.height/2;coin.radius=(coin.radiusX+coin.radiusY)/2;coin.x=coin.centreX-coin.radiusX;coin.y=coin.centreY-coin.radiusY;const button=[...overlay.children].find(b=>b.dataset.regionId===coin.id);if(button){button.style.left=`${coin.x/state.source.width*100}%`;button.style.top=`${coin.y/state.source.height*100}%`;button.style.width=`${coin.width/state.source.width*100}%`;button.style.height=`${coin.height/state.source.height*100}%`;} $('batchSizeValue').textContent=`${Math.round(size)} px`;};
   $('batchSize').onchange=()=>{if(state.selected)refreshCrops();};
   $('batchAdd').onclick=()=>{state.adding=!state.adding;state.selected=null;render();status.textContent=state.adding?'Tap the centre of a missed coin in the photo. An outline and crop will appear.':'Adding cancelled. Check each crop below.';};
   overlay.addEventListener('click',async event=>{
-    if(!state.adding)return;
-    if(state.regions.length>=BatchCoins.config.maxCoins){status.textContent='Maximum 10 coins in one photo. Remove a detection before adding another.';return;}
+    if(!state.adding){if(state.selected)selectRegion(state.selected);return;}
+    if(state.regions.length>=BatchCoins.config.maxCoins){status.textContent=`Maximum ${BatchCoins.config.maxCoins} coins in one photo. Remove a detection before adding another.`;return;}
     const rect=overlay.getBoundingClientRect(),x=(event.clientX-rect.left)/rect.width*state.source.width,y=(event.clientY-rect.top)/rect.height*state.source.height;
     const radius=Math.min(state.source.width,state.source.height)*.065;
     const coin=BatchCoins.regionAt(x,y,radius,radius,0,true);
@@ -111,7 +127,7 @@
     }catch(error){if(job===state.job){await refreshCrops();status.textContent=`${error.message} You can check the remaining outlines manually.`;}}
     finally{if(job===state.job){state.checking=false;render();}}
   };
-  window.BatchReview={select(id){if(state.regions.some(r=>r.id===id)){state.selected=id;render();document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
+  window.BatchReview={async approveAll(){if(state.checking)return false;state.regions.forEach(r=>r.reviewed=true);await refreshCrops();return true;},select(id){if(state.regions.some(r=>r.id===id)){if(state.selected!==id)selectRegion(id);document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
   window.addEventListener('popstate',event=>{
     const target=event.state?.batchStage||'entry';
     if(target==='entry'){leave();return;}

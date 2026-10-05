@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
+import {createHash} from 'node:crypto';
 import worker from '../src/index.js';
 import {parseBatchCheck} from '../src/identify-circulating.js';
 const catalogue=JSON.parse(await readFile('public/catalogue-v2.json','utf8'));
@@ -24,6 +25,15 @@ for(const [answer,status] of [
 }
 const checked=await identify('COIN=yes; COUNT=1; SIDE=design; QUALITY=clear; CONFIDENCE=93',{batch_check:true});
 assert.equal(checked.data.status,'ready');assert.equal(checked.calls.length,1);
+const reviewed=await identify(['DENOM=5c; CONFIDENCE=95; WORDS=FIVE CENTS; MOTIF=echidna','DESIGN=Echidna; CONFIDENCE=95; REASON=visible spiny echidna'],{batch_reviewed:true});
+assert.equal(reviewed.data.observed.design,'Echidna');assert.equal(reviewed.calls.length,2,'Reviewed batch crops go directly to the unchanged single matcher');
+for(const [path,hash] of Object.entries({
+ 'public/identify.js':'d9e7eac57ec1c05f81a8954c888774583dae25dfbcadc38dee7cbe044373f0b8',
+ 'public/identify.css':'61cbce2341a0362c1f17bc59b4f61f95842c36e5e6eee1ca0d37ed9b09329965',
+ 'public/camera-entry.js':'5ff0ccb3944056785b7dc81a6a5b85b9e29d424f108f9d260faa12324b3aa37e',
+ 'src/identify-single.js':'2095df4e9e592c9bffe582c8d65e799da71e608dbd7ef6e83bbe769ded57d413',
+ 'src/index.js':'ddd2ea47e8cf162cf01e0e963703615929e6553016e7dd11fc2abc89d8c94e45'
+}))assert.equal(createHash('sha256').update(await readFile(path)).digest('hex'),hash,`${path}: single-coin code must remain byte-for-byte unchanged`);
 const matched=await identify(['COIN=yes; COUNT=1; SIDE=design; QUALITY=clear; CONFIDENCE=93','DENOM=5c; CONFIDENCE=95; WORDS=FIVE CENTS; MOTIF=echidna','DESIGN=Echidna; CONFIDENCE=95; REASON=visible spiny echidna']);assert.equal(matched.status,200);assert.equal(matched.data.observed.design,'Echidna');assert.ok(matched.data.matches.length);assert.equal(matched.calls.length,3,'Coin check must precede current design matching');
 assert.equal(parseBatchCheck('COIN=yes; COUNT=1; SIDE=design; QUALITY=clear; CONFIDENCE=999').confidence,100);
 console.log('PASS non-coins, multiple coins, malformed checks, poor photos and portrait sides never reach matching');

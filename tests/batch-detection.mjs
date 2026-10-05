@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const code=fs.readFileSync('public/batch-detection.js','utf8');
 function fixture(count,texture=false,ellipse=false){
   const width=480,height=380,data=new Uint8ClampedArray(width*height*4);
-  const centers=Array.from({length:count},(_,i)=>[68+(i%5)*87,84+Math.floor(i/5)*160,20+(i%3)*5]);
+  const centers=Array.from({length:count},(_,i)=>[68+(i%5)*87,84+Math.floor(i/5)*(count>10?110:160),20+(i%3)*5]);
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
     let base=texture?118+Math.round(Math.sin(x*.21)*16+Math.sin(y*.12)*13):230;
     for(const [cx,cy,r] of centers){const d=Math.hypot(x-cx,(y-cy)/(ellipse?.83:1));
@@ -20,7 +20,7 @@ async function detect(source){
   vm.runInNewContext(code,context);
   return context.window.BatchCoins.detectCoins(source);
 }
-for(const [name,count,texture,ellipse] of [['plain',3,false,false],['mixed table',3,true,false],['table',6,true,false],['ten',10,false,false],['perspective',3,false,true],['empty table',0,true,false]]){
+for(const [name,count,texture,ellipse] of [['plain',3,false,false],['mixed table',3,true,false],['table',6,true,false],['ten',10,false,false],['twelve',12,false,false],['perspective',3,false,true],['empty table',0,true,false]]){
   const source=fixture(count,texture,ellipse),start=Date.now(),found=await detect(source);
   // A textured table may need one manual correction; avoid false circles instead
   // of filling all ten slots with weak rim votes.
