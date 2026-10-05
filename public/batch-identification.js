@@ -57,6 +57,16 @@
   const geometryOf=crop=>`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
   const activeCrop=crop=>crops.some(current=>current.id===crop.id&&geometryOf(current)===geometryOf(crop));
   function editable(crop){let result=results.get(crop.id);if(!result){result={status:'manual',choices:[],geometry:geometryOf(crop),ready:false};results.set(crop.id,result);}return result;}
+  async function editCrop(crop){
+    if(busy||!activeCrop(crop)||results.get(crop.id)?.added)return;
+    const revision=generation,previous=results.get(crop.id);busy=true;render(crops);
+    try{const adjusted=await window.CoinPhotoEditor.edit(previous?.reverseBlob||crop.crop);
+      if(!adjusted||revision!==generation||!activeCrop(crop))return;
+      const reverse=await fileDataUrl(adjusted);if(revision!==generation||!activeCrop(crop))return;
+      results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,message:'Photo adjusted. Identify this coin again before confirming.'});
+    }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=`Could not edit coin: ${error.message}`;}
+    finally{if(revision===generation){busy=false;render(crops);}}
+  }
   function photoControl(card,crop,result,side){
     const input=document.createElement('input');input.type='file';input.accept='image/*';input.setAttribute('capture','environment');input.hidden=true;
     const button=document.createElement('button');button.type='button';button.textContent=side==='design'?'Photograph this coin’s design side':result?.obverse?'Replace portrait-side photo':'Add portrait side to read year';button.disabled=busy||result?.added||!crop.reviewed;
@@ -98,6 +108,7 @@
       else summary.textContent=result.status==='manual'?(result.message||'Check the catalogue artwork and choose the exact issue.'):result.status==='confident'?'Likely design and issue: check before adding.':result.status==='year_uncertain'?'Design found · choose the issue year.':'Design uncertain · choose the matching design and issue.';
       card.append(summary);
       cardSummary.append(heading,thumbnail,summary);
+      if(result.status!=='loading'&&!result.added){const edit=document.createElement('button');edit.type='button';edit.textContent='Crop / rotate this coin';edit.disabled=busy;edit.onclick=()=>editCrop(crop);card.append(edit);}
       if(!result||result.status==='manual'&&!result.choices?.length){const identify=document.createElement('button');identify.type='button';identify.textContent='Identify this coin';identify.disabled=busy||!crop.reviewed;identify.onclick=()=>identifyOne(crop);card.append(identify);}
       if(result&&['error','no_match','not_coin','multiple_coins','check_coin','low_quality','needs_other_side'].includes(result.status)){
         const retry=document.createElement('button');retry.type='button';retry.textContent='Retry this coin';retry.disabled=busy||!crop.reviewed;retry.onclick=()=>identifyOne(crop);card.append(retry);
@@ -300,6 +311,6 @@
     }catch(error){$('batchIdentifyStatus').textContent=`Could not finish saving: ${error.message}`;}
     finally{busy=false;render(crops);}
   };
-  window.BatchIdentification={reset,sync,render,isBusy:()=>busy};
+  window.BatchIdentification={reset,sync,render,editCrop,isBusy:()=>busy};
   window.BatchIdentificationCore={classify};
 })();
