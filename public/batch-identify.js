@@ -62,7 +62,8 @@
       const picture=document.createElement('img');picture.src=coin.cropUrl;picture.alt=`Crop of coin ${coin.detectionNumber}`;
       const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.onclick=()=>removeRegion(coin.id);
       const select=document.createElement('button');select.type='button';select.className='batchCropSelect';select.append(picture);select.setAttribute('aria-label',`Select outline ${coin.detectionNumber}`);select.onclick=()=>selectRegion(coin.id);
-      card.append(title,select,remove);grid.append(card);
+      const edit=document.createElement('button');edit.type='button';edit.textContent='Crop / rotate';edit.disabled=state.checking||window.BatchIdentification?.isBusy?.();edit.onclick=()=>window.BatchIdentification?.editCrop(coin);
+      card.append(title,select,edit,remove);grid.append(card);
     }
   }
   async function refreshCrops(){window.BatchIdentification?.sync(state.regions);const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();}

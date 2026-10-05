@@ -1,28 +1,28 @@
-/* Camera-only Android entry fix. Analysis, guided-camera implementation and
- * matching stay untouched. Native capture exposes the phone's own autofocus. */
+/* Guided capture on both platforms; native capture remains an explicit option.
+ * Analysis and matching stay untouched. */
 const guidedCoinCamera=openCoinCamera;
 const originalLoadIdentifyPhoto=loadIdentifyPhoto;
 const originalClearIdentifyPhoto=clearIdentifyPhoto;
 function androidCoinCamera(){return /Android/i.test(navigator.userAgent);}
 openCoinCamera=async function openPreferredCoinCamera(side){
-  if(androidCoinCamera())return openNativeCoinCamera(side);
   return guidedCoinCamera(side);
 };
 function setupCameraEntry(){
   const optional=document.getElementById('identifyBrowserCamera');
-  optional.hidden=!androidCoinCamera();
+  optional.hidden=true;
   optional.onclick=()=>guidedCoinCamera('reverse');
+  window.CoinPhotoEditor?.setupSingle();
   if(!androidCoinCamera())return;
-  document.querySelectorAll('[data-camera-side] small').forEach(item=>item.textContent='Phone camera · tap the coin to focus');
-  document.querySelector('.identifyIntro').textContent='Start with the design side. Android opens your phone camera so you can tap the coin to focus. Move back if the lettering stays soft, then zoom and hold still. The portrait side is optional.';
+  document.querySelectorAll('[data-camera-side] small').forEach(item=>item.textContent='Guided circle · centre the coin');
+  document.querySelector('.identifyIntro').textContent='Centre the coin inside the guide and keep the phone straight above it. If focus stays soft, use the phone camera instead, then adjust its crop. The portrait side is optional.';
 }
 loadIdentifyPhoto=async function loadPreferredCameraPhoto(...args){
   const result=await originalLoadIdentifyPhoto(...args);
-  if(androidCoinCamera())document.querySelectorAll('[data-camera-side] small').forEach(item=>item.textContent='Tap to retake with phone camera');
+  window.CoinPhotoEditor?.updateSingle();
   return result;
 };
 clearIdentifyPhoto=function clearPreferredCameraPhoto(...args){
   const result=originalClearIdentifyPhoto(...args);
-  if(androidCoinCamera())document.querySelectorAll('[data-camera-side] small').forEach(item=>item.textContent='Phone camera · tap the coin to focus');
+  window.CoinPhotoEditor?.updateSingle();
   return result;
 };
