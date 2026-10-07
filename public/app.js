@@ -1,7 +1,7 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.22";
-const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView", "seriesView", "milestonesView"]);
+const APP_VERSION = "0.14.23";
+const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView", "seriesView", "milestonesView", "helpView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
   seal: {name: "Pocket Mint Seal", manifest: "manifest.webmanifest"},
@@ -126,7 +126,7 @@ async function loadLocal() {
   const records = await getAll("myMint");
   const photos = await getAll("personalPhotos");
   identificationTests = (await getAll("identificationTests")).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  state = new Map(records.map(record => [record.coin_id, record]));
+  state = new Map(records.map(record => [record.coin_id, window.PocketMintConditionData.normalise(record)]));
   await loadMilestoneHistory();
   photoMap = new Map();
   for (const photo of photos) {
@@ -136,7 +136,7 @@ async function loadLocal() {
 }
 
 function baseRec(id) {
-  return {coin_id: id, quantity: 0, wishlist: false, favourite: false, condition: "", notes: "", date_added: "", updated_at: new Date().toISOString()};
+  return {coin_id: id, quantity: 0, wishlist: false, favourite: false, condition: "", conditionGrade: null, conditionSource: "owner", conditionIssues: [], notes: "", date_added: "", updated_at: new Date().toISOString()};
 }
 
 let collectionWriteQueue=Promise.resolve();
@@ -157,6 +157,7 @@ async function saveCollectionRecord(id, patch) {
   }
   next.favourite = Boolean(next.favourite);
   next.wishlist = Boolean(next.wishlist);
+  Object.assign(next, window.PocketMintConditionData?.normalise(next) || next);
   next.updated_at = new Date().toISOString();
   const completions=await persistCollectionRecord(next);
   state.set(id, next);
@@ -484,9 +485,9 @@ function detailHtml(coin, record) {
   const releaseInfo=coin.releaseId?`<p class="muted">${esc(catalogueSeries.find(s=>s.id===coin.seriesId)?.title||'')} · ${esc(catalogueReleases.find(r=>r.id===coin.releaseId)?.title||'')}</p>`:'';
   const themeInfo=coin.collectionTags?.length?`<p class="muted">Themes: ${coin.collectionTags.map(tag=>esc(human(tag))).join(' · ')}</p>`:'';
   return `<section class="referencePanel pm-detail-art" aria-label="Catalogue coin artwork"><div class="pm-detail-artwork"><div class="eyebrow">${esc(referenceLabel(coin).toUpperCase())}</div>${coinImageHtml(coin, {preferPersonal: false, className: "detailArtwork"})}</div><p>${esc(imageNote)}</p></section>
-    <header class="pm-detail-heading pm-cream-card"><div class="eyebrow">COIN DETAILS · ${esc(coin.id)}</div><h2>${multiYear ? esc(coin.title) : `${coin.year} ${esc(coin.title)}`}</h2><p class="muted">${multiYear ? `${variants.length} catalogue issues · ` : ""}${human(coin.coin_class)} · ${human(coin.issue_type)}</p>${releaseInfo}${themeInfo}${yearControl}</header>
+    <header class="pm-detail-heading pm-cream-card"><div class="eyebrow">COIN DETAILS · ${esc(coin.id)}</div><h2>${multiYear ? esc(coin.title) : `${coin.year} ${esc(coin.title)}`}</h2><p class="muted">${multiYear ? `${variants.length} catalogue issues · ` : ""}${human(coin.coin_class)} · ${human(coin.issue_type)}</p>${releaseInfo}${themeInfo}${yearControl}${conditionSummaryHtml(record)}</header>
     <section class="pm-detail-information pm-cream-card"><h3>Coin information</h3><div class="detailGrid"><div><span>Year</span><b>${esc(variantIssueLabel(coin,variants))}</b></div><div><span>Denomination</span><b>${esc(coin.denomination_display||'$1')}</b></div><div><span>Mintage</span><b>${coin.mintage ? Number(coin.mintage).toLocaleString() : esc(coin.mintage_status || "—")}</b></div><div><span>Composition</span><b>${esc(coin.composition || "—")}</b></div><div><span>Size</span><b>${coin.mass_grams ?? "—"} g · ${coin.diameter_mm ?? "—"} mm</b></div><div><span>Effigy</span><b>${esc(coin.obverse_effigy || "—")}</b></div></div></section>
-    ${seriesHtml(coin)}<section class="editBlock pm-cream-card"><h3>My Mint record · ${esc(variantIssueLabel(coin,variants))}</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}"><label>Condition</label><select id="dCondition"><option value="">Not set</option>${["Poor","Fair","Good","Very Good","Fine","Very Fine","Extremely Fine","About Uncirculated","Uncirculated"].map(value => `<option ${record.condition === value ? "selected" : ""}>${value}</option>`).join("")}</select>${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Your photos</label><p class="photoHelp">Add your own photos any time. They will become the thumbnail in My Mint while this reference stays available here.</p><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></section>`;
+    ${seriesHtml(coin)}<section class="editBlock pm-cream-card"><h3>My Mint record · ${esc(variantIssueLabel(coin,variants))}</h3><label>Quantity</label><input id="dQty" type="number" min="0" value="${record.quantity}">${conditionEditorHtml(record)}${date}<label>Notes</label><textarea id="dNotes" rows="4" placeholder="Personal notes…">${esc(record.notes)}</textarea><label class="check"><input id="dWish" type="checkbox" ${record.wishlist ? "checked" : ""}> Wishlist</label><label class="check"><input id="dFavourite" type="checkbox" ${record.favourite ? "checked" : ""}> ★ Favourite</label><label>Your photos</label><p class="photoHelp">Add your own photos any time. They will become the thumbnail in My Mint while this reference stays available here.</p><input id="photoInput" type="file" accept="image/*" capture="environment" multiple><div id="photoGrid" class="photoGrid"></div><div class="dialogActions"><button type="button" id="saveDetail">Save record</button><button type="button" id="doneDetail">Done</button></div></section>`;
 }
 
 function renderCoin(coin) {
@@ -495,12 +496,13 @@ function renderCoin(coin) {
   box.innerHTML = detailHtml(coin, record);
   renderPhotos(coin.id);
   bindSeriesLinks();
+  bindConditionControls(box, coin);
   box.querySelector("#dYear")?.addEventListener("change", event => {
     const selected = coinById(event.target.value);
     if (selected) replaceCoin(selected);
   });
   box.querySelector("#saveDetail").onclick = async () => {
-    await saveRec(coin.id, {quantity: box.querySelector("#dQty").value, condition: box.querySelector("#dCondition").value, notes: box.querySelector("#dNotes").value.trim(), wishlist: box.querySelector("#dWish").checked, favourite: box.querySelector("#dFavourite").checked});
+    await saveRec(coin.id, {quantity: box.querySelector("#dQty").value, ...conditionEditorValue(box, record), notes: box.querySelector("#dNotes").value.trim(), wishlist: box.querySelector("#dWish").checked, favourite: box.querySelector("#dFavourite").checked});
     renderCoin(coin);
   };
   box.querySelector("#doneDetail").onclick = closeCoin;
@@ -580,7 +582,7 @@ async function addPhoto(id, file) {
 }
 
 async function exportBackup() {
-  const data = {format: "pocket-mint-backup", version: 3, created_at: new Date().toISOString(), catalogue_version: catMeta.catalogue_version, fields: ["favourite", "date_added", "identification_tests"], my_mint: await getAll("myMint"), personal_photos: await getAll("personalPhotos"), identification_tests: await getAll("identificationTests"), app_meta: await getAll("appMeta")};
+  const data = {format: "pocket-mint-backup", version: 3, created_at: new Date().toISOString(), catalogue_version: catMeta.catalogue_version, fields: ["favourite", "date_added", "identification_tests", "conditionGrade", "conditionSource", "conditionIssues"], my_mint: await getAll("myMint"), personal_photos: await getAll("personalPhotos"), identification_tests: await getAll("identificationTests"), app_meta: await getAll("appMeta")};
   const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -636,7 +638,7 @@ function showFindTab(tab, options={}) {
 function showView(view) {
   const safeView = VIEW_IDS.has(view) ? view : "homeView";
   document.querySelectorAll(".view").forEach(item => item.classList.toggle("active", item.id === safeView));
-  const navView = safeView==='seriesView'?'findView':["wishlistView", "statsView", "collectionView", "settingsView", "milestonesView"].includes(safeView) ? "myMintView" : safeView;
+  const navView = safeView==='seriesView'?'findView':["wishlistView", "statsView", "collectionView", "settingsView", "milestonesView", "helpView"].includes(safeView) ? "myMintView" : safeView;
   document.querySelectorAll(".bottomNav button").forEach(button => button.classList.toggle("active", button.dataset.nav === navView));
   scrollTo(0, 0);
   window.PocketMintCompanions?.setView(safeView);
@@ -695,6 +697,7 @@ function wire() {
     document.getElementById("collectionTitle").textContent = mintFilter === "favourite" ? "Favourites" : mintFilter === "duplicates" ? "Duplicates" : "Collection";
     renderMint();
   });
+  document.getElementById("helpConditionGuide").onclick = () => window.PocketMintConditionGuide.open();
   document.getElementById("closeDialog").onclick = closeCoin;
   document.getElementById("coinDialog").addEventListener("cancel", event => {
     event.preventDefault();
@@ -737,6 +740,7 @@ function wire() {
   window.addEventListener("online", updateNetwork);
   window.addEventListener("offline", updateNetwork);
   window.addEventListener("popstate", event => {
+    if (window.PocketMintConditionGuide.handleHistory(event)) return;
     const celebration=document.getElementById('seriesCelebration');
     if(celebration.open)celebration.close();
     const dialog = document.getElementById("coinDialog");

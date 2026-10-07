@@ -36,6 +36,7 @@
   <link rel="stylesheet" href="pm-visual.css">
   <link rel="stylesheet" href="batch-identify.css">
   <link rel="stylesheet" href="pm-frames.css">
+  <link rel="stylesheet" href="condition-guide.css">
   <title>Pocket Mint — Coin collection companion</title>
 </head>
 <body>
@@ -182,7 +183,8 @@
 
     <section id="collectionView" class="view"><div class="sectionHead"><h2 id="collectionTitle">Collection</h2></div><div class="segmented collectionTabs"><button data-mintfilter="owned" class="on">All</button><button data-mintfilter="favourite">Favourites</button><button data-mintfilter="duplicates">Duplicates</button></div><input id="collectionSearch" class="search" type="search" placeholder="Search collection" aria-label="Search collection"><div class="listMeta"><span id="collectionCount">0 coins</span><button type="button" class="textButton">Sort</button></div><div id="myMintList" class="coinList coinGrid"></div></section>
 
-    <section id="myMintView" class="view"><div class="sectionHead"><h2>My Mint</h2></div><h3 class="menuHeading">Your collection</h3><div class="menuCard"><button data-open-collection="owned"><span>▤</span><b>Collection</b><i>›</i></button><button data-nav="wishlistView"><span>♡</span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span>☆</span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span>▣</span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span>▥</span><b>Stats</b><i>›</i></button><button disabled><span>⇄</span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span>⚙</span><b>Settings</b><i>›</i></button><button data-static-page="Help &amp; feedback"><span>?</span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span>ⓘ</span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.14.22</p></section>
+    <section id="helpView" class="view pm-page"><div class="sectionHead"><h2>Help &amp; feedback</h2></div><div class="menuCard"><button type="button" id="helpConditionGuide"><span aria-hidden="true">⌕</span><b>Coin Condition Guide</b><i aria-hidden="true">›</i></button></div><p class="muted">Browse Australian coin grades and compare conditions before recording your own estimate.</p></section>
+    <section id="myMintView" class="view"><div class="sectionHead"><h2>My Mint</h2></div><h3 class="menuHeading">Your collection</h3><div class="menuCard"><button data-open-collection="owned"><span>▤</span><b>Collection</b><i>›</i></button><button data-nav="wishlistView"><span>♡</span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span>☆</span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span>▣</span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span>▥</span><b>Stats</b><i>›</i></button><button disabled><span>⇄</span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span>⚙</span><b>Settings</b><i>›</i></button><button data-nav="helpView"><span>?</span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span>ⓘ</span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.14.23</p></section>
 
     <section id="settingsView" class="view">
       <div class="sectionHead"><div><div class="eyebrow">PERSONALISE &amp; PORTABILITY</div><h2>Settings</h2></div></div>
@@ -253,6 +255,9 @@
   <dialog id="coinDialog"><div class="dialogInner"><button id="closeDialog" class="close" type="button" aria-label="Close coin details">×</button><div id="dialogContent"></div></div></dialog>
   <dialog id="seriesCelebration" aria-labelledby="seriesCelebrationTitle"><div id="seriesCelebrationContent" class="seriesCelebrationCard pm-frame pm-frame-hero"></div></dialog>
   <script src="companions.js"></script>
+  <script src="condition-data.js"></script>
+  <script src="condition-guide.js"></script>
+  <script src="condition-editor.js"></script>
   <script src="app.js"></script>
   <script src="identification-report.js"></script>
   <script src="progress.js"></script>
