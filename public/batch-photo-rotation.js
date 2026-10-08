@@ -3,14 +3,14 @@
   async function suggest(file){
     try {
       const bitmap=await decodeIdentifyPhoto(file);
-      const tile=256,pad=28,canvas=document.createElement('canvas');canvas.width=tile*4;canvas.height=(tile+pad)*2;
+      const tile=384,pad=28,canvas=document.createElement('canvas');canvas.width=tile*2;canvas.height=(tile+pad)*2;
       const context=canvas.getContext('2d');context.fillStyle='#faf5e9';context.fillRect(0,0,canvas.width,canvas.height);
-      const angles=[0,45,90,135,180,-135,-90,-45];
+      const angles=[0,90,180,-90];
       for(let i=0;i<angles.length;i++){
-        const x=(i%4)*tile,y=Math.floor(i/4)*(tile+pad),angle=angles[i]*Math.PI/180;
+        const x=(i%2)*tile,y=Math.floor(i/2)*(tile+pad),angle=angles[i]*Math.PI/180;
         context.fillStyle='#111827';context.font='bold 22px sans-serif';context.textAlign='center';context.fillText(String(i+1),x+tile/2,y+23);
         context.save();context.translate(x+tile/2,y+pad+tile/2);context.rotate(angle);
-        const size=tile*.72,scale=Math.min(size/bitmap.width,size/bitmap.height);context.drawImage(bitmap,-bitmap.width*scale/2,-bitmap.height*scale/2,bitmap.width*scale,bitmap.height*scale);context.restore();
+        const size=tile*.85,scale=Math.min(size/bitmap.width,size/bitmap.height);context.drawImage(bitmap,-bitmap.width*scale/2,-bitmap.height*scale/2,bitmap.width*scale,bitmap.height*scale);context.restore();
       }
       bitmap.close?.();const image=canvas.toDataURL('image/jpeg',.88);canvas.width=canvas.height=0;
       const response=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({image})});

@@ -90,6 +90,14 @@ for(const status of ['error','no_match','multiple_coins','needs_other_side','low
   await button.onclick();assert.equal(batchSaved.at(-1).outcome,status==='error'?'error':'no_match');assert.equal(batchSaved.at(-1).result_status,status);assert.equal(batchSaved.at(-1).expected_coin_id,null);assert.equal(result.testSaved,true);
 }
 console.log('PASS failed batch tests save without selecting an exact issue');
+for(const status of ['confident','year_uncertain','design_uncertain']){
+ const card=node('article'),result={status,predictedCoinId:five.id,choices:[{id:five.id,coin:five}],observed:{denomination:'20c'}};
+ failureContext.window.BatchIdentificationCore.renderTestReport(card,result,{detectionNumber:1});
+ assert.equal(card.children[0].open,true,'Feedback is visible by default');
+ const button=findButton(card,status==='confident'?'✓ Yes, this coin is right · save test':status==='year_uncertain'?'✓ Value and design right · save test':'✓ Suggested design is right · save test');assert.ok(button,'Every suggested result allows positive feedback');
+ await button.onclick();assert.equal(batchSaved.at(-1).outcome,'partial','Correct design but wrong denomination is not scored fully correct');assert.equal(batchSaved.at(-1).issue_correct,null,'Unconfirmed year is not scored');
+}
+console.log('PASS positive feedback for confident, unknown-year and uncertain designs, with honest partial scoring');
 failureContext.designVariants=coin=>variants.filter(item=>item.design_id===coin.design_id);
 const batchCrops=[1,2,3].map(n=>({id:`physical-${n}`,detectionNumber:n,reviewed:true,x:n,y:0,width:40,height:40,cropUrl:'data:image/jpeg;base64,AA=='}));
 const core=failureContext.window.BatchIdentificationCore;

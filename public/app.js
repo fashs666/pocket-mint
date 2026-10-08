@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.37";
+const APP_VERSION = "0.14.38";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView", "seriesView", "milestonesView", "helpView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -8,7 +8,7 @@ const APP_ICONS = {
   spiral: {name: "Spiral Emblem", manifest: "manifest-spiral.webmanifest"},
   character: {name: "Character Icon", manifest: "manifest-character.webmanifest"}
 };
-let catalogue = [], browseCatalogue = [], catalogueDesigns = [], catalogueSeries = [], catalogueReleases = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "owned", findTab = "catalogue", deferredInstallPrompt = null;
+let catalogue = [], browseCatalogue = [], catalogueDesigns = [], catalogueSeries = [], catalogueReleases = [], catMeta = {}, state = new Map(), photoMap = new Map(), identificationTests = [], mintFilter = "owned", findTab = "identify", deferredInstallPrompt = null;
 const collectionCoins = () => [...new Map([...catalogue,...browseCatalogue].map(coin=>[coin.id,coin])).values()];
 const coinById = id => browseCatalogue.find(coin=>coin.id===id)||catalogue.find(coin=>coin.id===id);
 const recordForDesign = coin => (coin.design_id?designVariants(coin):[coin]).map(item=>state.get(item.id)).filter(Boolean);
@@ -647,6 +647,7 @@ function showView(view) {
 }
 
 function navigate(view) {
+  if(view==='findView'&&currentView()!=='findView')showFindTab('identify');
   if (view === currentView() && !document.getElementById("coinDialog").open) return;
   history.pushState({view,fromView:currentView()}, "", routeForView(view));
   showView(view);
@@ -799,7 +800,7 @@ async function init() {
   browseCatalogue=catalogueDesigns.flatMap(design=>design.yearVariants.map(variant=>({
     id:variant.id,design_id:design.id,year:variant.year,title:design.title,denomination_cents:design.denomination,
     denomination_display:design.denomination_display,seriesId:design.seriesId,releaseId:design.releaseId,
-    collectionTags:design.collectionTags,searchAliases:design.searchAliases,
+    collectionTags:design.collectionTags,searchAliases:[...(design.searchAliases||[]),...(variant.id==='AU20-2005-END-OF-WWII'?['Coming Home']:[])],
     issue_type:design.title==='Five Kangaroos'||['Echidna','Lyrebird','Platypus','Aboriginal Elder','Commonwealth Coat of Arms (dodecagonal)','Commonwealth Coat of Arms (round silver)'].includes(design.title)?'standard':'commemorative',
     coin_class:'circulating',obverse_effigy:variant.effigy||null,mintage:variant.mintage||null,colour:variant.colour||null,
     variant_label:variant.variantLabel||null,reference_image:variant.reference_image||design.reference_image,

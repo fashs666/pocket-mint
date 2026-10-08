@@ -74,7 +74,7 @@
       const picture=card.querySelector('img'),url=window.BatchIdentification?.effectivePhoto(coin).url||coin.cropUrl;
       if(picture.getAttribute('src')!==url)picture.src=url;
       picture.alt=`Crop of coin ${coin.detectionNumber}`;
-      const select=card.querySelector('.batchCropSelect');select.setAttribute('aria-label',`Review coin ${coin.detectionNumber}`);select.onclick=()=>window.BatchIdentification?.openCoin(coin.id);
+      const select=card.querySelector('.batchCropSelect');select.setAttribute('aria-label',`Open crop preview for coin ${coin.detectionNumber}`);select.onclick=()=>window.BatchIdentification?.editCrop(coin);
       text(card.querySelector('.batchRotationStatus'),window.BatchIdentification?.rotationStatus(coin)||'Check rotation');
       let matchStatus=card.querySelector('.batchMatchStatus');if(!matchStatus){matchStatus=document.createElement('span');matchStatus.className='batchMatchStatus';card.append(matchStatus);}text(matchStatus,window.BatchIdentification?.identificationStatus(coin)||'Waiting');
       const edit=card.querySelector('.batchCropEdit');edit.setAttribute('aria-label',`Crop coin ${coin.detectionNumber}`);edit.disabled=state.checking||window.BatchIdentification?.isBusy?.();
@@ -94,11 +94,18 @@
     state.crops=crops;renderedSource=source;render();window.BatchIdentification?.scheduleOrientation();
   }
   function showReviewStep(next){
-    reviewStep=next;$('batchOutlineStep').hidden=next!=='outlines';$('batchCoinStep').hidden=next!=='coins';
+    reviewStep=next;$('batchOutlineStep').hidden=next!=='outlines';$('batchCoinStep').hidden=next!=='coins';$('batchIdentificationStep').hidden=next!=='identify';
     $('batchShowOutlines').setAttribute('aria-pressed',String(next==='outlines'));$('batchShowCoins').setAttribute('aria-pressed',String(next==='coins'));
+    $('batchShowIdentify').setAttribute('aria-pressed',String(next==='identify'));
   }
   $('batchShowOutlines').onclick=()=>showReviewStep('outlines');$('batchShowCoins').onclick=()=>showReviewStep('coins');
-  $('batchNextToCoins').onclick=async()=>{if(await window.BatchReview.approveAll()){showReviewStep('coins');window.BatchIdentification.startQueue();}};
+  $('batchShowIdentify').onclick=()=>$('batchStartIdentification').click();
+  $('batchNextToCoins').onclick=async()=>{if(await window.BatchReview.approveAll()){showReviewStep('coins');window.BatchIdentification.scheduleOrientation();}};
+  $('batchStartIdentification').onclick=async()=>{
+    const button=$('batchStartIdentification'),job=state.job;button.disabled=true;button.textContent='Finishing rotation checks…';
+    try{if(!await window.BatchReview.approveAll())return;await window.BatchIdentification.prepareOrientation();if(job!==state.job)return;showReviewStep('identify');window.BatchIdentification.startQueue();}
+    finally{button.disabled=false;button.textContent='Crops & rotation checked · identify coins';}
+  };
 
   async function removeRegion(id){state.regions=state.regions.filter(r=>r.id!==id);state.selected=null;await refreshCrops();}
   async function process(file){
@@ -162,11 +169,11 @@
     }catch(error){if(job===state.job){await refreshCrops();status.textContent=`${error.message} You can check the remaining outlines manually.`;}}
     finally{if(job===state.job){state.checking=false;feedback.setAttribute('aria-busy','false');render();}}
   };
-  window.BatchReview={redraw:render,showCoins:()=>showReviewStep('coins'),async approveAll(){if(state.checking)return false;state.regions.forEach(r=>r.reviewed=true);await refreshCrops();return true;},select(id){if(state.regions.some(r=>r.id===id)){if(state.selected!==id)selectRegion(id);document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
+  window.BatchReview={redraw:render,showCoins:()=>showReviewStep('identify'),async approveAll(){if(state.checking)return false;state.regions.forEach(r=>r.reviewed=true);await refreshCrops();return true;},select(id){if(state.regions.some(r=>r.id===id)){if(state.selected!==id)selectRegion(id);document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
   window.addEventListener('popstate',event=>{
     const target=event.state?.batchStage||'entry';
     if(state.stage==='review'&&window.BatchIdentification?.closeWorkspace()){event.stopImmediatePropagation();history.pushState({view:'findView',batchStage:'review'},'','#batch-review');return;}
-    if(state.stage==='review'&&reviewStep==='coins'){event.stopImmediatePropagation();showReviewStep('outlines');history.pushState({view:'findView',batchStage:'review'},'','#batch-review');return;}
+    if(state.stage==='review'&&reviewStep!=='outlines'){event.stopImmediatePropagation();showReviewStep(reviewStep==='identify'?'coins':'outlines');history.pushState({view:'findView',batchStage:'review'},'','#batch-review');return;}
     if(target==='entry'){leave();return;}
     if(target==='capture'&&state.stage==='review'){stage('capture',false);return;}
     if(target==='review'&&state.source){stage('review',false);return;}

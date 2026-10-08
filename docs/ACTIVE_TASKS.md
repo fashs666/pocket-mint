@@ -74,3 +74,21 @@ Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.
 - [x] Separate crop/rotation review from confirmation; show one photo comparison and one other-side option.
 - [x] Pause the queue on allowance errors, avoid retry loops and reject stale/reset results.
 - [ ] Verify the revised workflow and scrolling on physical Android/iPhone; automatic rotation accuracy remains open.
+
+## Three-stage batch flow — v0.14.38
+
+- [x] Default Find to photo Identify; keep Browse as the alternate tab.
+- [x] Photo → outlines → crop/rotation → identification; no recognition begins on the crop screen.
+- [x] Finish all queued orientation checks before starting sequential recognition; do not cancel waiting checks.
+- [x] Larger four-view quarter-turn references, with independent upright verification and original-photo fallback.
+- [x] Keep crop/rotation controls out of identification and show one focused coin comparison.
+- [x] Offer positive test feedback for uncertain suggestions; leave unverified years unscored and wrong denominations partial.
+- [x] Finish review with added/not-added totals and a guarded new-photo action; unmatched coins remain accessible.
+- [x] Add UI-only Coming Home search alias for existing AU20-2005-END-OF-WWII; master catalogue remains unchanged.
+- [ ] Evaluate real automatic orientation accuracy on physical album photographs. Larger references and workflow tests do not establish improved accuracy.
+- [ ] Review shared-recogniser denomination/design mistakes in the supplied reports separately; single Identify remains protected.
+- [ ] Decide whether to expand catalogue scope for 2023 AFL uncirculated team coins, including Brisbane Lions and Fremantle. Do not treat them as missing circulating designs.
+- [ ] Physical Android/iPhone scrolling, Back and rotation checks.
+- [ ] Supply rights-cleared photographic condition references for the nine grades and supported denominations (existing condition-image backlog remains active).
+
+Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/twenty-cents and https://www.ramint.gov.au/collect/national-coin-collection/corporate-partnerships/woolworths-programs/afl
