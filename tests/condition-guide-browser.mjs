@@ -131,7 +131,7 @@ try {
   await page.locator('[data-grade="G"]').click();assert.equal(await page.locator('.cg-reference img').count(),0);assert.equal(await page.locator('.cg-photo-missing').isVisible(),true);
   assert.equal(await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns})),master,'catalogue must not receive condition fields');
   await page.waitForFunction(()=>navigator.serviceWorker.controller,{timeout:30000});
-  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.38-neon-headings');return Promise.all(['pm-live-headings.js','batch-photo-rotation.js','fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
+  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.38-rotation-first-r2');return Promise.all(['pm-live-headings.js','batch-photo-rotation.js','fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
   assert(assets.every(Boolean),'Guide, heading font and title assets must be cached offline');
   await context.setOffline(true);await page.reload();await ready();
   await page.evaluate(()=>navigate('helpView'));await page.locator('#helpConditionGuide').click();await page.locator('[data-grade="GEM"]').click();assert.equal(await page.locator('#conditionGuide [aria-selected="true"]').textContent(),'GEM');
