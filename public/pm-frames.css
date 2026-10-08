@@ -450,8 +450,7 @@ body .view .menuCard button {
 }
 /* Page and section titles use one rounded, slightly informal voice. Preserve
    the illustrated Home wordmark and compact catalogue title sizing. */
-:root body :is(.view,#coinDialog,#conditionGuide,#seriesCelebration) :is(h2,h3):not(.pm-home-logo),
-:root body .topbar h1 {
+:root body :is(h1,h2,h3,h4):not(.pm-home-logo) {
   font-family:'Pocket Mint Hand',ui-rounded,'Trebuchet MS',system-ui,sans-serif;
   font-weight:400;letter-spacing:-.04em;line-height:1.4;
 }
