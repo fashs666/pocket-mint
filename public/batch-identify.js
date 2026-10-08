@@ -59,11 +59,12 @@
     for(const coin of state.crops){
       const card=document.createElement('article');card.className='batchCrop pm-cream-card'+(coin.id===state.selected?' selected':'');card.dataset.regionId=coin.id;
       const title=document.createElement('strong');title.textContent=`Coin ${coin.detectionNumber}`;
-      const picture=document.createElement('img');picture.src=coin.cropUrl;picture.alt=`Crop of coin ${coin.detectionNumber}`;
+      const picture=document.createElement('img');picture.src=window.BatchIdentification?.effectivePhoto(coin).url||coin.cropUrl;picture.alt=`Crop of coin ${coin.detectionNumber}`;
       const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.onclick=()=>removeRegion(coin.id);
       const select=document.createElement('button');select.type='button';select.className='batchCropSelect';select.append(picture);select.setAttribute('aria-label',`Select outline ${coin.detectionNumber}`);select.onclick=()=>selectRegion(coin.id);
       const edit=document.createElement('button');edit.type='button';edit.textContent='Crop / rotate';edit.disabled=state.checking||window.BatchIdentification?.isBusy?.();edit.onclick=()=>window.BatchIdentification?.editCrop(coin);
-      card.append(title,select,edit,remove);grid.append(card);
+      const auto=document.createElement('button');auto.type='button';auto.textContent='Auto rotate';auto.disabled=edit.disabled;auto.onclick=()=>window.BatchIdentification?.autoRotate(coin);
+      card.append(title,select,auto,edit,remove);grid.append(card);
     }
   }
   async function refreshCrops(){window.BatchIdentification?.sync(state.regions);const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();}
@@ -114,7 +115,7 @@
       if(job!==state.job)break;
       const geometry=`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
       status.textContent=`Checking object ${crop.detectionNumber}…`;
-      const reverse=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(crop.crop);});
+      const reverse=await BatchCoins.batchVisionImage(window.BatchIdentification?.effectivePhoto(crop).blob||crop.crop);
       if(job!==state.job)break;
       const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',batch_check:true,reverse})});
       const data=await response.json();if(!response.ok)throw new Error(data.error||'Coin check unavailable');
@@ -128,7 +129,7 @@
     }catch(error){if(job===state.job){await refreshCrops();status.textContent=`${error.message} You can check the remaining outlines manually.`;}}
     finally{if(job===state.job){state.checking=false;render();}}
   };
-  window.BatchReview={async approveAll(){if(state.checking)return false;state.regions.forEach(r=>r.reviewed=true);await refreshCrops();return true;},select(id){if(state.regions.some(r=>r.id===id)){if(state.selected!==id)selectRegion(id);document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
+  window.BatchReview={redraw:render,async approveAll(){if(state.checking)return false;state.regions.forEach(r=>r.reviewed=true);await refreshCrops();return true;},select(id){if(state.regions.some(r=>r.id===id)){if(state.selected!==id)selectRegion(id);document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
   window.addEventListener('popstate',event=>{
     const target=event.state?.batchStage||'entry';
     if(target==='entry'){leave();return;}

@@ -22,4 +22,16 @@ Reference schema and sourcing status: [CONDITION_GUIDE.md](CONDITION_GUIDE.md).
 - [x] Keep single-coin Identify, its camera and shared recognition behaviour unchanged; verify protected-file diffs and regression checks.
 - [ ] Deploy and validate this multi-coin fix on physical Android and iPhone devices.
 
-Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.md. Deployment remains a separate step.
+Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.md. The detection fix is deployed; physical-device validation remains outstanding.
+
+
+## Batch rotation and visual consistency — v0.14.31
+
+- [x] Share edited photos across review thumbnails, results and batch recognition inputs.
+- [x] Retain corrections when crops regenerate with unchanged outlines; invalidate them when the outline changes.
+- [x] Check orientation automatically before batch identification, with a per-coin Auto rotate action and manual Crop / rotate override.
+- [x] Preserve original orientation when the service is uncertain, unavailable or returns an invalid angle.
+- [x] Verify actual rotated pixels in review/results/request, cancellation, refresh persistence and landscape layout.
+- [x] Match remaining dynamic page headings to glossy two-colour lettering; round utility controls.
+- [ ] Verify orientation accuracy and manual corrections on physical Android/iPhone with real batch photos.
+- [ ] Review mascot placement separately (explicitly excluded from this release).
