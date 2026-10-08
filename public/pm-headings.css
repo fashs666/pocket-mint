@@ -1,0 +1,31 @@
+/* Presentation only: title art never intercepts navigation. */
+@font-face{font-family:'Pocket Mint Bubble';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/coiny-latin-400.woff2') format('woff2')}
+:root body :is(h1,h2,h3,h4):not(.pm-home-logo){font-family:'Pocket Mint Bubble',ui-rounded,system-ui,sans-serif;font-weight:400;letter-spacing:0;line-height:1.3}
+:root body .sectionHead{border-bottom:0;box-shadow:none}
+.pm-title-art{display:block;width:100%;height:auto;overflow:hidden}
+.pm-title-mint{max-width:190px}.pm-title-find{max-width:245px}.pm-title-condition{max-width:310px}
+:root body .sectionHead h2:has(.pm-title-art){width:100%;margin:0}
+:root body #myMintView .sectionHead{margin-bottom:12px;padding-bottom:0}
+:root body #myMintView .menuHeading{margin:24px 0 12px}
+:root body #homeView .pm-home-hero-heading h3{margin:0 0 8px;width:100%}
+:root body #homeView .pm-collection-title-link{display:flex;align-items:center;gap:8px;width:100%;max-width:300px;padding:0;min-height:48px;border:0;background:none;box-shadow:none;color:#292238;text-align:left;border-radius:12px}
+.pm-collection-title-link .pm-title-art{min-width:0;flex:1}.pm-title-chevron{font-family:system-ui,sans-serif;font-size:28px;flex-shrink:0}
+.pm-collection-title-link:focus-visible{outline:3px solid #72529a;outline-offset:4px}
+:root body #conditionGuide .cg-header>div{min-width:0;flex:1}
+:root body #conditionGuide .cg-header h2{margin:0;width:100%}
+:root body #conditionGuide .cg-header h2::after{display:none}
+.cg-subtitle{margin:9px 0;color:#dbcbe9;font-size:.9rem}
+:root body .menuCard button .pm-menu-icon{display:block;width:38px;height:38px;flex:0 0 38px;border:1px solid #c9aa6b;border-radius:15px 17px 14px 18px;background-image:var(--pm-menu-glyph),radial-gradient(circle at 35% 25%,#18384c,#10152e);background-size:27px 27px,100% 100%;background-position:center;background-repeat:no-repeat;box-shadow:inset 0 0 0 2px #fff1ce30,0 2px 0 #a1815480;font-size:0}
+.pm-icon-owned{--pm-menu-glyph:url("frames/icon-owned.svg")}
+.pm-icon-wishlist{--pm-menu-glyph:url("frames/icon-wishlist.svg")}
+.pm-icon-favourites{--pm-menu-glyph:url("frames/icon-favourites.svg")}
+.pm-icon-duplicates{--pm-menu-glyph:url("frames/icon-duplicates.svg")}
+.pm-icon-stats{--pm-menu-glyph:url("frames/icon-stats.svg")}
+.pm-icon-swaps{--pm-menu-glyph:url("frames/icon-swaps.svg")}
+.pm-icon-settings{--pm-menu-glyph:url("frames/icon-settings.svg")}
+.pm-icon-help{--pm-menu-glyph:url("frames/icon-help.svg")}
+.pm-icon-about{--pm-menu-glyph:url("frames/icon-about.svg")}
+@media(max-width:380px){.pm-title-mint{max-width:165px}.pm-title-find{max-width:215px}.pm-title-condition{max-width:255px}}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+:root body .view:not(#homeView) .sectionHead{border-bottom:0;box-shadow:none}
+:root body .menuCard button{grid-template-columns:38px 1fr auto auto}
