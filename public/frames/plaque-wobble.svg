@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120" preserveAspectRatio="none">
  <defs><linearGradient id="paper" x2=".2" y2="1"><stop stop-color="#fff0d5"/><stop offset="1" stop-color="#ead7b4"/></linearGradient></defs>
- <path id="shape" d="M26 7 C47 1 64 11 86 6 S128 3 151 7 S194 2 215 6 S255 1 277 8 Q295 12 292 29 C287 42 298 50 292 63 S297 90 288 104 Q285 115 266 113 C243 118 222 109 200 114 S157 111 135 114 S90 109 68 114 S32 117 17 109 Q5 104 8 88 C13 73 3 62 8 49 S3 26 12 15 Q16 8 26 7Z" fill="url(#paper)" stroke="#e9bd70" stroke-width="5"/>
+ <path id="shape" d="M26 9 C46 0 63 20 86 7 S129 18 151 7 S194 20 215 7 S255 0 277 10 Q297 14 290 30 C282 42 302 51 291 64 S301 88 287 102 Q282 117 266 111 C243 121 222 99 200 111 S157 101 135 112 S89 100 68 112 S32 121 17 106 Q2 100 10 88 C19 73 0 63 10 49 S0 27 13 17 Q16 9 26 9Z" fill="url(#paper)" stroke="#e9bd70" stroke-width="5"/>
  <use href="#shape" fill="none" stroke="#bc915d" stroke-width="2"/>
- <path d="M27 13 C49 7 64 17 87 12 S129 9 152 13 S194 8 216 12 S253 7 275 14 Q287 16 285 29 C280 43 291 50 285 63 S291 88 282 101 Q280 108 265 107 C244 112 222 103 199 108 S157 105 135 108 S90 103 68 108 S33 111 21 103 Q12 100 15 88 C20 73 10 62 15 49 S10 29 18 20 Q21 14 27 13Z" fill="none" stroke="#fff8e7" stroke-width="2"/>
+ <use href="#shape" fill="none" stroke="#fff8e7" stroke-width="2" transform="translate(6 5) scale(.96 .916)"/>
 </svg>

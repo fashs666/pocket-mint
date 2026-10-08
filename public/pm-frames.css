@@ -1,4 +1,8 @@
 /* Shared album-like framing: decoration lives on edges, never over content. */
+@font-face {
+  font-family:'Pocket Mint Hand';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/short-stack-latin-400.woff2') format('woff2');
+}
 :root{--pm-frame-tan:#c5a16f;--pm-frame-light:#fff9e9;--pm-frame-shadow:#b98d5860}
 .pm-frame,.pm-cream-card,.statsCard,.menuCard,.stat,.coinCard,.seriesBox,.identifyPanel,.editBlock{border:2px solid var(--pm-frame-tan);border-radius:24px 29px 25px 28px;background:var(--pm-cream);color:var(--pm-ink);box-shadow:inset 0 0 0 4px var(--pm-frame-light),inset 0 -7px 12px #b98d5810,0 5px 0 var(--pm-frame-shadow),0 12px 26px #02071730}
 .pm-frame-hero,.findHero{border:2px solid #d2b276;border-radius:29px 34px 28px 35px;box-shadow:inset 0 0 0 3px #fff4dd55,0 0 0 2px #68d9e92b,0 0 20px #a98bec25,0 8px 0 #18162f66}
@@ -424,4 +428,57 @@ body .view .menuCard button {
 .statsAlbums .seriesDirectory {
   gap: 18px;
   padding: 0 3px 5px;
+}
+
+/* Repeat the drawn side rails rather than stretching their waves into a
+   nearly straight line on tall records and menus. Content stays rectangular. */
+:root body :is(.view,#coinDialog,#seriesCelebration) :is(
+  .card:not(.coinCard),.pm-cream-card:not(.pm-home-hero),.statsCard,.menuCard,
+  .statsGrid .stat,.identifyPanel,.batchPanel,.matchCard,.seriesBox,.editBlock,
+  .seriesHeader,.seriesCelebrationCard,.empty
+)::before {
+  border-width:18px;border-image-repeat:stretch round;
+  border-image-slice:20% 8%;
+  background:linear-gradient(150deg,#fff0d5,#ead7b4);background-clip:padding-box;
+}
+:root body :is(.view,#coinDialog) :is(.settings.card,.menuCard,.editBlock)::before {
+  border-image-slice:9% 15%;
+}
+:root body #conditionGuide :is(.cg-card,.cg-basics)::before {
+  border-width:18px;border-image-repeat:stretch round;border-image-slice:9% 15%;
+  background:linear-gradient(150deg,#fff0d5,#ead7b4);background-clip:padding-box;
+}
+/* Page and section titles use one rounded, slightly informal voice. Preserve
+   the illustrated Home wordmark and compact catalogue title sizing. */
+:root body :is(.view,#coinDialog,#conditionGuide,#seriesCelebration) :is(h2,h3):not(.pm-home-logo),
+:root body .topbar h1 {
+  font-family:'Pocket Mint Hand',ui-rounded,'Trebuchet MS',system-ui,sans-serif;
+  font-weight:400;letter-spacing:-.04em;line-height:1.4;
+}
+:root body .view:not(#homeView) .sectionHead {
+  border-bottom:0;box-shadow:none;padding-bottom:10px;align-items:center;
+}
+:root body :is(.view,#coinDialog,#conditionGuide,#seriesCelebration) :is(
+  .sectionHead h2,.sectionTitle h3,.findPanelHead h3,.menuHeading,
+  .statsAlbums>h3,.statsCard>h3,.settings h3,.pm-home-hero-heading h3,
+  .pm-detail-heading h2,.pm-detail-information>h3,.editBlock>h3,.seriesBox>h3,
+  .seriesHeader h2,.cg-header h2,.cg-compare-heading h3,
+  .seriesCelebrationCard h2,.batchPanel>h3
+)::after {
+  content:'';display:block;position:static;width:min(155px,80%);height:14px;
+  margin:5px 0 1px;border:0;border-radius:0;transform:none;box-shadow:none;
+  background:url('frames/header-scribble.svg') left center/contain no-repeat;
+  pointer-events:none;
+}
+:root body #coinDialog .pm-detail-heading h2::after {margin-inline:auto}
+:root body #coinDialog .editBlock>h3 {border-bottom:0;padding-bottom:0}
+:root body :is(.view,#coinDialog,#conditionGuide) .eyebrow {
+  font-family:ui-rounded,'Trebuchet MS',system-ui,sans-serif;
+  letter-spacing:.09em;font-weight:800;line-height:1.5;
+}
+:root body .view .sectionHead h2 {font-size:clamp(1.65rem,4vw,2rem);color:#fff0d7}
+:root body .topbar h1 {letter-spacing:-.035em;color:var(--pm-on-dark)}
+:root body .view .menuHeading {margin-top:22px;margin-bottom:12px}
+@media(max-width:380px) {
+  :root body :is(.view,#coinDialog,#conditionGuide) :is(h2,h3) {overflow-wrap:anywhere}
 }
