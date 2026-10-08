@@ -35,3 +35,12 @@ Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.
 - [x] Match remaining dynamic page headings to glossy two-colour lettering; round utility controls.
 - [ ] Verify orientation accuracy and manual corrections on physical Android/iPhone with real batch photos.
 - [ ] Review mascot placement separately (explicitly excluded from this release).
+
+## Automatic batch orientation workflow — v0.14.33
+
+- [x] Start a bounded orientation queue as detected/manual crops appear, before identification.
+- [x] Update review/results immediately, show Checking rotation / Rotation checked / Check rotation.
+- [x] Replace the Auto rotate button with accessible 90-degree left/right controls beside each preview.
+- [x] Preserve manual priority over late orientation responses and maintain corrected recognition/saved inputs.
+- [x] Restore transparent circles and guard their styling with computed-style browser checks (v0.14.32).
+- [ ] Improve and evaluate real-coin orientation accuracy: Ben reports only 1 of 9 useful corrections. Current conservative angle service remains unchanged; workflow tests do not establish accuracy.

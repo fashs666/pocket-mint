@@ -87,3 +87,13 @@ assert.equal(context.window.BatchIdentification.effectivePhoto(crop).blob,adjust
 const moved={...crop,x:11};context.window.BatchIdentification.sync([moved]);context.window.BatchIdentification.render([moved]);
 assert.equal(context.window.BatchIdentification.effectivePhoto(moved).blob,moved.crop,'Changed outline invalidates old correction');
 console.log('PASS late orientation rejection, shared edited photo, review redraw, refresh/cancel persistence and geometry invalidation');
+context.window.BatchIdentification.reset();context.window.BatchIdentification.render([crop]);
+context.window.BatchPhotoRotation={suggest:()=>new Promise(resolve=>resolveOrientation=resolve),rotate:async()=>adjustedBlob};
+context.window.BatchIdentification.scheduleOrientation();
+assert.equal(context.window.BatchIdentification.rotationStatus(crop),'Checking rotation…');
+await context.window.BatchIdentification.rotateCrop(crop,90);
+resolveOrientation({file:{lateAutomatic:true},confident:true});
+await new Promise(resolve=>setImmediate(resolve));
+assert.equal(context.window.BatchIdentification.effectivePhoto(crop).blob,adjustedBlob,'Late automatic correction must never overwrite quick manual rotation');
+assert.equal(context.window.BatchIdentification.rotationStatus(crop),'Rotation adjusted');
+console.log('PASS automatic crop queue, progress status and manual priority over late orientation');

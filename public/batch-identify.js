@@ -63,11 +63,13 @@
       const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.onclick=()=>removeRegion(coin.id);
       const select=document.createElement('button');select.type='button';select.className='batchCropSelect';select.append(picture);select.setAttribute('aria-label',`Select outline ${coin.detectionNumber}`);select.onclick=()=>selectRegion(coin.id);
       const edit=document.createElement('button');edit.type='button';edit.textContent='Crop / rotate';edit.disabled=state.checking||window.BatchIdentification?.isBusy?.();edit.onclick=()=>window.BatchIdentification?.editCrop(coin);
-      const auto=document.createElement('button');auto.type='button';auto.textContent='Auto rotate';auto.disabled=edit.disabled;auto.onclick=()=>window.BatchIdentification?.autoRotate(coin);
-      card.append(title,select,auto,edit,remove);grid.append(card);
+      const rotation=document.createElement('div');rotation.className='batchRotationControls';
+      for(const [angle,label] of [[-90,'↶'],[90,'↷']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-label',`Rotate coin ${coin.detectionNumber} ${angle<0?'left':'right'} 90 degrees`);button.disabled=edit.disabled;button.onclick=()=>window.BatchIdentification?.rotateCrop(coin,angle);rotation.append(button);}
+      const hint=document.createElement('span');hint.className='batchRotationStatus';hint.textContent=window.BatchIdentification?.rotationStatus(coin)||'Check rotation';hint.setAttribute('role','status');
+      card.append(title,select,hint,rotation,edit,remove);grid.append(card);
     }
   }
-  async function refreshCrops(){window.BatchIdentification?.sync(state.regions);const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();}
+  async function refreshCrops(){window.BatchIdentification?.sync(state.regions);const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();window.BatchIdentification?.scheduleOrientation();}
   async function removeRegion(id){state.regions=state.regions.filter(r=>r.id!==id);state.selected=null;await refreshCrops();}
   async function process(file){
     if(!file)return;
