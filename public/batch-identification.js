@@ -161,7 +161,7 @@
     renderKey=key;renderResult=current;
     if(rebuild)root.replaceChildren();
     $('batchIdentifyAll').disabled=busy||!crops.length;
-    const action='Review coins';if($('batchIdentifyAll').textContent!==action)$('batchIdentifyAll').textContent=action;
+    const action=crops.every(c=>c.reviewed)?'Review coins':'Confirm crops & review';if($('batchIdentifyAll').textContent!==action)$('batchIdentifyAll').textContent=action;
     for(const id of ['batchSaveTests','batchExportTests']){const button=$(id);if(button){button.hidden=![...results.values()].some(result=>!result.orientationOnly);button.disabled=busy;}}
     for(const crop of rebuild&&selected?[selected]:[]){
       const result=results.get(crop.id)||editable(crop);
@@ -359,7 +359,7 @@
   }
   function startQueue(){queueEnabled=true;queuePaused=false;for(const job of orientationQueue.splice(0)){if(orientationJobs.get(job.crop.id)===job)orientationJobs.delete(job.crop.id);job.resolve();}runQueue();}
   $('batchResumeQueue').onclick=startQueue;
-  $('batchIdentifyAll').onclick=()=>{const next=crops.find(c=>!results.get(c.id)?.added);if(next)openCoin(next.id);startQueue();};
+  $('batchIdentifyAll').onclick=async()=>{if(!crops.every(c=>c.reviewed)&&!await window.BatchReview?.approveAll())return;const next=crops.find(c=>!results.get(c.id)?.added);if(next)openCoin(next.id);startQueue();};
 
   async function saveBatchTests(exportFile=false){
     if(busy)return;
