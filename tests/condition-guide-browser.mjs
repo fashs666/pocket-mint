@@ -27,11 +27,17 @@ const url=`http://127.0.0.1:${server.address().port}`;
 const browser=await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}),args:['--no-sandbox','--disable-gpu']});
 const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
 const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.30'));
+const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.31'));
 const closed=()=>page.waitForFunction(()=>!document.querySelector('#conditionGuide').open);
 const saved=grade=>page.waitForFunction(g=>state.get(history.state.coinId)?.conditionGrade===g,grade);
 try {
   await page.goto(url);await ready();
+  await page.waitForFunction(()=>document.querySelector('#settingsView .pm-title-live'));
+  const titleSizes=await page.evaluate(()=>[...document.querySelectorAll('.pm-title-live')].map(svg=>Number(svg.getAttribute('viewBox').split(' ')[2])));
+  assert(titleSizes.every(width=>width>20),'Hidden page headings retain measurable glossy SVG titles');
+  await page.evaluate(()=>{document.querySelector('#collectionTitle').textContent='Duplicates';});
+  await page.waitForFunction(()=>document.querySelector('#collectionTitle .pm-title-live text')?.textContent==='Duplicates');
+  await page.evaluate(()=>{document.querySelector('#collectionTitle').textContent='Collection';});
   const decoration=await page.evaluate(()=>{
     const card=document.querySelector('#homeSeries .pm-series-card');
     const sample=()=>{const s=getComputedStyle(card,'::after');return {image:s.backgroundImage,content:s.content,animation:s.animationName,top:s.top,bottom:s.bottom,width:s.width,height:s.height,transform:s.transform,opacity:s.opacity};};
@@ -125,7 +131,7 @@ try {
   await page.locator('[data-grade="G"]').click();assert.equal(await page.locator('.cg-reference img').count(),0);assert.equal(await page.locator('.cg-photo-missing').isVisible(),true);
   assert.equal(await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns})),master,'catalogue must not receive condition fields');
   await page.waitForFunction(()=>navigator.serviceWorker.controller,{timeout:30000});
-  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.30-neon-headings');return Promise.all(['fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
+  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.31-neon-headings');return Promise.all(['pm-live-headings.js','batch-photo-rotation.js','fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
   assert(assets.every(Boolean),'Guide, heading font and title assets must be cached offline');
   await context.setOffline(true);await page.reload();await ready();
   await page.evaluate(()=>navigate('helpView'));await page.locator('#helpConditionGuide').click();await page.locator('[data-grade="GEM"]').click();assert.equal(await page.locator('#conditionGuide [aria-selected="true"]').textContent(),'GEM');

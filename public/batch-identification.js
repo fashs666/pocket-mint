@@ -57,15 +57,40 @@
   const geometryOf=crop=>`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
   const activeCrop=crop=>crops.some(current=>current.id===crop.id&&geometryOf(current)===geometryOf(crop));
   function editable(crop){let result=results.get(crop.id);if(!result){result={status:'manual',choices:[],geometry:geometryOf(crop),ready:false};results.set(crop.id,result);}return result;}
+  const effectivePhoto=crop=>{
+    const result=results.get(crop.id);
+    return result?.geometry===geometryOf(crop)?{blob:result.reverseBlob||crop.crop,url:result.reverse||crop.cropUrl}:{blob:crop.crop,url:crop.cropUrl};
+  };
+  async function orientCrop(crop,force=false){
+    const previous=results.get(crop.id)||{};
+    if(!window.BatchPhotoRotation||!force&&(previous.orientationAttempted||previous.reverse))return;
+    const revision=generation;
+    const adjustment=await window.BatchPhotoRotation.suggest(effectivePhoto(crop).blob);
+    if(revision!==generation||!activeCrop(crop))return;
+    const reverse=adjustment.file!==effectivePhoto(crop).blob?await fileDataUrl(adjustment.file):undefined;
+    if(revision!==generation||!activeCrop(crop))return;
+    results.set(crop.id,{...previous,status:'manual',choices:previous.choices||[],geometry:geometryOf(crop),ready:false,
+      orientationAttempted:true,...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
+      message:adjustment.confident?'Orientation checked. Use Crop / rotate if it needs correcting.':'Orientation unclear. Use Crop / rotate to choose it yourself.'});
+    window.BatchReview?.redraw();
+  }
+  async function autoRotate(crop){
+    if(busy||!activeCrop(crop)||results.get(crop.id)?.added)return;
+    const revision=generation;busy=true;render(crops);
+    try{await orientCrop(crop,true);}finally{if(revision===generation){busy=false;window.BatchReview?.redraw();render(crops);}}
+  }
   async function editCrop(crop){
     if(busy||!activeCrop(crop)||results.get(crop.id)?.added)return;
     const revision=generation,previous=results.get(crop.id);busy=true;render(crops);
-    try{const adjusted=await window.CoinPhotoEditor.edit(previous?.reverseBlob||crop.crop);
+    try{const source=effectivePhoto(crop).blob;
+      // Batch crops already have an outline: do not re-detect or auto-rotate inside the shared editor.
+      window.AutoCoinPhoto?.markManual(source,source);
+      const adjusted=await window.CoinPhotoEditor.edit(source);
       if(!adjusted||revision!==generation||!activeCrop(crop))return;
       const reverse=await fileDataUrl(adjusted);if(revision!==generation||!activeCrop(crop))return;
-      results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,message:'Photo adjusted. Identify this coin again before confirming.'});
+      results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,message:'Photo adjusted. Identify this coin again before confirming.'});
     }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=`Could not edit coin: ${error.message}`;}
-    finally{if(revision===generation){busy=false;render(crops);}}
+    finally{if(revision===generation){busy=false;window.BatchReview?.redraw();render(crops);}}
   }
   function photoControl(card,crop,result,side){
     const input=document.createElement('input');input.type='file';input.accept='image/*';input.setAttribute('capture','environment');input.hidden=true;
@@ -75,8 +100,8 @@
       try{const source=await BatchCoins.prepareBatchImage(file);const blob=await new Promise((resolve,reject)=>source.toBlob(b=>b?resolve(b):reject(new Error('Could not read photo')),'image/jpeg',.9));source.width=0;source.height=0;
         const data=await fileDataUrl(blob);if(revision!==generation||!activeCrop(crop))return;
         const current=editable(crop);current.ready=false;current.added=false;current.choices=[];current.designId=null;current.coinId=null;current.status='manual';
-        if(side==='design'){current.reverse=data;current.reverseBlob=blob;}else current.obverse=data;
-        current.message='New photo ready. Identify this coin again.';render(crops);
+        if(side==='design'){current.reverse=data;current.reverseBlob=blob;current.orientationAttempted=true;}else current.obverse=data;
+        current.message='New photo ready. Identify this coin again.';window.BatchReview?.redraw();render(crops);
       }catch(error){$('batchIdentifyStatus').textContent=error.message;}finally{button.disabled=false;input.value='';}
     };card.append(button,input);
   }
@@ -241,6 +266,9 @@
   async function identifyOne(crop,fromAll=false){
     if(busy&&!fromAll||!crop.reviewed||!activeCrop(crop))return;
     if(!fromAll)busy=true;
+    const orientationRevision=generation;
+    await orientCrop(crop);
+    if(orientationRevision!==generation||!activeCrop(crop)){if(orientationRevision===generation&&!fromAll){busy=false;render(crops);}return;}
     const previous=results.get(crop.id)||{};
     const revision=generation,geometry=`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
     const pending={...previous,status:'loading',ready:false,geometry};results.set(crop.id,pending);render(crops);
@@ -312,6 +340,6 @@
     }catch(error){$('batchIdentifyStatus').textContent=`Could not finish saving: ${error.message}`;}
     finally{busy=false;render(crops);}
   };
-  window.BatchIdentification={reset,sync,render,editCrop,isBusy:()=>busy};
+  window.BatchIdentification={reset,sync,render,editCrop,autoRotate,effectivePhoto,isBusy:()=>busy};
   window.BatchIdentificationCore={classify};
 })();

@@ -470,3 +470,14 @@ body .view .menuCard button {
   box-shadow:inset 0 0 0 3px #fff5df,inset 0 0 0 4px #c9ac7770,inset 0 3px 8px #86623112,0 2px 0 #b2956440;
 }
 :root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard.pm-companion-spotlight {outline:none;box-shadow:none}
+
+/* Quiet utility controls share the rounded, slightly uneven cream treatment. */
+:root body .view :is(.smallBtn,.secondary,.clearFilters,.backBtn),
+:root body #clearCatalogueFilters,
+:root body :is(.batchPanel,.batchCrop,.batchResult,.settings) button:not(.batchCropSelect):not(.primary) {
+ min-height:44px;border:2px solid #bc9968;
+ border-radius:18px 22px 19px 24px / 20px 17px 23px 18px;
+ background:linear-gradient(#fff7e5,#ead7b4);color:#493654;
+ box-shadow:inset 0 2px 0 #fffaf0,0 2px 0 #aa8053;
+}
+:root body .view button:focus-visible {outline:3px solid #80e8d7;outline-offset:4px}

@@ -67,3 +67,7 @@
 @media(max-width:380px){.pm-title-continue{width:200px}.pm-title-recent{width:175px}.pm-title-home-find{width:125px}}
 
 :root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinCopy .meta{color:#54456b}
+
+/* Native SVG titles retain their live labels and share glossy two-hue lettering. */
+.pm-title-live{max-width:100%;filter:drop-shadow(0 2px 0 #080914)}
+@media(forced-colors:active){.pm-title-live text{fill:CanvasText;stroke:Canvas;filter:none}}
