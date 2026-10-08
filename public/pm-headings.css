@@ -30,30 +30,40 @@
 :root body .view:not(#homeView) .sectionHead{border-bottom:0;box-shadow:none}
 :root body .menuCard button{grid-template-columns:38px 1fr auto auto}
 
-/* Dynamic catalogue names and section headings share the logo concept without
-   rasterising catalogue text or adding another image library. */
+/* Neon is reserved for navigation and section headings. Coin information and
+   names keep their established dark, rounded typography on cream cards. */
+:root{--pm-heading-pink:#ff36e9;--pm-heading-yellow:#fffa55;--pm-heading-aqua:#00e9e9;--pm-heading-gold:#ffcf42}
 @supports ((background-clip:text) or (-webkit-background-clip:text)) {
-  :root body :is(.view,#coinDialog,#conditionGuide,#seriesCelebration) :is(h2,h3,h4,.findHero b,.pm-series-copy>b):not(:has(.pm-title-art)) {
-    --pm-heading-start:#ff36e9;--pm-heading-end:#ffcf42;
+  :root body :is(.view,#conditionGuide) :is(.sectionHead h2,.sectionTitle h3,.menuHeading,.statsAlbums>h3,.cg-header h2):not(:has(.pm-title-art)) {
+    --pm-heading-start:var(--pm-heading-pink);--pm-heading-end:var(--pm-heading-gold);
     background-image:linear-gradient(180deg,var(--pm-heading-start) 12%,var(--pm-heading-end) 90%);
     background-clip:text;-webkit-background-clip:text;color:transparent;
     -webkit-text-stroke:.55px #070914;paint-order:stroke fill;text-shadow:none;
   }
-  :root body :is(#myMintView,#conditionGuide) :is(h2,h3,h4,.findHero b,.pm-series-copy>b):not(:has(.pm-title-art)) {
-    --pm-heading-start:#fffa55;--pm-heading-end:#00e9e9;
+  :root body :is(#myMintView,#statsView,#conditionGuide) :is(.sectionHead h2,.menuHeading,.statsAlbums>h3,.cg-header h2):not(:has(.pm-title-art)) {
+    --pm-heading-start:var(--pm-heading-yellow);--pm-heading-end:var(--pm-heading-aqua);
   }
-  :root body .view .coinCard .coinCopy h3 {
-    -webkit-text-stroke:.45px #070914;line-height:1.4;padding-block:2px;
+  :root body :is(#collectionView,#helpView,#seriesView) .sectionHead h2:not(:has(.pm-title-art)) {
+    --pm-heading-start:var(--pm-heading-aqua);--pm-heading-end:var(--pm-heading-pink);
+  }
+  :root body :is(#wishlistView,#milestonesView,#settingsView) .sectionHead h2:not(:has(.pm-title-art)) {
+    --pm-heading-start:var(--pm-heading-pink);--pm-heading-end:var(--pm-heading-aqua);
   }
 }
+:root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinCopy h3,
+:root body #coinDialog .pm-detail-heading h2 {
+  background:none;color:#18192f;-webkit-text-stroke:0;text-shadow:none;
+  font-family:'Pocket Mint Bubble',ui-rounded,system-ui,sans-serif;font-weight:400;line-height:1.3;
+}
+:root body .pm-series-copy>b {background:none;color:#18192f;-webkit-text-stroke:0;text-shadow:none;font-family:inherit;font-weight:700;line-height:1.3}
 @media(forced-colors:active){
-  :root body :is(.view,#coinDialog,#conditionGuide,#seriesCelebration) :is(h2,h3,h4,.findHero b,.pm-series-copy>b):not(:has(.pm-title-art)){
+  :root body :is(.view,#conditionGuide) :is(.sectionHead h2,.sectionTitle h3,.menuHeading,.statsAlbums>h3,.cg-header h2):not(:has(.pm-title-art)){
     background:none;color:CanvasText;-webkit-text-stroke:0;
   }
 }
 
-:root body :is(.findHero b,.pm-series-copy>b){font-family:"Pocket Mint Bubble",ui-rounded,system-ui,sans-serif;font-weight:400;line-height:1.4}
-
 .pm-title-continue{width:225px;max-width:100%}.pm-title-recent{width:190px;max-width:100%}.pm-title-home-find{width:140px;max-width:100%}
 :root body #homeView .sectionTitle h3{min-width:0;flex:1;margin-bottom:0}
 @media(max-width:380px){.pm-title-continue{width:200px}.pm-title-recent{width:175px}.pm-title-home-find{width:125px}}
+
+:root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinCopy .meta{color:#54456b}

@@ -448,3 +448,18 @@ body .view .menuCard button {
   border-width:18px;border-image-repeat:stretch round;border-image-slice:9% 15%;
   background:linear-gradient(150deg,#fff0d5,#ead7b4);background-clip:padding-box;
 }
+
+/* A single coin-card frame across Home, Browse, Collection, Wishlist and Series.
+   Preserve Home's drawn asset and adapt it to each existing card footprint. */
+:root body .view .coinCard {
+  position:relative;isolation:isolate;background:transparent;border-color:transparent;
+  box-shadow:none;overflow:visible;
+}
+:root body .view .coinCard::before {
+  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+  border:0;border-radius:0;border-image:none;
+  background:url('frames/coin-wobble.svg') center / 100% 100% no-repeat;
+  filter:drop-shadow(0 2px 0 #8d673d60);
+}
+/* Companions may visit a coin without adding a second, rectangular neon frame. */
+:root body .view .coinCard.pm-companion-spotlight {outline:none;box-shadow:none}

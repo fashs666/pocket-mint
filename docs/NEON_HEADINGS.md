@@ -11,3 +11,7 @@ No Identify, camera, catalogue, condition storage, or batch recognition changes 
 Extend the two-colour rounded heading concept to Home section titles, Find call-to-action title, dynamic coin names and supporting headings. CSS text remains accessible/searchable, with black stroke, forced-colour fallback and unchanged sizes. Main title artwork remains unchanged.
 
 Fix series drawings moving/fading when a companion performs an idle notice: exclude series-card ::after from the companion notice animation, because it holds the illustration. Normal companion walk, patrol and notices on other cards remain intact.
+
+## v0.14.29
+
+Keep neon two-colour headings varied within the Pocket Mint palette. Restore dark rounded coin names and quiet series labels; restrict gradients to navigation/section headings. Home, Browse, Collection, Wishlist and Series share Home’s original wobbly coin frame, including tall records. Companion visits no longer add a second rectangular cyan border around coin cards. Existing focus indications on interactive buttons remain intact. Presentation only; no recognition, catalogue or persistence changes.
