@@ -40,11 +40,11 @@ const variants=catalogue.designs.flatMap(d=>d.yearVariants.map(v=>({...v,design_
 const coin=variants.find(c=>c.denomination_display==='5c');
 function node(){return {children:[],dataset:{},append(...items){this.children.push(...items)},replaceChildren(...items){this.children=items},setAttribute(){},add(){},classList:{},value:''};}
 const elements=new Map();const element=id=>{if(!elements.has(id))elements.set(id,node());return elements.get(id);};
-let resolveResponse,fetchCount=0;
+let resolveResponse,fetchCount=0;const requestImages=[];
 class Reader{readAsDataURL(){this.result=photo;this.onload();}}
-const context={window:{},document:{getElementById:element,createElement:node,createTextNode:text=>text},AbortSignal,Option:function(text,value){return {text,value}},FileReader:Reader,fetch:async()=>{fetchCount++;return await new Promise(resolve=>resolveResponse=resolve)},coinById:id=>variants.find(c=>c.id===id),designVariants:c=>variants.filter(v=>v.design_id===c.design_id),browseCatalogue:variants};
+const context={window:{},BatchCoins:{batchVisionImage:async input=>{requestImages.push(input);return photo;}},document:{getElementById:element,createElement:node,createTextNode:text=>text},AbortSignal,Option:function(text,value){return {text,value}},FileReader:Reader,fetch:async(_url,options)=>{const body=JSON.parse(options.body);assert(body.reverse.startsWith('data:image/jpeg;base64,'));if(body.obverse)assert(body.obverse.startsWith('data:image/jpeg;base64,'));fetchCount++;return await new Promise(resolve=>resolveResponse=resolve)},coinById:id=>variants.find(c=>c.id===id),designVariants:c=>variants.filter(v=>v.design_id===c.design_id),browseCatalogue:variants};
 vm.createContext(context);
-const code=(await readFile('public/batch-identification.js','utf8')).replace('window.BatchIdentificationCore={classify};','window.BatchIdentificationCore={classify,identifyOne,getResult:id=>results.get(id)};');
+const code=(await readFile('public/batch-identification.js','utf8')).replace('window.BatchIdentificationCore={classify};','window.BatchIdentificationCore={classify,identifyOne,getResult:id=>results.get(id),setResult:(id,result)=>results.set(id,result)};');
 vm.runInContext(code,context);
 const crop={id:'physical-a',x:10,y:10,width:50,height:50,reviewed:true,detectionNumber:4,crop:{},cropUrl:photo};
 context.window.BatchIdentification.render([crop]);
@@ -57,3 +57,12 @@ assert.equal(context.window.BatchIdentificationCore.getResult(crop.id),undefined
 const unchecked={...crop,id:'unchecked',reviewed:false};context.window.BatchIdentification.render([unchecked]);await context.window.BatchIdentificationCore.identifyOne(unchecked);assert.equal(fetchCount,1,'Unreviewed objects must not be identified');
 const prediction=context.window.BatchIdentificationCore.classify({matches:[{id:coin.id,confidence:.9}],uncertain:false});assert.equal(prediction.ready,false);
 console.log('PASS crop identity, stale-result rejection, review gate and explicit collection confirmation');
+context.window.BatchIdentification.render([crop]);
+const edited='data:image/png;base64,edited',portrait='data:image/png;base64,portrait';
+context.window.BatchIdentificationCore.setResult(crop.id,{status:'manual',choices:[],reverse:edited,obverse:portrait,geometry:'10:10:50:50'});
+const editedRequest=context.window.BatchIdentificationCore.identifyOne(crop);
+await new Promise(resolve=>setImmediate(resolve));
+assert.deepEqual(requestImages.slice(-2),[edited,portrait],'Both edited design and portrait must pass batch JPEG preparation');
+resolveResponse({ok:true,json:async()=>({matches:[],uncertain:true})});await editedRequest;
+assert.equal(context.window.BatchIdentificationCore.getResult(crop.id).reverse,edited,'Keep the saved transparent specimen unchanged');
+console.log('PASS batch edited PNG request preparation without changing saved specimen');

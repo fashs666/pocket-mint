@@ -35,3 +35,26 @@ vm.runInNewContext(code,stableContext);
 const renumbered=stableContext.window.BatchCoins.updateRelativeDiameters([{width:20,height:20,detectionNumber:1},{width:30,height:30,detectionNumber:3}]);
 assert.deepEqual(Array.from(renumbered,r=>r.detectionNumber),[1,3],'Removing an outline must preserve physical coin numbers');
 console.log('PASS stable outline numbers after removal');
+
+// Album seams and square dark patches must not pass a circular-rim test.
+const squares=fixture(0);
+for(let y=0;y<squares.height;y++)for(let x=0;x<squares.width;x++){
+  const dark=(x>50&&x<120&&y>60&&y<130)||(x>240&&x<330&&y>220&&y<300);
+  const seam=x%90<3||y%100<3;
+  const value=dark?70:seam?110:220;
+  const i=(y*squares.width+x)*4;squares.data[i]=squares.data[i+1]=squares.data[i+2]=value;
+}
+assert.equal((await detect(squares)).length,0,'Squares and seams are not coins');
+console.log('PASS negative squares and album seams');
+
+const polygon=fixture(0),cx=240,cy=190,radius=46;
+for(let y=0;y<polygon.height;y++)for(let x=0;x<polygon.width;x++){
+  const theta=Math.atan2(y-cy,x-cx),sector=Math.PI/6;
+  const limit=radius*Math.cos(Math.PI/12)/Math.cos(((theta+Math.PI*2+Math.PI/12)%sector)-Math.PI/12);
+  const d=Math.hypot(x-cx,y-cy),base=d<limit?(d>limit-4?65:145):230;
+  const i=(y*polygon.width+x)*4;polygon.data[i]=polygon.data[i+1]=polygon.data[i+2]=base;
+}
+const polygons=await detect(polygon);
+assert.equal(polygons.length,1,'Twelve-sided 50c outline remains supported');
+assert(Math.hypot(polygons[0].centreX-cx,polygons[0].centreY-cy)<10);
+console.log('PASS twelve-sided 50c outline');
