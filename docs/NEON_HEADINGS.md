@@ -15,3 +15,9 @@ Fix series drawings moving/fading when a companion performs an idle notice: excl
 ## v0.14.29
 
 Keep neon two-colour headings varied within the Pocket Mint palette. Restore dark rounded coin names and quiet series labels; restrict gradients to navigation/section headings. Home, Browse, Collection, Wishlist and Series share Home’s original wobbly coin frame, including tall records. Companion visits no longer add a second rectangular cyan border around coin cards. Existing focus indications on interactive buttons remain intact. Presentation only; no recognition, catalogue or persistence changes.
+
+## v0.14.30
+
+Correct the v0.14.29 frame check: comparing an image URL did not validate frame geometry or old screen-specific overrides. One authoritative selector now overrides every coin-list screen. A sliced decorative rail retains corner size and wave spacing as card height changes; no second stretched image remains underneath. Coin-image well colour, contour and shadows are shared too. Rendered browser checks compare the complete frame and well settings, including border size, repeat, backgrounds and parent radius.
+
+Remaining visual polish: flat live-text page titles versus glossy main title artwork; angular utility buttons (deferred because buttons were excluded from the current approved pass). No recognition, capture or data changes.
