@@ -1,6 +1,6 @@
 {
   "name": "pocket-mint-phase-0",
-  "version": "0.14.24",
+  "version": "0.14.25",
   "type": "module",
   "private": true,
   "scripts": {

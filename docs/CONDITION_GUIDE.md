@@ -1,5 +1,11 @@
 # Coin Condition Guide — v0.14.23
 
+## Visual consistency — v0.14.25
+
+The Condition Guide now uses the same `frames/coin-wobble.svg` cream/gold nine-slice rails and `frames/neon-wobble.svg` action buttons as Pocket Mint's existing cards. My Mint record fields, issue chips, photo selector and actions share its warm palette, irregular outlines and restrained neon accents. A small hand-drawn loupe and heading underline add detail without covering controls. Decorative layers do not clip content or focus rings. Existing frame assets were already cached offline.
+
+Validated with the complete regression suite and existing condition browser flows at six widths, landscape rotation, comparison, Back, saving and offline use. Mobile record and guide screenshots were visually reviewed. Only presentation, an information-icon markup change and release/cache metadata changed; Identify, camera, batch detection, condition storage and catalogue behaviour remain unchanged.
+
 The existing Coin Detail dialog remains the Add/Edit record surface. Its condition selector now has Not recorded and the nine requested Australian adjectival grades. My Mint → Help & feedback → Coin Condition Guide opens the same reusable guide in reference-only mode.
 
 ## Record model
