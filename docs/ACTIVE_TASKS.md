@@ -65,3 +65,12 @@ Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.
 
 - [x] Initial live evaluation: twelve contact-sheet proposals and seven completed upright checks; all seven checks preserved the original. No orientation accuracy improvement is claimed.
 - [ ] Improve real automatic orientation accuracy; the current method remains conservative and manual correction is still needed.
+
+## Ordered review workflow — v0.14.36
+
+- [x] Show progress and per-object outcomes when checking outlines, including when nothing changes.
+- [x] Identify confirmed outlines serially in the background while earlier coins are reviewed.
+- [x] Keep explicit collection confirmation; advance to the next unadded coin after saving.
+- [x] Separate crop/rotation review from confirmation; show one photo comparison and one other-side option.
+- [x] Pause the queue on allowance errors, avoid retry loops and reject stale/reset results.
+- [ ] Verify the revised workflow and scrolling on physical Android/iPhone; automatic rotation accuracy remains open.

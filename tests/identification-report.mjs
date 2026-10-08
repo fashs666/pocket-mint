@@ -28,7 +28,7 @@ assert.ok(echidnas.length>1);
 const differentYear=fields({flow:'batch',expectedLabel:`${echidnas[1].year} ${echidnas[1].title}`,expectedCoin:echidnas[1],predictedCoin:echidnas[0]});
 assert.deepEqual([differentYear.denomination_correct,differentYear.design_correct,differentYear.issue_correct],[true,true,false]);
 
-const handlers={batchIdentifyAll:{},batchAddConfirmed:{},batchCloseCoin:{},batchNextCoin:{}};
+const handlers={batchIdentifyAll:{},batchAddConfirmed:{},batchCloseCoin:{},batchNextCoin:{},batchResumeQueue:{}};
 const batchContext={window:{},document:{getElementById:id=>handlers[id]},catalogue:variants,browseCatalogue:variants,
   coinById:id=>variants.find(coin=>coin.id===id),designVariants:coin=>variants.filter(item=>item.design_id===coin.design_id)};
 vm.runInNewContext(await readFile('public/batch-identification.js','utf8'),batchContext);

@@ -1,0 +1,37 @@
+// Optional browser regression: verifies real image pixels and both batch views.
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import path from 'node:path';
+import {readFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+const {chromium}=createRequire(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES+'/runtime.js')('playwright');
+const root=path.resolve('public');
+const server=http.createServer(async(req,res)=>{
+ try{const name=new URL(req.url,'http://localhost').pathname;const file=path.resolve(root,'.'+(name==='/'?'/index.html':name));if(!file.startsWith(root+'/'))throw Error();
+ let body=await readFile(file);
+ if(name==='/batch-identify.js')body=Buffer.from(body.toString().replace('window.BatchReview={','window.__batchFixture={state,refreshCrops,resetPhoto,stage};window.BatchReview={'));
+ res.setHeader('content-type',({'.js':'text/javascript','.html':'text/html','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'})[path.extname(file)]||'application/octet-stream');res.end(body);
+ }catch{res.writeHead(404);res.end();}
+});
+await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox','--disable-gpu']});
+const page=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'});
+
+let count=0,releaseSecond,negativeCheck=false,objectNumber=0;const payloads=[];
+await page.route('**/api/batch-orientation',r=>r.fulfill({json:{angle:0,confident:false}}));
+await page.route('**/api/identify',async r=>{const p=r.request().postDataJSON();payloads.push(p);if(p.batch_check)return r.fulfill({json:{status:negativeCheck?(++objectNumber===1?'not_coin':'check_coin'):'ready'}});count++;if(count===1)return r.fulfill({json:{matches:[{id:'AU1-1999-OLDER-PERSONS',confidence:.94}],uncertain:false}});if(count===2)await new Promise(resolve=>releaseSecond=resolve);if(count===3)return r.fulfill({status:429,json:{error:'Daily allowance'}});return r.fulfill({json:{matches:[],uncertain:true,status:'no_match'}});});
+try{
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.BatchIdentification&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.36'));
+ await page.evaluate(async()=>{showView('findView');showFindTab('identify');const f=__batchFixture;f.resetPhoto();const c=document.createElement('canvas');c.width=480;c.height=120;const ctx=c.getContext('2d');for(let i=0;i<4;i++){ctx.fillStyle=['red','green','blue','yellow'][i];ctx.fillRect(i*120,0,120,120);}f.state.source=c;f.state.sourceUrl=c.toDataURL();f.state.regions=Array.from({length:4},(_,i)=>({id:'coin'+i,x:i*120,y:0,width:100,height:100,centreX:i*120+50,centreY:50,radiusX:50,radiusY:50,detectionNumber:i+1,reviewed:false}));f.stage('review',true);await f.refreshCrops();});
+ await page.locator('#batchCheckCoins').click();await page.waitForFunction(()=>document.querySelector('#batchCheckFeedback').getAttribute('aria-busy')==='false');assert.equal(await page.locator('#batchCheckList li').count(),4);assert.match(await page.locator('#batchStatus').textContent(),/4 outlines kept · 0 removed/);assert.equal(await page.locator('#batchCheckProgress').getAttribute('value'),'4');
+ await page.locator('#batchNextToCoins').click();await page.waitForFunction(()=>document.querySelector('.batchMatchStatus')?.textContent==='Ready to review');
+ await page.getByRole('button',{name:'Review coin 1',exact:true}).click();assert.equal(count,2,'Second identification runs while first can be confirmed');
+ assert(await page.locator('#batchCrops').isHidden());assert.equal(await page.locator('#batchResultList img[alt="Coin 1 crop"]').count(),1);assert.equal(await page.locator('#batchResultList .batchPair').count(),1);assert.equal(await page.getByRole('button',{name:'Add other side',exact:true}).count(),1);assert.equal(await page.locator('#batchResultList button').filter({hasText:/rotate|design side|portrait side/}).count(),0);assert(await page.locator('#batchAddConfirmed').isEnabled(),'Background identification does not block confirmation');
+ await page.locator('#batchAddConfirmed').click();await page.waitForFunction(()=>document.querySelector('#batchResultList h4')?.textContent==='Coin 2');assert.equal(await page.evaluate(()=>state.get('AU1-1999-OLDER-PERSONS')?.quantity),1);assert.equal(await page.locator('#batchResultList img[alt="Coin 2 crop"]').count(),1);assert(await page.locator('#batchAddConfirmed').isHidden(),'Waiting coin cannot be added');
+ releaseSecond();await page.waitForFunction(()=>!document.querySelector('#batchResumeQueue').hidden);assert.equal(count,3,'Allowance stops before fourth coin');await page.locator('#batchResumeQueue').click();await page.waitForFunction(()=>!BatchIdentification.isIdentifying());assert.equal(count,4);assert(payloads.filter(p=>!p.batch_check).every(p=>p.single_coin===true&&p.batch_coin===undefined));
+ const other=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=100;c.getContext('2d').fillRect(0,0,100,100);return c.toDataURL('image/png');});const portraitRequest=page.waitForResponse(r=>r.url().endsWith('/api/identify')&&Boolean(r.request().postDataJSON()?.obverse));await page.locator('#batchResultList input[type=file]').setInputFiles({name:'other-side.png',mimeType:'image/png',buffer:Buffer.from(other.split(',')[1],'base64')});await portraitRequest;await page.waitForFunction(()=>!BatchIdentification.isIdentifying());assert.equal(count,6,'Other side requeues once and uses the single-flow portrait retry');assert.equal(await page.getByRole('button',{name:'Replace other side',exact:true}).count(),1);
+ for(const width of [320,360,390,768,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/workspace/scratch/60af6b8f0471/batch36-confirmation.png',fullPage:true});
+ negativeCheck=true;await page.evaluate(async()=>{const f=__batchFixture;f.resetPhoto();const c=document.createElement('canvas');c.width=240;c.height=120;c.getContext('2d').fillRect(0,0,240,120);f.state.source=c;f.state.sourceUrl=c.toDataURL();f.state.regions=[0,1].map(i=>({id:'object'+i,x:i*120,y:0,width:100,height:100,centreX:i*120+50,centreY:50,radiusX:50,radiusY:50,detectionNumber:i+1,reviewed:false}));f.stage('review',false);await f.refreshCrops();});await page.locator('#batchCheckCoins').click();await page.waitForFunction(()=>document.querySelector('#batchCheckFeedback').getAttribute('aria-busy')==='false');assert.equal(await page.locator('.batchRegion').count(),1);assert.match(await page.locator('#batchCheckList').textContent(),/Not a coin · outline removed/);assert.match(await page.locator('#batchCheckList').textContent(),/Needs your check · outline kept/);assert.match(await page.locator('#batchStatus').textContent(),/1 outlines kept · 1 removed/);
+ console.log('PASS visible object-check outcomes, serial prefetch, confirmation during next request, one-photo comparison, one other-side control, no identification rotation, next coin, quota pause/resume, protected single payload and five widths');
+}finally{await browser.close();await new Promise(r=>server.close(r));}
