@@ -17,3 +17,6 @@ assert.deepEqual(d.referenceCandidates('VF','2','design',refs).map(r=>r.image),[
 assert.deepEqual(d.referenceCandidates('VF','10',null,refs).map(r=>r.image),['condition-references/general.webp']);
 assert.equal(d.referenceCandidates('EF','2',null,refs).length,0);
 console.log('Condition model: grades, legacy conversion, unset, independent issues and controlled reference fallback passed.');
+
+for(const g of d.grades){assert.ok(d.referenceSources[g.grade].url.endsWith(`#page=${d.referenceSources[g.grade].page}`));assert.equal(d.referenceSources[g.grade].status,"publisher_link_only");}
+assert.equal(d.referenceAcquisition[0].status,"awaiting_local_download_and_visual_review");assert.equal(d.referenceAcquisition[0].license,"CC BY 4.0");

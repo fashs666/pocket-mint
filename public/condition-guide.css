@@ -69,3 +69,7 @@
 @media(prefers-reduced-motion:reduce){.condition-guide .cg-card{animation:none}}
 
 .condition-guide .cg-side-use{width:100%;margin-top:12px;background:#b9f3d0;color:#152834;font-weight:700}
+
+.condition-guide .cg-example-link{display:inline-flex;align-items:center;justify-content:center;min-height:46px;margin-top:12px;color:#48315e;text-decoration:underline;font-size:.95rem;line-height:1.4}
+.condition-guide .cg-example-online{display:block;font-size:.8rem;margin-top:4px}
+.condition-guide .cg-reference:has(.cg-photo-missing){aspect-ratio:auto;min-height:240px}

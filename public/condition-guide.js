@@ -8,7 +8,7 @@
   const gradeOptions=selected=>data.grades.map(g=>`<option value="${g.grade}" ${g.grade===selected?'selected':''}>${g.grade} — ${g.name}</option>`).join('');
   function remember(){try{sessionStorage.setItem('pocketMintConditionGrade',grade);}catch{}}
   function referenceArea(code) {
-    return `<div class="cg-reference" data-reference="${code}"><div class="cg-photo-missing"><span aria-hidden="true">⌕</span><b>Photographic reference being prepared</b><p>No verified ${escape(code)} photograph is available yet. Use the written guide below.</p></div></div>`;
+    return `<div class="cg-reference" data-reference="${code}"><div class="cg-photo-missing"><span aria-hidden="true">⌕</span><b>Photographic reference being prepared</b><p>No verified ${escape(code)} photograph is available yet. Use the written guide below.</p><a class="cg-example-link" href="${data.referenceSources[code].url}" target="_blank" rel="noopener">View ANDA’s ${escape(code)} photo examples</a><small class="cg-example-online">Opens the official PDF online</small></div></div>`;
   }
   function fillReferences() {
     dialog.querySelectorAll('[data-reference]').forEach(area=>{

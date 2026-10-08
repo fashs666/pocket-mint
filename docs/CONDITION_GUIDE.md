@@ -50,3 +50,12 @@ Selection precedence: same design + denomination → denomination → general. F
 - All Identify, denomination, matching, camera, segmentation, confidence, recognition prompts, test export and catalogue implementation files are unchanged.
 
 The optional YOUR COIN / REFERENCE photo comparison is deferred. There is no automatic grading or cleaning detection.
+
+
+## Photo sourcing pass — 8 October 2026
+
+Every pending grade card now links directly to the relevant page of ANDA's official photographed grading guide (G page 7; VG/F page 6; VF/EF page 5; aUNC/UNC page 4; CHU/GEM page 3). These are publisher-hosted links, not redistributed/cached photos. They require an internet connection and remain available in comparison mode. The guide does not claim photo redistribution rights. The full ANDA booklet credits grading photographs to John Freestone with permission of Downie's; an open redistribution licence was not established.
+
+The controlled `referenceAcquisition` queue records an independently sourced UNC candidate: Museums Victoria NU 49844, 2023/2024 $2 A Royal Transition coins, photograph by Nick Crotty, CC BY 4.0. The museum explicitly describes both coins as uncirculated and its photograph as reusable with attribution. Source: https://collections.museumsvictoria.com.au/items/2722365 . Original download: https://collections.museumsvictoria.com.au/items/2722365/media/1944032/large . Licence: https://creativecommons.org/licenses/by/4.0/ . This is a museum-described uncirculated example, not independent ANDA certification or justification for CHU/GEM.
+
+Download returned HTTP 403 in the current workspace. No local image was installed or claimed as installed. The candidate stays inactive until the original file is acquired and visually reviewed; the commemorative-card windows may introduce glare. The local `references` array remains empty, and no asset is added to the offline library. Other investigated museum coin records often have image permission without documented condition, or documented condition without image permission; these were not promoted into grading references. No permission request was sent.

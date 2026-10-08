@@ -24,6 +24,24 @@
   //  source:'...', rightsNote:'...', description:'...', lookFor:['...'],
   //  callouts:[{x:50,y:30,label:'Highest point'}]}
   const references = [];
+  // Link to publisher-hosted examples; permission to redistribute the photographs
+  // has not been established. These links are not cached photographic assets.
+  const referenceSources = Object.fromEntries([
+    ['G',7],['VG',6],['F',6],['VF',5],['EF',5],['aUNC',4],['UNC',4],['CHU',3],['GEM',3]
+  ].map(([grade,page])=>[grade,{grade,source:'ANDA',url:`${source}#page=${page}`,page,status:'publisher_link_only'}]));
+  const referenceAcquisition = [{
+    grade:'UNC',denomination:'2',designId:null,
+    title:'2023/2024 $2 coins — A Royal Transition',
+    source:'Museums Victoria, NU 49844',
+    sourceUrl:'https://collections.museumsvictoria.com.au/items/2722365',
+    imageUrl:'https://collections.museumsvictoria.com.au/items/2722365/media/1944032/large',
+    photographer:'Nick Crotty',license:'CC BY 4.0',
+    licenseUrl:'https://creativecommons.org/licenses/by/4.0/',
+    gradeBasis:'Museum catalogue explicitly describes both coins as uncirculated; not an ANDA-certified assessment.',
+    rightsBasis:'Item page identifies this photograph as Museums Victoria / CC BY 4.0 and permits reuse with attribution.',
+    status:'awaiting_local_download_and_visual_review',
+    limitation:'Photographed through commemorative-card windows; packaging glare may limit examination of the surfaces.'
+  }];
   const legacy = Object.fromEntries(grades.flatMap(g=>[[g.grade,g.grade],[g.name,g.grade]]));
   legacy['About Uncirculated']='aUNC';
   function normalise(record = {}) {
@@ -45,5 +63,5 @@
       ...valid.filter(r=>!r.designId && !r.denomination)
     ];
   }
-  root.PocketMintConditionData={grades,issues,denominations,references,source,normalise,denominationFor,referenceCandidates};
+  root.PocketMintConditionData={grades,issues,denominations,references,referenceSources,referenceAcquisition,source,normalise,denominationFor,referenceCandidates};
 })(typeof window==='undefined'?globalThis:window);
