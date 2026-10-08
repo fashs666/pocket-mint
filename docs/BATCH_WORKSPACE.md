@@ -31,3 +31,5 @@ The crop grid owns rotation and crop controls. Opening confirmation hides that g
 Object checking now reveals a progress bar and per-object kept/removed/needs-check outcomes. Completion explicitly reports unchanged outlines when nothing is removed. Its optional model check does not identify catalogue designs.
 
 Validation: full npm checks; queue units for ordered automatic next request, no retry loop and stale reset; browser object outcomes/removal, confirmation during the next request, one comparison photo, one other-side button, no rotation in confirmation, auto-advance, allowance pause/resume and five widths; existing pixel/rotation/Back/24-node stability and full condition/offline browser suites. No physical-device performance claim is added.
+
+v0.14.37 also preserves the alternate navigation path: entering the crop grid directly shows Confirm crops & review for unverified outlines. That explicit action approves the displayed crops before starting the queue. Entering through Outlines look right already starts it automatically.
