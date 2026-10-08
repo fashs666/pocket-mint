@@ -27,7 +27,7 @@ const url=`http://127.0.0.1:${server.address().port}`;
 const browser=await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}),args:['--no-sandbox','--disable-gpu']});
 const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
 const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.29'));
+const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.30'));
 const closed=()=>page.waitForFunction(()=>!document.querySelector('#conditionGuide').open);
 const saved=grade=>page.waitForFunction(g=>state.get(history.state.coinId)?.conditionGrade===g,grade);
 try {
@@ -125,7 +125,7 @@ try {
   await page.locator('[data-grade="G"]').click();assert.equal(await page.locator('.cg-reference img').count(),0);assert.equal(await page.locator('.cg-photo-missing').isVisible(),true);
   assert.equal(await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns})),master,'catalogue must not receive condition fields');
   await page.waitForFunction(()=>navigator.serviceWorker.controller,{timeout:30000});
-  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.29-neon-headings');return Promise.all(['fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
+  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.30-neon-headings');return Promise.all(['fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
   assert(assets.every(Boolean),'Guide, heading font and title assets must be cached offline');
   await context.setOffline(true);await page.reload();await ready();
   await page.evaluate(()=>navigate('helpView'));await page.locator('#helpConditionGuide').click();await page.locator('[data-grade="GEM"]').click();assert.equal(await page.locator('#conditionGuide [aria-selected="true"]').textContent(),'GEM');
@@ -136,14 +136,14 @@ try {
     await page.evaluate(view=>navigate(view),view);
     const card=page.locator(selector).first();await card.waitFor({state:'visible'});
     const appearance=await card.evaluate(el=>{
-      const frame=getComputedStyle(el,'::before'),name=getComputedStyle(el.querySelector('h3'));
+      const frame=getComputedStyle(el,'::before'),name=getComputedStyle(el.querySelector('h3')),outer=getComputedStyle(el),well=getComputedStyle(el.querySelector('.coinArtwork'));
       el.classList.add('pm-companion-spotlight');const outline=getComputedStyle(el).outlineStyle;el.classList.remove('pm-companion-spotlight');
-      return {frame:{source:frame.backgroundImage,size:frame.backgroundSize,repeat:frame.backgroundRepeat,filter:frame.filter},name:{color:name.color,background:name.backgroundImage,stroke:name.webkitTextStrokeWidth,font:name.fontFamily,weight:name.fontWeight},outline};
+      return {frame:{source:frame.borderImageSource,slice:frame.borderImageSlice,repeat:frame.borderImageRepeat,width:frame.borderTopWidth,background:frame.backgroundImage,clip:frame.backgroundClip,filter:frame.filter,outerBorder:outer.borderTopWidth,outerRadius:outer.borderRadius,outerBackground:outer.backgroundImage,wellBorder:well.borderColor,wellRadius:well.borderRadius,wellShadow:well.boxShadow},name:{color:name.color,background:name.backgroundImage,stroke:name.webkitTextStrokeWidth,font:name.fontFamily,weight:name.fontWeight},outline};
     });
     assert.equal(appearance.name.background,'none','Coin names must not have a neon gradient');
     assert.equal(appearance.name.color,'rgb(24, 25, 47)','Coin names keep the original dark colour');
     assert.equal(appearance.name.stroke,'0px');assert.equal(appearance.outline,'none','Companions do not add a rectangular frame');
-    assert(appearance.frame.source.includes('coin-wobble.svg'));frames.push(appearance.frame);
+    assert(appearance.frame.source.includes('coin-wobble.svg'));assert.equal(appearance.frame.repeat,'stretch round');assert.equal(appearance.frame.width,'20px');assert(!appearance.frame.background.includes('coin-wobble.svg'),'No second stretched frame beneath the sliced edge');frames.push(appearance.frame);
     if(process.env.CONDITION_STYLE_PREVIEW){await card.scrollIntoViewIfNeeded();await page.waitForTimeout(220);await page.screenshot({path:process.env.CONDITION_STYLE_PREVIEW+'-cohesion-'+view+'.png'});}
   }
   assert.deepEqual(frames[1],frames[0],'Browse and Home share the coin frame');

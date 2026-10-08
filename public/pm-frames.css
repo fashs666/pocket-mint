@@ -449,17 +449,24 @@ body .view .menuCard button {
   background:linear-gradient(150deg,#fff0d5,#ead7b4);background-clip:padding-box;
 }
 
-/* A single coin-card frame across Home, Browse, Collection, Wishlist and Series.
-   Preserve Home's drawn asset and adapt it to each existing card footprint. */
-:root body .view .coinCard {
-  position:relative;isolation:isolate;background:transparent;border-color:transparent;
-  box-shadow:none;overflow:visible;
+/* One authoritative frame with sufficient specificity to replace old page rules.
+   Border-image keeps corner size and wave spacing steady as card height changes;
+   only its decorative layer is sliced, never the coin, text or controls. */
+:root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard {
+  position:relative;isolation:isolate;background:transparent;
+  border:2px solid transparent;border-radius:0;box-shadow:none;overflow:visible;
 }
-:root body .view .coinCard::before {
-  content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
-  border:0;border-radius:0;border-image:none;
-  background:url('frames/coin-wobble.svg') center / 100% 100% no-repeat;
+:root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard::before {
+  content:'';position:absolute;inset:-2px;z-index:-1;pointer-events:none;
+  border:20px solid transparent;border-radius:0;
+  border-image-source:url('frames/coin-wobble.svg');border-image-slice:9% 15%;
+  border-image-width:1;border-image-outset:0;border-image-repeat:stretch round;
+  background:linear-gradient(150deg,#fff0d5,#ead7b4);background-clip:padding-box;
   filter:drop-shadow(0 2px 0 #8d673d60);
 }
-/* Companions may visit a coin without adding a second, rectangular neon frame. */
-:root body .view .coinCard.pm-companion-spotlight {outline:none;box-shadow:none}
+:root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard .coinArtwork {
+  border:1px solid #c6a878;border-radius:43% 46% 22% 25% / 36% 39% 20% 23%;
+  background:radial-gradient(ellipse at 50% 42%,#fff5df 48%,#e4d0aa 94%);
+  box-shadow:inset 0 0 0 3px #fff5df,inset 0 0 0 4px #c9ac7770,inset 0 3px 8px #86623112,0 2px 0 #b2956440;
+}
+:root body .view:is(#homeView,#findView,#collectionView,#wishlistView,#seriesView) .coinCard.pm-companion-spotlight {outline:none;box-shadow:none}
