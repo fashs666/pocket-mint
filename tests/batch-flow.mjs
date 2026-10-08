@@ -38,7 +38,7 @@ assert.equal(parseBatchCheck('COIN=yes; COUNT=1; SIDE=design; QUALITY=clear; CON
 console.log('PASS non-coins, multiple coins, malformed checks, poor photos and portrait sides never reach matching');
 const variants=catalogue.designs.flatMap(d=>d.yearVariants.map(v=>({...v,design_id:d.id,title:d.title,denomination_display:d.denomination_display})));
 const coin=variants.find(c=>c.denomination_display==='5c');
-function node(){return {children:[],dataset:{},append(...items){this.children.push(...items)},replaceChildren(...items){this.children=items},setAttribute(){},add(){},classList:{},value:''};}
+function node(){return {children:[],dataset:{},append(...items){this.children.push(...items);for(const item of items)if(item&&typeof item==='object')item.parent=this;},remove(){if(this.parent)this.parent.children=this.parent.children.filter(n=>n!==this);},replaceChildren(...items){this.children=items},scrollIntoView(){},setAttribute(){},add(){},classList:{},value:''};}
 const elements=new Map();const element=id=>{if(!elements.has(id))elements.set(id,node());return elements.get(id);};
 let resolveResponse,fetchCount=0;const requestImages=[];
 class Reader{readAsDataURL(){this.result=photo;this.onload();}}

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import worker,{parseBatchOrientation,parseUpright} from '../src/batch-orientation.js';
-for(const [choice,angle] of [[1,0],[3,90],[5,180],[7,-90]])assert.deepEqual(parseBatchOrientation(`CHOICE=${choice}; CONFIDENCE=92; CUE=ONE DOLLAR reads at bottom`),{angle,confident:true,reason:'visual_orientation'});
+for(const [choice,angle] of [[1,0],[2,90],[3,180],[4,-90]])assert.deepEqual(parseBatchOrientation(`CHOICE=${choice}; CONFIDENCE=92; CUE=ONE DOLLAR reads at bottom`),{angle,confident:true,reason:'visual_orientation'});
 for(const answer of ['CHOICE=unknown; CONFIDENCE=99; CUE=unknown','CHOICE=9; CONFIDENCE=99; CUE=portrait upright','CHOICE=2; CONFIDENCE=84; CUE=portrait upright','CHOICE=3; CONFIDENCE=999; CUE=portrait upright','CHOICE=2; CONFIDENCE=95; CUE=symmetric design'])assert.equal(parseBatchOrientation(answer).confident,false);
 const request=()=>new Request('https://test/api/batch-orientation',{method:'POST',body:JSON.stringify({image:'data:image/jpeg;base64,AA=='})});
-let calls=0;const env={AI:{run:async()=>{calls++;return {response:'CHOICE=7; CONFIDENCE=95; CUE=standing figure points upward'};}},ASSETS:{fetch:async()=>new Response('original asset')}};
+let calls=0;const env={AI:{run:async()=>{calls++;return {response:'CHOICE=4; CONFIDENCE=95; CUE=standing figure points upward'};}},ASSETS:{fetch:async()=>new Response('original asset')}};
 assert.equal((await (await worker.fetch(request(),env)).json()).angle,-90);
 assert.equal(await (await worker.fetch(new Request('https://test/'),env)).text(),'original asset');
 assert.equal((await worker.fetch(new Request('https://test/api/identify'),env)).status,405);

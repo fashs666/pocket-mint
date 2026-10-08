@@ -31,7 +31,7 @@
 #batchIdentify .batchCrop{min-width:0;padding:12px;contain:layout}
 #batchIdentify .batchCrop img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain}
 #batchIdentify .batchCropSelect{width:100%;min-height:44px;background:#faf4e9}
-.batchSteps,.batchWorkspaceNav{display:flex;gap:12px;justify-content:space-between;margin:14px 0}
+.batchSteps,.batchWorkspaceNav{display:flex;gap:12px;justify-content:space-between;margin:14px 0;flex-wrap:wrap}
 .batchSteps button,.batchWorkspaceNav button{min-height:48px;padding:10px 14px;border:2px solid #bc9968;border-radius:18px 23px 17px 22px;background:#fff3dc;color:#493654;font-weight:700}
 .batchSteps button[aria-pressed=true]{background:#d1eee3;border-color:#74ada6}
 #batchCoinStep[hidden],#batchOutlineStep[hidden],#batchWorkspace[hidden]{display:none}
