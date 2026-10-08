@@ -101,3 +101,21 @@ await new Promise(resolve=>setImmediate(resolve));
 assert.equal(context.window.BatchIdentification.effectivePhoto(crop).blob,adjustedBlob,'Late automatic correction must never overwrite quick manual rotation');
 assert.equal(context.window.BatchIdentification.rotationStatus(crop),'Rotation adjusted');
 console.log('PASS automatic crop queue, progress status and manual priority over late orientation');
+
+// Prefetch confirmed outlines serially while confirmation remains independent.
+context.window.BatchIdentification.reset();context.window.BatchPhotoRotation=null;
+const first={...crop,id:'queue-first',detectionNumber:1},second={...crop,id:'queue-second',detectionNumber:2};
+context.window.BatchIdentification.render([second,first]);const before=fetchCount;
+context.window.BatchIdentification.startQueue();await new Promise(r=>setImmediate(r));
+assert.equal(context.window.BatchIdentificationCore.getResult(first.id).status,'loading');
+assert.notEqual(context.window.BatchIdentificationCore.getResult(second.id)?.status,'loading');
+resolveResponse({ok:true,json:async()=>({matches:[{id:coin.id,confidence:.95}],uncertain:false})});await new Promise(r=>setImmediate(r));
+assert.equal(fetchCount,before+2,'Second crop starts automatically after the first');
+assert.equal(context.window.BatchIdentificationCore.getResult(first.id).ready,false,'Prefetch never confirms');
+assert.equal(context.window.BatchIdentificationCore.getResult(second.id).status,'loading');
+resolveResponse({ok:true,json:async()=>({matches:[],uncertain:true})});await new Promise(r=>setImmediate(r));
+context.window.BatchIdentification.startQueue();await new Promise(r=>setImmediate(r));assert.equal(fetchCount,before+2,'Finished/no-match crops are not retried in a loop');
+context.window.BatchIdentification.reset();context.window.BatchIdentification.render([first,second]);context.window.BatchIdentification.startQueue();await new Promise(r=>setImmediate(r));
+context.window.BatchIdentification.reset();resolveResponse({ok:true,json:async()=>({matches:[],uncertain:true})});await new Promise(r=>setImmediate(r));
+assert.equal(context.window.BatchIdentificationCore.getResult(first.id),undefined,'Reset rejects a late queued response');
+console.log('PASS sequential prefetch, automatic next request, explicit confirmation, no retry loop and reset cancellation');

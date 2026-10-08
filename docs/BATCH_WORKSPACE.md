@@ -21,3 +21,13 @@ Twelve manually isolated crops from the recovered IMG_5029/IMG_5031 album photog
 Two real-photo requests through the unchanged single-coin API returned: International Year of Older Persons matched AU1-1999-OLDER-PERSONS; the other design remained uncertain and requires comparison/manual selection. The batch interface does not turn uncertain results into confirmed owned records.
 
 Both recovered album photographs still detect six actual coins at ceilings 12, 24 and 48. The full automated suite, condition/offline browser suite and batch pixel/stability/Back/layout suite pass. Physical iPhone/Android scrolling has not been tested.
+
+## Ordered identification and cleaner confirmation — v0.14.36
+
+Confirming the outlines starts a serial background identification queue in detection-number order. Completed, manual and no-match results are not automatically retried. A 429 allowance response pauses the remaining queue and exposes Resume identification. Reset aborts in-flight requests and invalidates late results. Matching uses the unchanged single-photo adapter. Pending auto-orientation jobs are removed when recognition starts, and manual crop edits invalidate/requeue their coin.
+
+The crop grid owns rotation and crop controls. Opening confirmation hides that grid while retaining its nodes. A coin has one own-photo/reference comparison, design/year selectors, a single Add other side control and explicit confirmation. Other-side upload queues the coin again; a known first portrait side is passed as the portrait input and the newly supplied design as the design input. Search/value overrides and test feedback are collapsed. Batch export controls sit beneath the workspace. Successful confirmation advances to the next unadded coin, while background matching never writes to the collection.
+
+Object checking now reveals a progress bar and per-object kept/removed/needs-check outcomes. Completion explicitly reports unchanged outlines when nothing is removed. Its optional model check does not identify catalogue designs.
+
+Validation: full npm checks; queue units for ordered automatic next request, no retry loop and stale reset; browser object outcomes/removal, confirmation during the next request, one comparison photo, one other-side button, no rotation in confirmation, auto-advance, allowance pause/resume and five widths; existing pixel/rotation/Back/24-node stability and full condition/offline browser suites. No physical-device performance claim is added.

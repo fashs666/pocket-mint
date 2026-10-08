@@ -48,3 +48,23 @@
 #batchIdentify .batchResult>button{margin-top:12px;min-height:48px}
 @media(min-width:700px){#batchIdentify .batchCrops{grid-template-columns:repeat(4,minmax(0,1fr))}#batchWorkspace{max-width:720px;margin:0 auto}}
 @media(prefers-reduced-motion:reduce){#batchIdentify *{scroll-behavior:auto}}
+
+/* v0.14.36: review crops separately from an uncluttered confirmation workspace. */
+#batchCrops[hidden]{display:none!important}
+#batchIdentify .batchResults.workspace-open> :is(.eyebrow,h3,p:not(#batchIdentifyStatus),#batchIdentifyAll){display:none}
+#batchIdentify .batchCompactSummary .batchPair{grid-column:1;grid-row:auto;width:100%;margin:0}
+#batchIdentify .batchCompactSummary .batchPair img{width:100%;max-width:240px;margin:auto}
+#batchIdentify .batchCheckFeedback{padding:14px;margin:14px 0;border:2px solid #bc9968;border-radius:18px 23px 17px 22px;background:#fff3dc;scroll-margin-top:90px}
+#batchIdentify .batchCheckFeedback progress{display:block;width:100%;height:20px;margin:12px 0;accent-color:#548e85}
+#batchIdentify .batchCheckFeedback ol{padding-left:22px;margin-bottom:0}
+#batchIdentify .batchCheckFeedback li{padding:5px 0}
+#batchIdentify .batchRotationControls{flex-wrap:wrap}
+#batchIdentify .batchCropEdit{flex-basis:100%}
+
+#batchReview.workspace-open> :is(.eyebrow,#batchCount,#batchStatus){display:none}
+#batchReview.workspace-open #batchCoinStep>.batchHint{display:none}
+#batchIdentify .batchDiagnostics,#batchIdentify .batchMatchHelp{margin-top:18px}
+#batchIdentify :is(.batchDiagnostics,.batchMatchHelp,.batchTestReport)>summary{min-height:44px;padding:10px 0;font-weight:700;cursor:pointer}
+#batchIdentify .batchDiagnostics>button{display:block;width:100%;min-height:48px;margin-top:12px}
+
+#batchIdentify .batchDiagnostics>button[hidden]{display:none!important}
