@@ -1,5 +1,5 @@
 /* Local detector. Regions use coordinates in the downscaled source image. */
-const BATCH_CONFIG = Object.freeze({maxSide:2400, analysisSide:480, maxCoins:24, minRadius:12, maxRadiusFraction:.19, padding:.06,
+const BATCH_CONFIG = Object.freeze({maxSide:2400, analysisSide:480, maxCoins:24, minRadius:16, maxRadiusFraction:.19, padding:.06,
   minShapeRimCoverage:.46, minRingRimCoverage:.70, minRimContrast:17,
   minRingPolarity:.70, minRingSurfaceDifference:10, minRingSurfaceConsistency:.60});
 const batchPause = () => new Promise(resolve => setTimeout(resolve,0));
@@ -24,6 +24,23 @@ async function prepareBatchImage(file) {
   canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
   image.close?.();
   return canvas;
+}
+async function batchVisionImage(input) {
+  // Manual edits intentionally retain transparent PNGs for My Mint. Convert
+  // only the batch request copy to the existing API's bounded JPEG format.
+  let image;
+  if(typeof input==='string'){image=new Image();image.src=input;await image.decode();}
+  else image=await decodeBatchImage(input);
+  try {
+    const factor=Math.min(1,960/Math.max(image.width,image.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(image.width*factor));canvas.height=Math.max(1,Math.round(image.height*factor));
+    const ctx=canvas.getContext('2d');ctx.fillStyle='#f3f0e9';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(image,0,0,canvas.width,canvas.height);
+    const data=canvas.toDataURL('image/jpeg',.9);canvas.width=canvas.height=0;
+    if(!data.startsWith('data:image/jpeg;base64,')||data.length>=5_000_000)throw new Error('Could not prepare this coin photo for identification.');
+    return data;
+  }finally{image.close?.();}
 }
 function regionAt(x,y,rx,ry,confidence=0,manual=false) {
   return {id:crypto.randomUUID(),x:x-rx,y:y-ry,width:rx*2,height:ry*2,centreX:x,centreY:y,radius:(rx+ry)/2,radiusX:rx,radiusY:ry,confidence,manual};
@@ -53,7 +70,7 @@ async function detectCoins(source) {
   }
   await batchPause();
   const visited=new Uint8Array(mask.length),queue=new Int32Array(mask.length),candidates=[];
-  const minDiameter=Math.min(width,height)*.055,maxDiameter=Math.min(width,height)*.48;
+  const minDiameter=Math.max(BATCH_CONFIG.minRadius*2,Math.min(width,height)*.055),maxDiameter=Math.min(width,height)*.48;
   for(let start=0;start<mask.length;start++){
     if(!mask[start]||visited[start])continue;
     let head=0,tail=1;queue[0]=start;visited[start]=1;
@@ -78,6 +95,17 @@ async function detectCoins(source) {
   // surface. Each strong edge votes for plausible centres on both sides of its rim.
   const gray=new Uint8Array(width*height);
   for(let i=0;i<gray.length;i++)gray[i]=Math.round(.299*rgba[i*4]+.587*rgba[i*4+1]+.114*rgba[i*4+2]);
+  // Suppress album stitching and fabric grain before checking rim direction.
+  // Strong raw texture gradients are not evidence of a continuous disk edge.
+  const smooth=new Uint8Array(gray.length);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    let sum=0,count=0;
+    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
+      const sx=x+dx,sy=y+dy;if(sx<0||sy<0||sx>=width||sy>=height)continue;
+      sum+=gray[sy*width+sx];count++;
+    }
+    smooth[y*width+x]=Math.round(sum/count);
+  }
   function rimEvidence({x,y,rx,ry}) {
     let hits=0,contrast=0,positive=0,negative=0,surface=0,surfacePositive=0,surfaceNegative=0,radialHits=0;
     const quarters=[0,0,0,0];
@@ -90,9 +118,9 @@ async function detectCoins(source) {
       for(const adjustment of [.94,1,1.06]){
         const ex=Math.round(x+ux*rx*adjustment),ey=Math.round(y+uy*ry*adjustment);
         if(ex>0&&ey>0&&ex<width-1&&ey<height-1){
-          const index=ey*width+ex,gx=gray[index+1]-gray[index-1],gy=gray[index+width]-gray[index-width],strength=Math.hypot(gx,gy);
+          const index=ey*width+ex,gx=smooth[index+1]-smooth[index-1],gy=smooth[index+width]-smooth[index-width],strength=Math.hypot(gx,gy);
           const nx=ux/rx,ny=uy/ry,alignment=strength?Math.abs(gx*nx+gy*ny)/(strength*Math.hypot(nx,ny)):0;
-          if(strength>=12&&alignment>=.75)radial=true;
+          if(strength>=12&&alignment>=.85)radial=true;
         }
         const insideX=Math.round(x+ux*rx*(adjustment-.10)),insideY=Math.round(y+uy*ry*(adjustment-.10));
         const outsideX=Math.round(x+ux*rx*(adjustment+.10)),outsideY=Math.round(y+uy*ry*(adjustment+.10));
@@ -114,7 +142,9 @@ async function detectCoins(source) {
     return {coverage:hits/48,radialCoverage:radialHits/48,balanced:quarters.every(count=>count>=5),contrast:hits?contrast/hits:0,polarity:hits?Math.max(positive,negative)/hits:0,
       surfaceDifference:surface/48,surfaceConsistency:Math.max(surfacePositive,surfaceNegative)/48};
   }
-  const radii=[];for(let r=Math.max(12,Math.round(Math.min(width,height)*.029));r<=Math.min(width,height)*BATCH_CONFIG.maxRadiusFraction;r+=Math.max(4,Math.round(r*.12)))radii.push(r);
+  // Below this analysis resolution, seam bumps and tiny disks cannot be
+  // distinguished reliably. Users can still add small/missed coins manually.
+  const radii=[];for(let r=Math.max(BATCH_CONFIG.minRadius,Math.round(Math.min(width,height)*.029));r<=Math.min(width,height)*BATCH_CONFIG.maxRadiusFraction;r+=Math.max(4,Math.round(r*.12)))radii.push(r);
   const votes=radii.map(()=>new Uint16Array(width*height));
   for(let y=2;y<height-2;y+=2)for(let x=2;x<width-2;x+=2){
     const i=y*width+x,gx=gray[i+1]-gray[i-1],gy=gray[i+width]-gray[i-width],strength=Math.hypot(gx,gy);
@@ -166,7 +196,7 @@ async function detectCoins(source) {
     if(!evidence.balanced||evidence.coverage<(c.kind==='shape'?BATCH_CONFIG.minShapeRimCoverage:BATCH_CONFIG.minRingRimCoverage))continue;
     // Fabric edges may cross a circular path without pointing toward its
     // centre. A coin's outer-rim gradients should follow the ellipse normal.
-    if(evidence.radialCoverage<(c.kind==='shape'?.36:.52))continue;
+    if(evidence.radialCoverage<.70)continue;
     if(c.kind==='shape'&&(evidence.polarity<.62||evidence.surfaceConsistency<.58))continue;
     if(c.kind==='ring'&&(evidence.contrast<24||evidence.polarity<BATCH_CONFIG.minRingPolarity||
       evidence.surfaceDifference<BATCH_CONFIG.minRingSurfaceDifference||evidence.surfaceConsistency<BATCH_CONFIG.minRingSurfaceConsistency))continue;
@@ -200,4 +230,4 @@ async function cropCoins(source,regions) {
   }
   return crops;
 }
-window.BatchCoins={config:BATCH_CONFIG,prepareBatchImage,detectCoins,cropCoins,regionAt,updateRelativeDiameters};
+window.BatchCoins={config:BATCH_CONFIG,prepareBatchImage,batchVisionImage,detectCoins,cropCoins,regionAt,updateRelativeDiameters};

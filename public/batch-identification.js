@@ -245,9 +245,10 @@
     const revision=generation,geometry=`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
     const pending={...previous,status:'loading',ready:false,geometry};results.set(crop.id,pending);render(crops);
     try{
-      const reverse=previous.reverse||await fileDataUrl(crop.crop);
+      const reverse=await BatchCoins.batchVisionImage(previous.reverse||crop.crop);
+      const obverse=previous.obverse?await BatchCoins.batchVisionImage(previous.obverse):null;
       if(revision!==generation)return;
-      const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',obverse:previous.obverse||null,reverse,batch_coin:true,batch_reviewed:true,denomination:previous.denomination||''})});
+      const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',obverse,reverse,batch_coin:true,batch_reviewed:true,denomination:previous.denomination||''})});
       const data=await response.json();
       if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429,analysisError:{status:response.status,diagnostic_code:data.diagnostic_code||null,request_id:data.request_id||null,message:data.error||'Identification unavailable'}});
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
