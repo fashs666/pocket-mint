@@ -474,7 +474,7 @@ body .view .menuCard button {
 /* Quiet utility controls share the rounded, slightly uneven cream treatment. */
 :root body .view :is(.smallBtn,.secondary,.clearFilters,.backBtn),
 :root body #clearCatalogueFilters,
-:root body :is(.batchPanel,.batchCrop,.batchResult,.settings) button:not(.batchCropSelect):not(.primary) {
+:root body :is(.batchPanel,.batchCrop,.batchResult,.settings) button:not(.batchCropSelect):not(.batchRegion):not(.primary) {
  min-height:44px;border:2px solid #bc9968;
  border-radius:18px 22px 19px 24px / 20px 17px 23px 18px;
  background:linear-gradient(#fff7e5,#ead7b4);color:#493654;
