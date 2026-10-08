@@ -3,6 +3,40 @@
 (() => {
   const results=new Map(), $=id=>document.getElementById(id);
   let crops=[],generation=0,busy=false;
+  const orientationJobs=new Map(),orientationQueue=[];let orientationRunning=0;
+  function rotationStatus(crop){return results.get(crop.id)?.orientationLabel||(orientationJobs.has(crop.id)?'Checking rotation…':'Check rotation');}
+  function scheduleOrientation(){
+    if(!window.BatchPhotoRotation)return;
+    for(const crop of crops){
+      const result=results.get(crop.id),existing=orientationJobs.get(crop.id);
+      if(result?.orientationAttempted||result?.reverse||existing?.geometry===geometryOf(crop))continue;
+      let resolve;const job={crop,geometry:geometryOf(crop),revision:generation,promise:new Promise(r=>resolve=r),resolve:()=>resolve()};
+      orientationJobs.set(crop.id,job);orientationQueue.push(job);
+    }
+    pumpOrientation();window.BatchReview?.redraw();
+  }
+  function pumpOrientation(){
+    while(orientationRunning<2&&orientationQueue.length){
+      const job=orientationQueue.shift();orientationRunning++;
+      (async()=>{try{if(job.revision===generation&&activeCrop(job.crop))await orientCrop(job.crop);}finally{
+        orientationRunning--;if(orientationJobs.get(job.crop.id)===job)orientationJobs.delete(job.crop.id);
+        job.resolve();pumpOrientation();if(job.revision===generation)window.BatchReview?.redraw();
+      }})();
+    }
+  }
+  async function rotateCrop(crop,angle){
+    if(busy||!activeCrop(crop)||results.get(crop.id)?.added)return;
+    const revision=generation;busy=true;
+    // Claim a manual override before awaiting pixels, rejecting late automatic results.
+    const manual={...editable(crop),orientationAttempted:true,orientationLabel:'Rotation adjusted'};results.set(crop.id,manual);
+    window.BatchReview?.redraw();
+    try{
+      const blob=await window.BatchPhotoRotation.rotate(effectivePhoto(crop).blob,angle),reverse=await fileDataUrl(blob);
+      if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==manual)return;
+      results.set(crop.id,{...manual,status:'manual',choices:[],ready:false,coinId:null,designId:null,reverse,reverseBlob:blob,message:'Rotation adjusted. Identify this coin again before confirming.'});
+    }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=error.message;}
+    finally{if(revision===generation){busy=false;window.BatchReview?.redraw();}}
+  }
   const fileDataUrl=blob=>new Promise((resolve,reject)=>{
     const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);
   });
@@ -42,7 +76,7 @@
         const caption=document.createElement('span');caption.textContent=`${coin.title} · ${coin.denomination_display} · ${coin.year}`;
         button.append(thumbnail,caption);
         button.onclick=()=>{
-          result.choices=[catalogueChoice(coin)];result.designId=coin.id;
+          result.orientationOnly=false;result.choices=[catalogueChoice(coin)];result.designId=coin.id;
           const variants=designVariants(coin);
           result.coinId=variants.length===1?coin.id:null;
           result.ready=false;result.status='manual';result.manualOpen=false;
@@ -62,15 +96,15 @@
     return result?.geometry===geometryOf(crop)?{blob:result.reverseBlob||crop.crop,url:result.reverse||crop.cropUrl}:{blob:crop.crop,url:crop.cropUrl};
   };
   async function orientCrop(crop,force=false){
-    const previous=results.get(crop.id)||{};
+    const expected=results.get(crop.id),previous=expected||{};
     if(!window.BatchPhotoRotation||!force&&(previous.orientationAttempted||previous.reverse))return;
     const revision=generation;
     const adjustment=await window.BatchPhotoRotation.suggest(effectivePhoto(crop).blob);
-    if(revision!==generation||!activeCrop(crop))return;
+    if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
     const reverse=adjustment.file!==effectivePhoto(crop).blob?await fileDataUrl(adjustment.file):undefined;
-    if(revision!==generation||!activeCrop(crop))return;
+    if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
     results.set(crop.id,{...previous,status:'manual',choices:previous.choices||[],geometry:geometryOf(crop),ready:false,
-      orientationAttempted:true,...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
+      orientationOnly:previous.orientationOnly??!previous.status,orientationAttempted:true,orientationLabel:adjustment.confident?'Rotation checked':'Check rotation',...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
       message:adjustment.confident?'Orientation checked. Use Crop / rotate if it needs correcting.':'Orientation unclear. Use Crop / rotate to choose it yourself.'});
     window.BatchReview?.redraw();
   }
@@ -88,7 +122,7 @@
       const adjusted=await window.CoinPhotoEditor.edit(source);
       if(!adjusted||revision!==generation||!activeCrop(crop))return;
       const reverse=await fileDataUrl(adjusted);if(revision!==generation||!activeCrop(crop))return;
-      results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,message:'Photo adjusted. Identify this coin again before confirming.'});
+      results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,orientationLabel:'Rotation adjusted',message:'Photo adjusted. Identify this coin again before confirming.'});
     }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=`Could not edit coin: ${error.message}`;}
     finally{if(revision===generation){busy=false;window.BatchReview?.redraw();render(crops);}}
   }
@@ -105,7 +139,7 @@
       }catch(error){$('batchIdentifyStatus').textContent=error.message;}finally{button.disabled=false;input.value='';}
     };card.append(button,input);
   }
-  function reset(){generation++;busy=false;crops=[];results.clear();$('batchIdentifyStatus').textContent='';render([]);}
+  function reset(){for(const job of orientationQueue.splice(0))job.resolve();orientationJobs.clear();generation++;busy=false;crops=[];results.clear();$('batchIdentifyStatus').textContent='';render([]);}
   function sync(regions){
     const active=new Map(regions.map(r=>[r.id,`${r.x}:${r.y}:${r.width}:${r.height}`]));
     for(const [id,result] of results)if(!active.has(id)||result.geometry!==active.get(id))results.delete(id);
@@ -115,7 +149,7 @@
     const root=$('batchResultList');root.replaceChildren();
     $('batchIdentifyAll').disabled=busy||!crops.length;
     $('batchIdentifyAll').textContent=busy?'Identifying coins…':`Outlines look right · identify ${crops.length} coin${crops.length===1?'':'s'}`;
-    for(const id of ['batchSaveTests','batchExportTests']){const button=$(id);if(button){button.hidden=!results.size;button.disabled=busy;}}
+    for(const id of ['batchSaveTests','batchExportTests']){const button=$(id);if(button){button.hidden=![...results.values()].some(result=>!result.orientationOnly);button.disabled=busy;}}
     for(const crop of crops){
       const result=results.get(crop.id);
       if(!result)continue;
@@ -186,7 +220,7 @@
           }
         }
       }
-      if(result&&result.status!=='loading')renderTestReport(card,result,crop);
+      if(result&&!result.orientationOnly&&result.status!=='loading')renderTestReport(card,result,crop);
       root.append(card);
     }
     const count=crops.filter(crop=>crop.reviewed&&results.get(crop.id)?.ready&&results.get(crop.id)?.coinId&&!results.get(crop.id)?.added).length;
@@ -267,7 +301,7 @@
     if(busy&&!fromAll||!crop.reviewed||!activeCrop(crop))return;
     if(!fromAll)busy=true;
     const orientationRevision=generation;
-    await orientCrop(crop);
+    if(orientationJobs.get(crop.id))await orientationJobs.get(crop.id).promise;else await orientCrop(crop);
     if(orientationRevision!==generation||!activeCrop(crop)){if(orientationRevision===generation&&!fromAll){busy=false;render(crops);}return;}
     const previous=results.get(crop.id)||{};
     const revision=generation,geometry=`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
@@ -280,10 +314,10 @@
       const data=await response.json();
       if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429,analysisError:{status:response.status,diagnostic_code:data.diagnostic_code||null,request_id:data.request_id||null,message:data.error||'Identification unavailable'}});
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
-      results.set(crop.id,{...previous,...classify(data),geometry,testSaved:false});
+      results.set(crop.id,{...previous,...classify(data),orientationOnly:false,geometry,testSaved:false});
     }catch(error){
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
-      results.set(crop.id,{...previous,status:'error',ready:false,message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,analysisError:error.analysisError||{message:error.message},quota:Boolean(error.quota),geometry});
+      results.set(crop.id,{...previous,orientationOnly:false,status:'error',ready:false,message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,analysisError:error.analysisError||{message:error.message},quota:Boolean(error.quota),geometry});
     }
     finally{if(revision===generation&&!fromAll){busy=false;render(crops);}}
     render(crops);
@@ -312,7 +346,7 @@
     if(busy)return;
     const revision=generation,sourceCrops=[...crops];busy=true;render(crops);
     try{
-      for(const crop of sourceCrops){if(revision!==generation)return;const result=results.get(crop.id);if(!result||result.status==='loading')continue;
+      for(const crop of sourceCrops){if(revision!==generation)return;const result=results.get(crop.id);if(!result||result.orientationOnly||result.status==='loading')continue;
         if(!result.testSaved)await result.saveReport?.(false,true,result.status==='error'?'error':result.choices?.length?'unreviewed':'no_match');
         if(!result.testSaved)throw new Error(`Coin ${crop.detectionNumber}: test could not be saved`);
       }
@@ -340,6 +374,6 @@
     }catch(error){$('batchIdentifyStatus').textContent=`Could not finish saving: ${error.message}`;}
     finally{busy=false;render(crops);}
   };
-  window.BatchIdentification={reset,sync,render,editCrop,autoRotate,effectivePhoto,isBusy:()=>busy};
+  window.BatchIdentification={reset,sync,render,editCrop,autoRotate,rotateCrop,scheduleOrientation,rotationStatus,effectivePhoto,isBusy:()=>busy};
   window.BatchIdentificationCore={classify};
 })();
