@@ -62,3 +62,6 @@ Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.
 - [x] Live testing on 12 supplied-photo crops exposed confidently wrong contact-sheet choices.
 - [x] Require a second, full-photo upright check before applying a candidate. Disagreement preserves the original.
 - [ ] Complete live evaluation of verified outcomes; two model checks do not guarantee a correct orientation.
+
+- [x] Initial live evaluation: twelve contact-sheet proposals and seven completed upright checks; all seven checks preserved the original. No orientation accuracy improvement is claimed.
+- [ ] Improve real automatic orientation accuracy; the current method remains conservative and manual correction is still needed.
