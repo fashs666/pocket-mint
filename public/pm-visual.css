@@ -90,15 +90,15 @@ body > .pm-roaming-companions .pm-companion .pm-companion-step.is-step { opacity
 .pm-companion-spark[hidden] { display: none; }
 .view .pm-companion-spotlight { outline: 2px solid rgba(98, 223, 237, .68); outline-offset: 3px; box-shadow: 0 0 15px rgba(98, 223, 237, .3); transition: outline-color .2s ease; }
 .view .pm-companion-grim-clue, .view .pm-companion-noxel-idea { position: relative; }
-.view .pm-companion-grim-clue::after, .view .pm-companion-noxel-idea::after { position: absolute; z-index: 3; right: 9px; top: 4px; font-size: 23px; pointer-events: none; animation: pm-companion-notice 1.1s ease-out both; }
-.view .pm-companion-grim-clue::after { content: "⌕"; color: #61d6dc; text-shadow: 0 0 12px #5fd5ec; }
-.view .pm-companion-noxel-idea::after { content: "✦"; color: #f8d378; text-shadow: 0 0 12px #e784eb; }
+.view .pm-companion-grim-clue:not(.pm-series-card)::after, .view .pm-companion-noxel-idea:not(.pm-series-card)::after { position: absolute; z-index: 3; right: 9px; top: 4px; font-size: 23px; pointer-events: none; animation: pm-companion-notice 1.1s ease-out both; }
+.view .pm-companion-grim-clue:not(.pm-series-card)::after { content: "⌕"; color: #61d6dc; text-shadow: 0 0 12px #5fd5ec; }
+.view .pm-companion-noxel-idea:not(.pm-series-card)::after { content: "✦"; color: #f8d378; text-shadow: 0 0 12px #e784eb; }
 @keyframes pm-companion-notice { 0% { opacity: 0; transform: translateY(9px) scale(.3); } 40% { opacity: 1; transform: translateY(-5px) scale(1.15); } 100% { opacity: 0; transform: translateY(-13px) scale(.7); } }
 @media (prefers-reduced-motion: reduce) {
   body > .pm-roaming-companions .pm-companion { will-change: auto; }
   body > .pm-roaming-companions .pm-companion img { animation: none !important; }
   .view .pm-companion-spotlight { outline: none; box-shadow: none; }
-  .view .pm-companion-grim-clue::after, .view .pm-companion-noxel-idea::after { animation: none; }
+  .view .pm-companion-grim-clue:not(.pm-series-card)::after, .view .pm-companion-noxel-idea:not(.pm-series-card)::after { animation: none; }
 }
 .pm-stat-card {
   padding: 14px;
@@ -419,3 +419,5 @@ dialog :is(button, input, select):focus-visible { outline: 3px solid var(--pm-cy
   #coinDialog .pm-detail-artwork { width: min(100%, 260px); }
   #coinDialog .pm-detail-art::after { right: 8%; }
 }
+
+/* Series illustrations own ::after; companion notice pulses must never animate it. */
