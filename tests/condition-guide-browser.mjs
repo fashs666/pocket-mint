@@ -27,11 +27,18 @@ const url=`http://127.0.0.1:${server.address().port}`;
 const browser=await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}),args:['--no-sandbox','--disable-gpu']});
 const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
 const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.25'));
+const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.26'));
 const closed=()=>page.waitForFunction(()=>!document.querySelector('#conditionGuide').open);
 const saved=grade=>page.waitForFunction(g=>state.get(history.state.coinId)?.conditionGrade===g,grade);
 try {
   await page.goto(url);await ready();
+  if(process.env.CONDITION_STYLE_PREVIEW){
+    await page.evaluate(()=>document.fonts.load('18px "Pocket Mint Hand"'));
+    for(const view of ['homeView','myMintView','findView','settingsView']){
+      await page.evaluate(view=>navigate(view),view);
+      await page.screenshot({path:process.env.CONDITION_STYLE_PREVIEW+'-'+view+'.png'});
+    }
+  }
   const master=await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns}));
   const id=await page.evaluate(()=>browseCatalogue.find(c=>c.denomination_cents===200).id);
   await page.evaluate(id=>openCoin(coinById(id)),id);
@@ -100,8 +107,8 @@ try {
   await page.locator('[data-grade="G"]').click();assert.equal(await page.locator('.cg-reference img').count(),0);assert.equal(await page.locator('.cg-photo-missing').isVisible(),true);
   assert.equal(await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns})),master,'catalogue must not receive condition fields');
   await page.waitForFunction(()=>navigator.serviceWorker.controller,{timeout:30000});
-  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.25-condition-style');return Promise.all(['condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
-  assert.deepEqual(assets,[true,true,true,true]);
+  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.26-drawn-headings');return Promise.all(['fonts/short-stack-latin-400.woff2','frames/header-scribble.svg','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
+  assert(assets.every(Boolean),'Guide, heading font and scribble assets must be cached offline');
   await context.setOffline(true);await page.reload();await ready();
   await page.evaluate(()=>navigate('helpView'));await page.locator('#helpConditionGuide').click();await page.locator('[data-grade="GEM"]').click();assert.equal(await page.locator('#conditionGuide [aria-selected="true"]').textContent(),'GEM');
   await page.locator('.cg-close').click();await closed();await page.evaluate(id=>openCoin(coinById(id)),id);await page.locator('#dCondition').selectOption('CHU');await page.locator('#saveDetail').click();await saved('CHU');
