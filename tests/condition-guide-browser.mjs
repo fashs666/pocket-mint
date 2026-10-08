@@ -27,17 +27,35 @@ const url=`http://127.0.0.1:${server.address().port}`;
 const browser=await playwright.chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE}:{}),args:['--no-sandbox','--disable-gpu']});
 const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
 const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.27'));
+const ready=()=>page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('v0.14.28'));
 const closed=()=>page.waitForFunction(()=>!document.querySelector('#conditionGuide').open);
 const saved=grade=>page.waitForFunction(g=>state.get(history.state.coinId)?.conditionGrade===g,grade);
 try {
   await page.goto(url);await ready();
+  const decoration=await page.evaluate(()=>{
+    const card=document.querySelector('#homeSeries .pm-series-card');
+    const sample=()=>{const s=getComputedStyle(card,'::after');return {image:s.backgroundImage,content:s.content,animation:s.animationName,top:s.top,bottom:s.bottom,width:s.width,height:s.height,transform:s.transform,opacity:s.opacity};};
+    const before=sample();card.classList.add('pm-companion-noxel-idea','pm-companion-grim-clue');
+    const during=sample();card.classList.remove('pm-companion-noxel-idea','pm-companion-grim-clue');
+    return {before,during};
+  });
+  assert.deepEqual(decoration.during,decoration.before,'Companion notices must not animate or replace series artwork');
+  assert.equal(decoration.during.animation,'none');
+  assert(decoration.during.image.includes('artwork/series/'),'Series artwork remains visible');
+  assert.equal(await page.locator('#homeView .sectionTitle .pm-title-art').count(),2,'Home section titles follow the approved artwork concept');
+
   if(process.env.CONDITION_STYLE_PREVIEW){
     await page.evaluate(()=>document.fonts.load('18px "Pocket Mint Bubble"'));
     for(const view of ['homeView','myMintView','findView','settingsView']){
       await page.evaluate(view=>navigate(view),view);
       await page.waitForTimeout(220);await page.screenshot({path:process.env.CONDITION_STYLE_PREVIEW+'-'+view+'.png'});
     }
+  }
+  if(process.env.CONDITION_STYLE_PREVIEW){
+    await page.evaluate(()=>navigate('homeView'));await page.locator('#homeSeries').scrollIntoViewIfNeeded();await page.waitForTimeout(220);
+    await page.screenshot({path:process.env.CONDITION_STYLE_PREVIEW+'-home-sections.png'});
+    await page.evaluate(()=>navigate('findView'));await page.locator('#catalogueList .coinCard').first().scrollIntoViewIfNeeded();await page.waitForTimeout(220);
+    await page.screenshot({path:process.env.CONDITION_STYLE_PREVIEW+'-coin-titles.png'});
   }
   const master=await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns}));
   const id=await page.evaluate(()=>browseCatalogue.find(c=>c.denomination_cents===200).id);
@@ -107,7 +125,7 @@ try {
   await page.locator('[data-grade="G"]').click();assert.equal(await page.locator('.cg-reference img').count(),0);assert.equal(await page.locator('.cg-photo-missing').isVisible(),true);
   assert.equal(await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns})),master,'catalogue must not receive condition fields');
   await page.waitForFunction(()=>navigator.serviceWorker.controller,{timeout:30000});
-  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.27-neon-headings');return Promise.all(['fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
+  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.28-neon-headings');return Promise.all(['fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
   assert(assets.every(Boolean),'Guide, heading font and title assets must be cached offline');
   await context.setOffline(true);await page.reload();await ready();
   await page.evaluate(()=>navigate('helpView'));await page.locator('#helpConditionGuide').click();await page.locator('[data-grade="GEM"]').click();assert.equal(await page.locator('#conditionGuide [aria-selected="true"]').textContent(),'GEM');
