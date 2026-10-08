@@ -448,36 +448,3 @@ body .view .menuCard button {
   border-width:18px;border-image-repeat:stretch round;border-image-slice:9% 15%;
   background:linear-gradient(150deg,#fff0d5,#ead7b4);background-clip:padding-box;
 }
-/* Page and section titles use one rounded, slightly informal voice. Preserve
-   the illustrated Home wordmark and compact catalogue title sizing. */
-:root body :is(h1,h2,h3,h4):not(.pm-home-logo) {
-  font-family:'Pocket Mint Hand',ui-rounded,'Trebuchet MS',system-ui,sans-serif;
-  font-weight:400;letter-spacing:-.04em;line-height:1.4;
-}
-:root body .view:not(#homeView) .sectionHead {
-  border-bottom:0;box-shadow:none;padding-bottom:10px;align-items:center;
-}
-:root body :is(.view,#coinDialog,#conditionGuide,#seriesCelebration) :is(
-  .sectionHead h2,.sectionTitle h3,.findPanelHead h3,.menuHeading,
-  .statsAlbums>h3,.statsCard>h3,.settings h3,.pm-home-hero-heading h3,
-  .pm-detail-heading h2,.pm-detail-information>h3,.editBlock>h3,.seriesBox>h3,
-  .seriesHeader h2,.cg-header h2,.cg-compare-heading h3,
-  .seriesCelebrationCard h2,.batchPanel>h3
-)::after {
-  content:'';display:block;position:static;width:min(155px,80%);height:14px;
-  margin:5px 0 1px;border:0;border-radius:0;transform:none;box-shadow:none;
-  background:url('frames/header-scribble.svg') left center/contain no-repeat;
-  pointer-events:none;
-}
-:root body #coinDialog .pm-detail-heading h2::after {margin-inline:auto}
-:root body #coinDialog .editBlock>h3 {border-bottom:0;padding-bottom:0}
-:root body :is(.view,#coinDialog,#conditionGuide) .eyebrow {
-  font-family:ui-rounded,'Trebuchet MS',system-ui,sans-serif;
-  letter-spacing:.09em;font-weight:800;line-height:1.5;
-}
-:root body .view .sectionHead h2 {font-size:clamp(1.65rem,4vw,2rem);color:#fff0d7}
-:root body .topbar h1 {letter-spacing:-.035em;color:var(--pm-on-dark)}
-:root body .view .menuHeading {margin-top:22px;margin-bottom:12px}
-@media(max-width:380px) {
-  :root body :is(.view,#coinDialog,#conditionGuide) :is(h2,h3) {overflow-wrap:anywhere}
-}
