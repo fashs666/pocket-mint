@@ -20,5 +20,5 @@
    const measure=document.createElement("canvas").getContext("2d");measure.font="36px \"Pocket Mint Bubble\"";const width=Math.ceil(measure.measureText(label).width)+8;svg.setAttribute('viewBox',`0 0 ${width} 54`);svg.style.width=`${width*size/36}px`;
   }
  }
- document.fonts.ready.then(()=>{draw();new MutationObserver(draw).observe(document.body,{childList:true,subtree:true});});
+ document.fonts.ready.then(()=>{draw();new MutationObserver(changes=>{if(changes.some(change=>change.target.nodeType===1&&(change.target.matches(selector)||[...change.addedNodes].some(node=>node.nodeType===1&&(node.matches(selector)||node.querySelector(selector))))))draw();}).observe(document.body,{childList:true,subtree:true});});
 })();

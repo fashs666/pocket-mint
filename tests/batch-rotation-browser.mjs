@@ -17,7 +17,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox','--disable-gpu']});
 const page=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'});
 let direction={angle:90,confident:false},orientationCalls=0;const requests=[];
-await page.route('**/api/photo-orientation',route=>{orientationCalls++;return route.fulfill({json:direction});});
+await page.route('**/api/batch-orientation',route=>{orientationCalls++;return route.fulfill({json:direction});});
 await page.route('**/api/identify',route=>{requests.push(route.request().postDataJSON());return route.fulfill({json:{matches:[],uncertain:true,status:'no_match'}});});
 async function fixture(){await page.evaluate(async()=>{
  showView('findView');showFindTab('identify');const f=window.__batchFixture;f.resetPhoto();
@@ -25,31 +25,50 @@ async function fixture(){await page.evaluate(async()=>{
  f.state.source=source;f.state.sourceUrl=source.toDataURL();document.querySelector('#batchImage').src=f.state.sourceUrl;
  f.state.regions=[{id:'fixture',x:16,y:16,width:96,height:96,centreX:64,centreY:64,radiusX:48,radiusY:48,detectionNumber:1,reviewed:true}];
  f.stage('review',false);await f.refreshCrops();
- });await page.waitForFunction(()=>!document.querySelector('.batchRotationStatus').textContent.includes('Checking'));}
+ });await page.waitForFunction(()=>!document.querySelector('.batchRotationStatus').textContent.includes('Checking'));await page.locator('#batchNextToCoins').click();}
 async function pixels(selector){return page.evaluate(async selector=>{const image=document.querySelector(selector);await image.decode();const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const data=ctx.getImageData(0,0,c.width,c.height).data;let x=0,y=0,n=0;for(let i=0;i<data.length;i+=4)if(data[i]>200&&data[i+1]<70&&data[i+2]<70&&data[i+3]>100){x+=(i/4)%c.width;y+=Math.floor(i/4/c.width);n++;}return {x:x/n/c.width,y:y/n/c.height,n};},selector);}
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.BatchIdentification&&window.__batchFixture&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.33'));await fixture();
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.BatchIdentification&&window.__batchFixture&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.34'));await fixture();
  const outline=await page.locator('.batchRegion').evaluate(el=>{const s=getComputedStyle(el);return {background:s.backgroundImage,radius:s.borderRadius,color:s.backgroundColor,border:s.borderTopWidth};});
  assert.equal(outline.background,'none','Coin outlines must not inherit opaque button backgrounds');
  assert.equal(outline.radius,'50%','Coin outlines remain circular');
  assert.equal(outline.border,'3px');assert.equal(outline.color,'rgba(16, 18, 37, 0.11)','Photo remains visible beneath outline');
  assert(await page.locator('#batchSaveTests').isHidden(),'Orientation checks are not identification test results');
  const original=await pixels('#batchCrops img');assert(original.y<.4);
- await page.locator('#batchCrops button').filter({hasText:'Crop / rotate'}).click();await page.locator('.rotateRight').click();await page.locator('.applyPhotoEdit').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());
+ await page.getByRole('button',{name:'Review coin 1',exact:true}).click();await page.getByRole('button',{name:'Crop / rotate this coin',exact:true}).click();await page.locator('.rotateRight').click();await page.locator('.applyPhotoEdit').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());
  const rotated=await pixels('#batchCrops img');assert(rotated.x>.6&&Math.abs(rotated.y-.5)<.1,'Review pixels rotate clockwise');
  assert.deepEqual(await pixels('#batchResultList img'),rotated,'Result and review show the same edited image');
  assert.equal(await page.getByRole('button',{name:'Auto rotate',exact:true}).count(),0,'No Auto rotate button');
  const edited=await page.locator('#batchCrops img').getAttribute('src');
  await page.evaluate(()=>window.__batchFixture.refreshCrops());assert.equal(await page.locator('#batchCrops img').getAttribute('src'),edited,'Review refresh preserves edits');
- await page.locator('#batchCrops button').filter({hasText:'Crop / rotate'}).click();await page.locator('.rotateRight').click();await page.locator('.cancelPhotoEdit').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert.equal(await page.locator('#batchCrops img').getAttribute('src'),edited,'Cancel preserves existing rotation');
- await page.locator('#batchIdentifyAll').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert.equal(orientationCalls,1,'Manual correction must not trigger another automatic check');assert(requests.at(-1).reverse.startsWith('data:image/jpeg'));
+ await page.getByRole('button',{name:'Review coin 1',exact:true}).click();await page.getByRole('button',{name:'Crop / rotate this coin',exact:true}).click();await page.locator('.rotateRight').click();await page.locator('.cancelPhotoEdit').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert.equal(await page.locator('#batchCrops img').getAttribute('src'),edited,'Cancel preserves existing rotation');
+ await page.locator('#batchIdentifyAll').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert.equal(orientationCalls,1,'Manual correction must not trigger another automatic check');assert(requests.at(-1).reverse.startsWith('data:image/jpeg'));assert.equal(requests.at(-1).single_coin,true);assert.equal(requests.at(-1).batch_coin,undefined);
  const requestPixels=await page.evaluate(async image=>{const img=new Image();img.src=image;await img.decode();const canvas=document.createElement('canvas');canvas.width=canvas.height=100;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,100,100);return Array.from(ctx.getImageData(75,50,1,1).data);},requests.at(-1).reverse);assert(requestPixels[0]>150&&requestPixels[1]<100,'Recognition receives rotated pixels');
  direction={angle:90,confident:true};await fixture();await page.locator('#batchIdentifyAll').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert.equal(orientationCalls,2);assert((await pixels('#batchCrops img')).x>.6,'Auto rotation updates review');
  await page.evaluate(()=>window.__batchFixture.refreshCrops());assert((await pixels('#batchCrops img')).x>.6,'Auto correction survives regenerated crops');
  direction={angle:90,confident:false};await fixture();assert.equal(await page.locator('.batchRotationStatus').textContent(),'Check rotation');assert((await pixels('#batchCrops img')).y<.4,'Uncertain orientation retains original');
  direction={angle:999,confident:true};await fixture();assert.equal(await page.locator('.batchRotationStatus').textContent(),'Check rotation');assert((await pixels('#batchCrops img')).y<.4,'Invalid orientation retains original');
  await page.getByRole('button',{name:'Rotate coin 1 right 90 degrees',exact:true}).click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert((await pixels('#batchCrops img')).x>.6,'Simple rotation control updates review');
+ // Stress the review grid without mounting 24 matching/editing interfaces.
+ direction={angle:0,confident:false};
+ await page.evaluate(async()=>{const f=window.__batchFixture;f.resetPhoto();const c=document.createElement('canvas');c.width=c.height=640;c.getContext('2d').fillRect(0,0,640,640);f.state.source=c;f.state.sourceUrl=c.toDataURL();f.state.regions=Array.from({length:24},(_,i)=>({id:'stress'+i,x:(i%4)*150,y:Math.floor(i/4)*100,width:80,height:80,centreX:(i%4)*150+40,centreY:Math.floor(i/4)*100+40,radiusX:40,radiusY:40,detectionNumber:i+1,reviewed:true}));f.stage('review',true);await f.refreshCrops();});
+ await page.locator('#batchNextToCoins').click();
+ assert.equal(await page.locator('#batchCrops img').count(),24);
+ await page.evaluate(()=>{window.__stableCards=Array.from(document.querySelector('#batchCrops').children);window.__stableSources=window.__stableCards.map(n=>n.querySelector('img').src);});
+ await page.evaluate(()=>{for(let i=0;i<30;i++)BatchReview.redraw();});
+ assert(await page.evaluate(()=>window.__stableCards.every((node,i)=>node===document.querySelector('#batchCrops').children[i]&&node.querySelector('img').src===window.__stableSources[i])),'Idle redraw retains all card nodes and image sources');
+ await page.getByRole('button',{name:'Review coin 12',exact:true}).click();
+ assert.equal(await page.locator('#batchResultList .batchResult').count(),1,'Only one coin workspace is mounted');
+ await page.evaluate(()=>window.__stableResult=document.querySelector('#batchResultList').firstElementChild);
+ await page.evaluate(()=>{for(let i=0;i<30;i++)BatchReview.redraw();});
+ assert(await page.evaluate(()=>window.__stableResult===document.querySelector('#batchResultList').firstElementChild),'Workspace survives unrelated redraws');
+ await page.goBack();await page.waitForFunction(()=>document.querySelector('#batchWorkspace').hidden);
+ assert(await page.locator('#batchCoinStep').isVisible(),'Back closes workspace before leaving grid');
+ await page.goBack();await page.locator('#batchOutlineStep').waitFor();
+ assert.equal(await page.locator('.batchRegion').count(),24,'Back preserves outline edits');
+ await page.locator('#batchNextToCoins').click();
  for(const width of [320,360,390,768,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`No overflow at ${width}px`);}
  await page.setViewportSize({width:844,height:390});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow after rotation');
- console.log('PASS review/result/recognition pixels, refresh persistence, cancelled edits, manual override, confident auto rotation, uncertain/invalid fallback and landscape layout');
+ await page.screenshot({path:'/workspace/scratch/60af6b8f0471/batch34-grid.png',fullPage:true});
+ console.log('PASS stable 24-coin grid, one workspace, Back, review/result/recognition pixels, refresh persistence, cancelled edits, manual override, confident auto rotation, uncertain/invalid fallback and landscape layout');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

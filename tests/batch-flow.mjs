@@ -43,6 +43,10 @@ const elements=new Map();const element=id=>{if(!elements.has(id))elements.set(id
 let resolveResponse,fetchCount=0;const requestImages=[];
 class Reader{readAsDataURL(){this.result=photo;this.onload();}}
 const context={window:{},BatchCoins:{batchVisionImage:async input=>{requestImages.push(input);return photo;}},document:{getElementById:element,createElement:node,createTextNode:text=>text},AbortSignal,Option:function(text,value){return {text,value}},FileReader:Reader,fetch:async(_url,options)=>{const body=JSON.parse(options.body);assert(body.reverse.startsWith('data:image/jpeg;base64,'));if(body.obverse)assert(body.obverse.startsWith('data:image/jpeg;base64,'));fetchCount++;return await new Promise(resolve=>resolveResponse=resolve)},coinById:id=>variants.find(c=>c.id===id),designVariants:c=>variants.filter(v=>v.design_id===c.design_id),browseCatalogue:variants};
+context.window.BatchSingleAdapter={identify:async({reverse,obverse,denomination})=>{
+ requestImages.push(reverse);if(obverse)requestImages.push(obverse);
+ const response=await context.fetch('/api/identify',{body:JSON.stringify({mode:'circulating',single_coin:true,reverse:photo,obverse:obverse?photo:null,denomination})});return response.json();
+}};
 vm.createContext(context);
 const code=(await readFile('public/batch-identification.js','utf8')).replace('window.BatchIdentificationCore={classify};','window.BatchIdentificationCore={classify,identifyOne,getResult:id=>results.get(id),setResult:(id,result)=>results.set(id,result)};');
 vm.runInContext(code,context);

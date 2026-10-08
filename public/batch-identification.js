@@ -2,7 +2,7 @@
    Diagnostic reports are independent of collection confirmation. */
 (() => {
   const results=new Map(), $=id=>document.getElementById(id);
-  let crops=[],generation=0,busy=false;
+  let crops=[],generation=0,busy=false,focusId=null,renderKey="",renderResult=null;
   const orientationJobs=new Map(),orientationQueue=[];let orientationRunning=0;
   function rotationStatus(crop){return results.get(crop.id)?.orientationLabel||(orientationJobs.has(crop.id)?'Checking rotation…':'Check rotation');}
   function scheduleOrientation(){
@@ -10,12 +10,14 @@
     for(const crop of crops){
       const result=results.get(crop.id),existing=orientationJobs.get(crop.id);
       if(result?.orientationAttempted||result?.reverse||existing?.geometry===geometryOf(crop))continue;
+      if(!result)results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,orientationOnly:true});
       let resolve;const job={crop,geometry:geometryOf(crop),revision:generation,promise:new Promise(r=>resolve=r),resolve:()=>resolve()};
       orientationJobs.set(crop.id,job);orientationQueue.push(job);
     }
     pumpOrientation();window.BatchReview?.redraw();
   }
   function pumpOrientation(){
+    if(busy)return;
     while(orientationRunning<2&&orientationQueue.length){
       const job=orientationQueue.shift();orientationRunning++;
       (async()=>{try{if(job.revision===generation&&activeCrop(job.crop))await orientCrop(job.crop);}finally{
@@ -90,7 +92,7 @@
   }
   const geometryOf=crop=>`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
   const activeCrop=crop=>crops.some(current=>current.id===crop.id&&geometryOf(current)===geometryOf(crop));
-  function editable(crop){let result=results.get(crop.id);if(!result){result={status:'manual',choices:[],geometry:geometryOf(crop),ready:false};results.set(crop.id,result);}return result;}
+  function editable(crop){let result=results.get(crop.id);if(!result){result={status:'manual',choices:[],geometry:geometryOf(crop),ready:false,orientationOnly:true};results.set(crop.id,result);}return result;}
   const effectivePhoto=crop=>{
     const result=results.get(crop.id);
     return result?.geometry===geometryOf(crop)?{blob:result.reverseBlob||crop.crop,url:result.reverse||crop.cropUrl}:{blob:crop.crop,url:crop.cropUrl};
@@ -104,7 +106,7 @@
     const reverse=adjustment.file!==effectivePhoto(crop).blob?await fileDataUrl(adjustment.file):undefined;
     if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
     results.set(crop.id,{...previous,status:'manual',choices:previous.choices||[],geometry:geometryOf(crop),ready:false,
-      orientationOnly:previous.orientationOnly??!previous.status,orientationAttempted:true,orientationLabel:adjustment.confident?'Rotation checked':'Check rotation',...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
+      orientationOnly:previous.orientationOnly??!previous.status,orientationAttempted:true,orientationLabel:adjustment.confident?'Rotation checked':adjustment.reason==='unavailable'?'Check rotation · service unavailable':adjustment.reason==='allowance'?'Check rotation · allowance reached':'Check rotation',...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
       message:adjustment.confident?'Orientation checked. Use Crop / rotate if it needs correcting.':'Orientation unclear. Use Crop / rotate to choose it yourself.'});
     window.BatchReview?.redraw();
   }
@@ -139,23 +141,30 @@
       }catch(error){$('batchIdentifyStatus').textContent=error.message;}finally{button.disabled=false;input.value='';}
     };card.append(button,input);
   }
-  function reset(){for(const job of orientationQueue.splice(0))job.resolve();orientationJobs.clear();generation++;busy=false;crops=[];results.clear();$('batchIdentifyStatus').textContent='';render([]);}
+  function reset(){focusId=null;renderKey="";renderResult=null;for(const job of orientationQueue.splice(0))job.resolve();orientationJobs.clear();generation++;busy=false;crops=[];results.clear();$('batchIdentifyStatus').textContent='';render([]);}
   function sync(regions){
     const active=new Map(regions.map(r=>[r.id,`${r.x}:${r.y}:${r.width}:${r.height}`]));
     for(const [id,result] of results)if(!active.has(id)||result.geometry!==active.get(id))results.delete(id);
   }
   function render(nextCrops){
     crops=nextCrops;
-    const root=$('batchResultList');root.replaceChildren();
+    const root=$('batchResultList');
+    $('batchWorkspace').hidden=!focusId;
+    const selected=crops.find(c=>c.id===focusId);
+    if(focusId&&!selected){focusId=null;$('batchWorkspace').hidden=true;}
+    const progress=`${crops.filter(c=>results.get(c.id)?.added).length} of ${crops.length} added`;if($('batchProgress').textContent!==progress)$('batchProgress').textContent=progress;
+    const current=selected?results.get(selected.id):null;
+    const key=JSON.stringify([focusId,busy,current?.status,current?.coinId,current?.designId,current?.manualOpen,current?.ready,current?.added,current?.testSaved,current?.denomination,current?.choices?.map(c=>c.id)]);
+    const rebuild=key!==renderKey||current!==renderResult;
+    renderKey=key;renderResult=current;
+    if(rebuild)root.replaceChildren();
     $('batchIdentifyAll').disabled=busy||!crops.length;
-    $('batchIdentifyAll').textContent=busy?'Identifying coins…':`Outlines look right · identify ${crops.length} coin${crops.length===1?'':'s'}`;
+    const action=busy?'Identifying coin…':'Identify next coin';if($('batchIdentifyAll').textContent!==action)$('batchIdentifyAll').textContent=action;
     for(const id of ['batchSaveTests','batchExportTests']){const button=$(id);if(button){button.hidden=![...results.values()].some(result=>!result.orientationOnly);button.disabled=busy;}}
-    for(const crop of crops){
-      const result=results.get(crop.id);
-      if(!result)continue;
-      const card=document.createElement('details');card.className='batchResult pm-cream-card';card.dataset.regionId=crop.id;card.open=Boolean(result.expanded);
-      card.ontoggle=()=>{result.expanded=card.open;};
-      const cardSummary=document.createElement('summary');cardSummary.className='batchCompactSummary';card.append(cardSummary);
+    for(const crop of rebuild&&selected?[selected]:[]){
+      const result=results.get(crop.id)||editable(crop);
+      const card=document.createElement('article');card.className='batchResult pm-cream-card';card.dataset.regionId=crop.id;
+      const cardSummary=document.createElement('div');cardSummary.className='batchCompactSummary';card.append(cardSummary);
       const heading=document.createElement('h4');heading.textContent=`Coin ${crop.detectionNumber}`;card.append(heading);
       const thumbnail=document.createElement('img');thumbnail.src=result?.reverse||crop.cropUrl;thumbnail.alt=`Coin ${crop.detectionNumber} crop`;thumbnail.onclick=()=>window.BatchReview?.select(crop.id);thumbnail.tabIndex=0;thumbnail.setAttribute('role','button');thumbnail.setAttribute('aria-label',`Locate coin ${crop.detectionNumber} in photo`);thumbnail.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();window.BatchReview?.select(crop.id);}};card.append(thumbnail);
       const summary=document.createElement('p');summary.className='batchResultSummary';
@@ -212,21 +221,17 @@
           issueSelect.value=result.coinId||'';issueSelect.disabled=busy||result.added;
           issueSelect.onchange=()=>{result.coinId=issueSelect.value||null;result.ready=false;render(crops);};
           issueLabel.append(issueSelect);card.append(issueLabel);
-          if(result.coinId){
-            const readyLabel=document.createElement('label');readyLabel.className='batchReady';
-            const ready=document.createElement('input');ready.type='checkbox';ready.checked=result.ready&&!result.added;ready.disabled=busy||result.added||!crop.reviewed;
-            ready.onchange=()=>{result.ready=ready.checked;render(crops);};
-            readyLabel.append(ready,document.createTextNode(result.added?' Added to My Mint':' Confirm this physical coin'));card.append(readyLabel);
-          }
+
         }
       }
       if(result&&!result.orientationOnly&&result.status!=='loading')renderTestReport(card,result,crop);
       root.append(card);
     }
-    const count=crops.filter(crop=>crop.reviewed&&results.get(crop.id)?.ready&&results.get(crop.id)?.coinId&&!results.get(crop.id)?.added).length;
+    const count=Boolean(selected?.reviewed&&current?.coinId&&!current?.added);
     $('batchAddConfirmed').hidden=!count;
     $('batchAddConfirmed').disabled=busy;
-    $('batchAddConfirmed').textContent=`Add ${count} confirmed coin${count===1?'':'s'} to My Mint`;
+    if($('batchAddConfirmed').textContent!=='Confirm & add this coin')$('batchAddConfirmed').textContent='Confirm & add this coin';
+  
   }
   function renderTestReport(card,result,crop){
     const section=document.createElement('section');section.className='batchTestReport';
@@ -301,52 +306,47 @@
     if(busy&&!fromAll||!crop.reviewed||!activeCrop(crop))return;
     if(!fromAll)busy=true;
     const orientationRevision=generation;
-    if(orientationJobs.get(crop.id))await orientationJobs.get(crop.id).promise;else await orientCrop(crop);
+    // Recognition uses the current photo immediately; orientation may finish later.
+    // The pending result claims this crop, so a late orientation cannot replace it.
     if(orientationRevision!==generation||!activeCrop(crop)){if(orientationRevision===generation&&!fromAll){busy=false;render(crops);}return;}
     const previous=results.get(crop.id)||{};
     const revision=generation,geometry=`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
     const pending={...previous,status:'loading',ready:false,geometry};results.set(crop.id,pending);render(crops);
     try{
-      const reverse=await BatchCoins.batchVisionImage(previous.reverse||crop.crop);
-      const obverse=previous.obverse?await BatchCoins.batchVisionImage(previous.obverse):null;
-      if(revision!==generation)return;
-      const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',obverse,reverse,batch_coin:true,batch_reviewed:true,denomination:previous.denomination||''})});
-      const data=await response.json();
-      if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429,analysisError:{status:response.status,diagnostic_code:data.diagnostic_code||null,request_id:data.request_id||null,message:data.error||'Identification unavailable'}});
+      const data=await window.BatchSingleAdapter.identify({reverse:previous.reverseBlob||previous.reverse||crop.crop,obverse:previous.obverse||null,denomination:previous.denomination||'',signal:AbortSignal.timeout(45000)});
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
       results.set(crop.id,{...previous,...classify(data),orientationOnly:false,geometry,testSaved:false});
     }catch(error){
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
       results.set(crop.id,{...previous,orientationOnly:false,status:'error',ready:false,message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,analysisError:error.analysisError||{message:error.message},quota:Boolean(error.quota),geometry});
     }
-    finally{if(revision===generation&&!fromAll){busy=false;render(crops);}}
+    finally{if(revision===generation&&!fromAll){busy=false;pumpOrientation();render(crops);}}
     render(crops);
   }
+  function openCoin(id){
+    if(!crops.some(c=>c.id===id))return;
+    focusId=id;renderKey='';window.BatchReview?.showCoins();render(crops);
+    $('batchWorkspace').scrollIntoView({block:'start',behavior:'smooth'});
+  }
+  function closeWorkspace(){if(!focusId)return false;focusId=null;render(crops);$('batchCrops').scrollIntoView({block:'start',behavior:'smooth'});return true;}
+  $('batchCloseCoin').onclick=closeWorkspace;
+  $('batchNextCoin').onclick=()=>{
+    const index=crops.findIndex(c=>c.id===focusId);const next=crops.slice(index+1).concat(crops.slice(0,index)).find(c=>!results.get(c.id)?.added);
+    if(next)openCoin(next.id);
+  };
   $('batchIdentifyAll').onclick=async()=>{
     if(busy||!crops.length)return;
-    busy=true;const revision=generation;
-    if(window.BatchReview?.approveAll){
-      try{const approved=await window.BatchReview.approveAll();if(!approved||revision!==generation){if(revision===generation){busy=false;render(crops);}return;}}
-      catch(error){if(revision===generation){busy=false;$('batchIdentifyStatus').textContent=`Could not prepare crops: ${error.message}`;render(crops);}return;}
-    }
-    const queue=[...crops].filter(crop=>crop.reviewed&&!results.get(crop.id)?.added&&!results.get(crop.id)?.choices?.length);
-    if(!queue.length){busy=false;$('batchIdentifyStatus').textContent='All remaining crops have results. Review them or retry a coin individually.';render(crops);return;}
-    for(let index=0;index<queue.length;index++){
-      if(revision!==generation)break;
-      $('batchIdentifyStatus').textContent=`Identifying coin ${index+1} of ${queue.length}…`;
-      await identifyOne(queue[index],true);
-      if(results.get(queue[index].id)?.quota){$('batchIdentifyStatus').textContent='Vision allowance reached. Remaining coins are still here to try later.';break;}
-    }
-    if(revision!==generation)return;
-    busy=false;
-    if(!$('batchIdentifyStatus').textContent.includes('allowance'))$('batchIdentifyStatus').textContent='Review each result, select uncertain designs or years, then confirm the coins you want to add.';
-    render(crops);
+    const crop=crops.find(c=>!results.get(c.id)?.added&&!results.get(c.id)?.choices?.length);
+    if(!crop){$('batchIdentifyStatus').textContent='Review the remaining matches and choose their issue years.';return;}
+    await window.BatchReview?.approveAll();openCoin(crop.id);await identifyOne(crop);
   };
+
   async function saveBatchTests(exportFile=false){
     if(busy)return;
     const revision=generation,sourceCrops=[...crops];busy=true;render(crops);
     try{
       for(const crop of sourceCrops){if(revision!==generation)return;const result=results.get(crop.id);if(!result||result.orientationOnly||result.status==='loading')continue;
+        if(!result.saveReport)renderTestReport(document.createElement('div'),result,crop);
         if(!result.testSaved)await result.saveReport?.(false,true,result.status==='error'?'error':result.choices?.length?'unreviewed':'no_match');
         if(!result.testSaved)throw new Error(`Coin ${crop.detectionNumber}: test could not be saved`);
       }
@@ -364,7 +364,7 @@
   if($('batchExportTests'))$('batchExportTests').onclick=()=>saveBatchTests(true);
   $('batchAddConfirmed').onclick=async()=>{
     if(busy)return;
-    const items=crops.filter(crop=>{const result=results.get(crop.id);return crop.reviewed&&result?.ready&&result.coinId&&!result.added;}).map(crop=>({regionId:crop.id,coinId:results.get(crop.id).coinId,crop:results.get(crop.id).reverseBlob||crop.crop}));
+    const items=crops.filter(crop=>{const result=results.get(crop.id);return crop.id===focusId&&crop.reviewed&&result?.coinId&&!result.added;}).map(crop=>({regionId:crop.id,coinId:results.get(crop.id).coinId,crop:results.get(crop.id).reverseBlob||crop.crop}));
     if(!items.length)return;
     busy=true;render(crops);$('batchIdentifyStatus').textContent='Saving confirmed coins…';
     try{
@@ -374,6 +374,6 @@
     }catch(error){$('batchIdentifyStatus').textContent=`Could not finish saving: ${error.message}`;}
     finally{busy=false;render(crops);}
   };
-  window.BatchIdentification={reset,sync,render,editCrop,autoRotate,rotateCrop,scheduleOrientation,rotationStatus,effectivePhoto,isBusy:()=>busy};
+  window.BatchIdentification={reset,sync,render,editCrop,autoRotate,rotateCrop,scheduleOrientation,rotationStatus,effectivePhoto,openCoin,closeWorkspace,isBusy:()=>busy};
   window.BatchIdentificationCore={classify};
 })();

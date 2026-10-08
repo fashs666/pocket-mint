@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
+const photo='data:image/jpeg;base64,AA==',prepared=[],requests=[];let responses=[];
+const untouched={reverse:'single-session-photo',results:['single-session-result']};
+const context={window:{},identifyState:untouched,makeAnalysisImage:async blob=>{prepared.push(blob);return photo;},fetch:async(url,options)=>{
+ if(url.startsWith('data:'))return {blob:async()=>({source:url})};
+ requests.push(JSON.parse(options.body));const item=responses.shift();return {ok:item.ok!==false,status:item.status||200,json:async()=>item};
+}};
+vm.createContext(context);vm.runInContext(await readFile('public/batch-single-adapter.js','utf8'),context);
+responses=[{matches:[{id:'a'}],uncertain:false,needs_year:false}];
+await context.window.BatchSingleAdapter.identify({reverse:{design:true},obverse:'data:image/png;base64,portrait'});
+assert.equal(requests.length,1);assert.equal(prepared.length,1,'Portrait is not analysed for an already certain design/year');
+assert.equal(requests[0].single_coin,true);assert.equal(requests[0].batch_coin,undefined);assert.equal(requests[0].mode,'circulating');assert.equal(requests[0].obverse,null);
+responses=[{matches:[{id:'a'}],uncertain:false,needs_year:true},{matches:[{id:'a'}],needs_year:false}];
+await context.window.BatchSingleAdapter.identify({reverse:{edited:true},obverse:'data:image/png;base64,portrait',denomination:'$1'});
+assert.equal(requests.length,3);assert.equal(requests[2].obverse,photo);assert.equal(requests[2].denomination,'$1');
+assert.equal(prepared.at(-1).source,'data:image/png;base64,portrait');assert.equal(untouched.reverse,'single-session-photo');assert.deepEqual(untouched.results,['single-session-result']);
+responses=[{ok:false,status:429,error:'Vision allowance reached',diagnostic_code:'LIMIT'}];
+await assert.rejects(context.window.BatchSingleAdapter.identify({reverse:{}}),error=>error.quota&&error.analysisError.status===429);
+console.log('PASS exact single request shape, shared photo preparation, conditional portrait retry, explicit errors and untouched single session');

@@ -4,8 +4,10 @@
   const status=document.getElementById('batchStatus'),grid=document.getElementById('batchCrops');
   const state={stage:'entry',source:null,sourceUrl:null,regions:[],crops:[],selected:null,adding:false,job:0,cropJob:0,nextNumber:1,checking:false};
   const $=id=>document.getElementById(id);
+  const text=(node,value)=>{if(node.textContent!==value)node.textContent=value;};
+  const outlineNodes=new Map(),cropNodes=new Map();let renderedSource=null,reviewStep='outlines';
   function releaseCrops(){state.crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));state.crops=[];}
-  function resetPhoto(){window.BatchIdentification?.reset();state.job++;state.cropJob++;releaseCrops();if(state.sourceUrl)URL.revokeObjectURL(state.sourceUrl);state.sourceUrl=null;state.source=null;state.regions=[];state.selected=null;state.adding=false;state.nextNumber=1;state.checking=false;image.removeAttribute('src');$('batchCapturedPreview').removeAttribute('src');$('batchCapturedPreview').hidden=true;$('batchToReview').hidden=true;}
+  function resetPhoto(){window.BatchIdentification?.reset();state.job++;state.cropJob++;releaseCrops();if(state.sourceUrl)URL.revokeObjectURL(state.sourceUrl);state.sourceUrl=null;state.source=null;state.regions=[];state.selected=null;state.adding=false;state.nextNumber=1;state.checking=false;outlineNodes.clear();cropNodes.clear();grid.replaceChildren();overlay.replaceChildren();renderedSource=null;showReviewStep('outlines');image.removeAttribute('src');$('batchCapturedPreview').removeAttribute('src');$('batchCapturedPreview').hidden=true;$('batchToReview').hidden=true;}
   function stage(next,push=true){
     state.stage=next;panel.hidden=next==='entry';normal.hidden=next!=='entry';
     $('batchCapture').hidden=next!=='capture';$('batchCapturedPreview').hidden=!state.sourceUrl;$('batchToReview').hidden=!state.sourceUrl;$('batchReview').hidden=next!=='review';
@@ -26,13 +28,15 @@
   }
   function render(){
     const list=BatchCoins.updateRelativeDiameters(state.regions);state.regions=list;
-    $('batchCount').textContent=`${list.length} outline${list.length===1?'':'s'} · ${list.filter(r=>!r.reviewed).length} need checking`;
-    overlay.replaceChildren();
+    text($('batchCount'),`${list.length} coin outline${list.length===1?'':'s'}`);
+    const ids=new Set(list.map(c=>c.id));for(const [id,node] of outlineNodes)if(!ids.has(id)){node.remove();outlineNodes.delete(id);}
+
     for(const region of list){
-      const button=document.createElement('button');button.type='button';button.className='batchRegion'+(!region.reviewed?' uncertain':'')+(region.id===state.selected?' selected':'');
+      let button=outlineNodes.get(region.id);if(!button){button=document.createElement('button');button.type='button';button.dataset.regionId=region.id;outlineNodes.set(region.id,button);overlay.append(button);}
+      button.className='batchRegion'+(!region.reviewed?' uncertain':'')+(region.id===state.selected?' selected':'');
       button.style.left=`${region.x/state.source.width*100}%`;button.style.top=`${region.y/state.source.height*100}%`;
       button.style.width=`${region.width/state.source.width*100}%`;button.style.height=`${region.height/state.source.height*100}%`;
-      button.textContent=String(region.detectionNumber);button.setAttribute('aria-label',`Select coin ${region.detectionNumber}`);
+      text(button,String(region.detectionNumber));button.setAttribute('aria-label',`Select coin ${region.detectionNumber}`);
       button.dataset.regionId=region.id;
       let drag=null,suppressClick=false;
       button.onpointerdown=event=>{if(event.button!==0)return;drag={x:event.clientX,y:event.clientY,cx:region.centreX,cy:region.centreY,moved:false};button.setPointerCapture(event.pointerId);};
@@ -42,39 +46,63 @@
       };
       const finishDrag=()=>{if(!drag)return;const moved=drag.moved;drag=null;if(moved){suppressClick=true;refreshCrops();status.textContent=`Coin ${region.detectionNumber} moved. Check its crop.`;}};
       button.onpointerup=finishDrag;button.onpointercancel=finishDrag;
-      button.onclick=event=>{event.stopPropagation();if(suppressClick){suppressClick=false;return;}selectRegion(region.id);};overlay.append(button);
+      button.onclick=event=>{event.stopPropagation();if(suppressClick){suppressClick=false;return;}selectRegion(region.id);};
     }
     $('batchCheckCoins').disabled=state.checking||window.BatchIdentification?.isBusy?.()||!list.length;
-    $('batchCheckCoins').textContent=state.checking?'Checking objects…':'Check detected objects';
+    text($('batchCheckCoins'),state.checking?'Checking objects…':'Check detected objects');
     $('batchRemove').disabled=!state.selected;
     $('batchClearSelection').hidden=!state.selected;
-    $('batchAdd').textContent=state.adding?'Cancel adding':'Add missed coin';
+    text($('batchAdd'),state.adding?'Cancel adding':'Add missed coin');
     $('batchAdd').classList.toggle('selected',state.adding);
     overlay.classList.toggle('adding',state.adding);
     const active=list.find(coin=>coin.id===state.selected);
     $('batchSizeRow').hidden=!active;
     if(active){const slider=$('batchSize');slider.max=Math.round(Math.min(state.source.width,state.source.height)*.48);slider.value=Math.round(active.width);$('batchSizeValue').textContent=`${Math.round(active.width)} px`;}
-    grid.replaceChildren();
     window.BatchIdentification?.render(state.crops);
+    const cropIds=new Set(state.crops.map(c=>c.id));for(const [id,node] of cropNodes)if(!cropIds.has(id)){node.remove();cropNodes.delete(id);}
     for(const coin of state.crops){
-      const card=document.createElement('article');card.className='batchCrop pm-cream-card'+(coin.id===state.selected?' selected':'');card.dataset.regionId=coin.id;
-      const title=document.createElement('strong');title.textContent=`Coin ${coin.detectionNumber}`;
-      const picture=document.createElement('img');picture.src=window.BatchIdentification?.effectivePhoto(coin).url||coin.cropUrl;picture.alt=`Crop of coin ${coin.detectionNumber}`;
-      const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.onclick=()=>removeRegion(coin.id);
-      const select=document.createElement('button');select.type='button';select.className='batchCropSelect';select.append(picture);select.setAttribute('aria-label',`Select outline ${coin.detectionNumber}`);select.onclick=()=>selectRegion(coin.id);
-      const edit=document.createElement('button');edit.type='button';edit.textContent='Crop / rotate';edit.disabled=state.checking||window.BatchIdentification?.isBusy?.();edit.onclick=()=>window.BatchIdentification?.editCrop(coin);
-      const rotation=document.createElement('div');rotation.className='batchRotationControls';
-      for(const [angle,label] of [[-90,'↶'],[90,'↷']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-label',`Rotate coin ${coin.detectionNumber} ${angle<0?'left':'right'} 90 degrees`);button.disabled=edit.disabled;button.onclick=()=>window.BatchIdentification?.rotateCrop(coin,angle);rotation.append(button);}
-      const hint=document.createElement('span');hint.className='batchRotationStatus';hint.textContent=window.BatchIdentification?.rotationStatus(coin)||'Check rotation';hint.setAttribute('role','status');
-      card.append(title,select,hint,rotation,edit,remove);grid.append(card);
+      let card=cropNodes.get(coin.id);
+      if(!card){
+        card=document.createElement('article');card.className='batchCrop pm-cream-card';card.dataset.regionId=coin.id;
+        const title=document.createElement('strong'),picture=document.createElement('img'),select=document.createElement('button'),hint=document.createElement('span'),rotation=document.createElement('div');
+        picture.decoding='async';select.type='button';select.className='batchCropSelect';select.append(picture);hint.className='batchRotationStatus';hint.setAttribute('role','status');rotation.className='batchRotationControls';
+        for(const [angle,label] of [[-90,'↶'],[90,'↷']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.angle=angle;rotation.append(button);}
+        card.append(title,select,hint,rotation);cropNodes.set(coin.id,card);grid.append(card);
+      }
+      card.classList.toggle('selected',coin.id===state.selected);
+      text(card.querySelector('strong'),`Coin ${coin.detectionNumber}`);
+      const picture=card.querySelector('img'),url=window.BatchIdentification?.effectivePhoto(coin).url||coin.cropUrl;
+      if(picture.getAttribute('src')!==url)picture.src=url;
+      picture.alt=`Crop of coin ${coin.detectionNumber}`;
+      const select=card.querySelector('.batchCropSelect');select.setAttribute('aria-label',`Review coin ${coin.detectionNumber}`);select.onclick=()=>window.BatchIdentification?.openCoin(coin.id);
+      text(card.querySelector('.batchRotationStatus'),window.BatchIdentification?.rotationStatus(coin)||'Check rotation');
+      for(const button of card.querySelectorAll('.batchRotationControls button')){const angle=Number(button.dataset.angle);button.setAttribute('aria-label',`Rotate coin ${coin.detectionNumber} ${angle<0?'left':'right'} 90 degrees`);button.disabled=state.checking||window.BatchIdentification?.isBusy?.();button.onclick=()=>window.BatchIdentification?.rotateCrop(coin,angle);}
     }
+    $('batchNextToCoins').disabled=!state.crops.length||state.checking;
   }
-  async function refreshCrops(){window.BatchIdentification?.sync(state.regions);const job=++state.cropJob,source=state.source,regions=[...state.regions];const crops=await BatchCoins.cropCoins(source,regions);if(job!==state.cropJob||source!==state.source){crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}releaseCrops();state.crops=crops;render();window.BatchIdentification?.scheduleOrientation();}
+  const geometry=c=>`${c.x}:${c.y}:${c.width}:${c.height}`;
+  async function refreshCrops(){
+    window.BatchIdentification?.sync(state.regions);
+    const job=++state.cropJob,source=state.source,old=new Map(state.crops.map(c=>[c.id,c]));
+    const missing=state.regions.filter(r=>renderedSource!==source||geometry(old.get(r.id)||{})!==geometry(r));
+    const fresh=await BatchCoins.cropCoins(source,missing);
+    if(job!==state.cropJob||source!==state.source){fresh.forEach(c=>URL.revokeObjectURL(c.cropUrl));return;}
+    const created=new Map(fresh.map(c=>[c.id,c]));const crops=state.regions.map(r=>({...old.get(r.id),...r,...created.get(r.id)}));
+    const keep=new Set(crops.map(c=>c.cropUrl));for(const crop of state.crops)if(!keep.has(crop.cropUrl))URL.revokeObjectURL(crop.cropUrl);
+    state.crops=crops;renderedSource=source;render();window.BatchIdentification?.scheduleOrientation();
+  }
+  function showReviewStep(next){
+    reviewStep=next;$('batchOutlineStep').hidden=next!=='outlines';$('batchCoinStep').hidden=next!=='coins';
+    $('batchShowOutlines').setAttribute('aria-pressed',String(next==='outlines'));$('batchShowCoins').setAttribute('aria-pressed',String(next==='coins'));
+  }
+  $('batchShowOutlines').onclick=()=>showReviewStep('outlines');$('batchShowCoins').onclick=()=>showReviewStep('coins');
+  $('batchNextToCoins').onclick=async()=>{if(await window.BatchReview.approveAll())showReviewStep('coins');};
+
   async function removeRegion(id){state.regions=state.regions.filter(r=>r.id!==id);state.selected=null;await refreshCrops();}
   async function process(file){
     if(!file)return;
     resetPhoto();const job=state.job;
-    stage('capture');status.textContent='Finding coins…';$('batchProcess').hidden=false;
+    showReviewStep('outlines');stage('capture');status.textContent='Finding coins…';$('batchProcess').hidden=false;
     try{
       const source=await BatchCoins.prepareBatchImage(file);if(job!==state.job)return;
       state.source=source;
@@ -131,15 +159,17 @@
     }catch(error){if(job===state.job){await refreshCrops();status.textContent=`${error.message} You can check the remaining outlines manually.`;}}
     finally{if(job===state.job){state.checking=false;render();}}
   };
-  window.BatchReview={redraw:render,async approveAll(){if(state.checking)return false;state.regions.forEach(r=>r.reviewed=true);await refreshCrops();return true;},select(id){if(state.regions.some(r=>r.id===id)){if(state.selected!==id)selectRegion(id);document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
+  window.BatchReview={redraw:render,showCoins:()=>showReviewStep('coins'),async approveAll(){if(state.checking)return false;state.regions.forEach(r=>r.reviewed=true);await refreshCrops();return true;},select(id){if(state.regions.some(r=>r.id===id)){if(state.selected!==id)selectRegion(id);document.querySelector('.batchImageFrame')?.scrollIntoView({block:'center',behavior:'smooth'});}}};
   window.addEventListener('popstate',event=>{
     const target=event.state?.batchStage||'entry';
+    if(state.stage==='review'&&window.BatchIdentification?.closeWorkspace()){event.stopImmediatePropagation();history.pushState({view:'findView',batchStage:'review'},'','#batch-review');return;}
+    if(state.stage==='review'&&reviewStep==='coins'){event.stopImmediatePropagation();showReviewStep('outlines');history.pushState({view:'findView',batchStage:'review'},'','#batch-review');return;}
     if(target==='entry'){leave();return;}
     if(target==='capture'&&state.stage==='review'){stage('capture',false);return;}
     if(target==='review'&&state.source){stage('review',false);return;}
     if(target==='capture'){stage('capture',false);return;}
     leave();
-  });
+  },true);
   document.querySelectorAll('[data-nav],[data-find-tab]').forEach(button=>button.addEventListener('click',()=>{
     if(button.dataset.findTab==='identify'&&state.stage!=='entry')return;
     if(state.stage!=='entry')leave();

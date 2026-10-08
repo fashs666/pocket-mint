@@ -135,21 +135,23 @@
             <button id="batchReviewBack" type="button" class="batchBack">‹ Back to photo</button>
             <div class="eyebrow">BATCH IDENTIFY · REVIEW</div><h3 id="batchCount">0 coins found</h3>
             <p id="batchStatus" aria-live="polite">Check the outlines and individual crops.</p>
-            <div class="batchImageFrame"><img id="batchImage" alt="Photo of coins"><div id="batchOverlay" class="batchOverlay" aria-label="Detected coin regions"></div></div>
+            <nav class="batchSteps" aria-label="Multi-coin steps"><button type="button" id="batchShowOutlines" aria-pressed="true">1 · Outlines</button><button type="button" id="batchShowCoins" aria-pressed="false">2 · Coins</button></nav>
+            <div id="batchOutlineStep"><div class="batchImageFrame"><img id="batchImage" alt="Photo of coins"><div id="batchOverlay" class="batchOverlay" aria-label="Detected coin regions"></div></div>
             <div class="batchActions"><button id="batchCheckCoins" type="button" class="primary">Check detected objects</button><button id="batchAdd" type="button">Add missed coin</button><button id="batchRemove" type="button" disabled>Remove selected</button><button id="batchClearSelection" type="button" hidden>Unselect</button><button id="batchRetake" type="button">New photo</button></div>
             <label id="batchSizeRow" class="batchSizeRow" hidden>Selected coin size <input id="batchSize" type="range" min="18" max="220" value="80" aria-label="Adjust selected coin size"><output id="batchSizeValue">80 px</output></label>
-            <p class="batchHint">Tap to select; tap again or empty space to deselect. Drag an outline to move it, or use the size slider. Remove false outlines and add missed coins, then tap Outlines look right · identify. Up to 24 coins. The optional object check sends reduced crops to the vision service.</p>
-            <div id="batchCrops" class="batchCrops"></div>
+            <p class="batchHint">Tap to select; tap again or empty space to deselect. Drag an outline to move it, or use the size slider. Remove false outlines and add missed coins, then tap Outlines look right · review coins. Up to 24 coins. The optional object check sends reduced crops to the vision service.</p>
+            <button id="batchNextToCoins" class="primaryWide" type="button">Outlines look right · review coins</button></div>
+            <div id="batchCoinStep" hidden><p class="batchHint">Tap a coin to identify it, compare the reference and choose its issue year.</p><p id="batchProgress" role="status"></p><div id="batchCrops" class="batchCrops"></div>
             <section id="batchResults" class="batchResults" aria-labelledby="batchResultsTitle">
               <div class="eyebrow">NEXT · IDENTIFY INDIVIDUALLY</div><h3 id="batchResultsTitle">Match your confirmed coins</h3>
-              <p>Review the outlines once, then identify the batch. Saving or exporting a test never adds coins to My Mint.</p>
+              <p>Identify and confirm one coin at a time. Your progress stays here.</p>
               <button id="batchIdentifyAll" class="primary" type="button">Identify coins</button>
               <p id="batchIdentifyStatus" role="status" aria-live="polite"></p>
               <button id="batchSaveTests" type="button" hidden>Save all batch test results</button>
               <button id="batchExportTests" type="button" hidden>Save &amp; export this batch</button>
-              <div id="batchResultList"></div>
-              <button id="batchAddConfirmed" class="primary" type="button" hidden>Add confirmed coins to My Mint</button>
-            </section>
+              <div id="batchWorkspace" hidden><div class="batchWorkspaceNav"><button id="batchCloseCoin" type="button">‹ All coins</button><button id="batchNextCoin" type="button">Next coin ›</button></div><div id="batchResultList"></div>
+              <button id="batchAddConfirmed" class="primary" type="button" hidden>Add confirmed coins to My Mint</button></div>
+            </section></div>
           </section>
         </div>
       </div>
@@ -184,7 +186,7 @@
     <section id="collectionView" class="view"><div class="sectionHead"><h2 id="collectionTitle">Collection</h2></div><div class="segmented collectionTabs"><button data-mintfilter="owned" class="on">All</button><button data-mintfilter="favourite">Favourites</button><button data-mintfilter="duplicates">Duplicates</button></div><input id="collectionSearch" class="search" type="search" placeholder="Search collection" aria-label="Search collection"><div class="listMeta"><span id="collectionCount">0 coins</span><button type="button" class="textButton">Sort</button></div><div id="myMintList" class="coinList coinGrid"></div></section>
 
     <section id="helpView" class="view pm-page"><div class="sectionHead"><h2>Help &amp; feedback</h2></div><div class="menuCard"><button type="button" id="helpConditionGuide"><span aria-hidden="true">⌕</span><b>Coin Condition Guide</b><i aria-hidden="true">›</i></button></div><p class="muted">Browse Australian coin grades and compare conditions before recording your own estimate.</p></section>
-    <section id="myMintView" class="view"><div class="sectionHead"><h2><span class="sr-only">My Mint</span><svg class="pm-title-art pm-title-mint" viewBox="361 297 812 223" aria-hidden="true" focusable="false"><image href="artwork/headings/neon-titles.png" width="1536" height="1024"/></svg></h2></div><div class="menuCard"><button data-open-collection="owned"><span class="pm-menu-icon pm-icon-owned" aria-hidden="true"></span><b>My collection</b><i>›</i></button><button data-nav="wishlistView"><span class="pm-menu-icon pm-icon-wishlist" aria-hidden="true"></span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span class="pm-menu-icon pm-icon-favourites" aria-hidden="true"></span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span class="pm-menu-icon pm-icon-duplicates" aria-hidden="true"></span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span class="pm-menu-icon pm-icon-stats" aria-hidden="true"></span><b>Stats</b><i>›</i></button><button disabled><span class="pm-menu-icon pm-icon-swaps" aria-hidden="true"></span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span class="pm-menu-icon pm-icon-settings" aria-hidden="true"></span><b>Settings</b><i>›</i></button><button data-nav="helpView"><span class="pm-menu-icon pm-icon-help" aria-hidden="true"></span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span class="pm-menu-icon pm-icon-about" aria-hidden="true"></span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.14.33</p></section>
+    <section id="myMintView" class="view"><div class="sectionHead"><h2><span class="sr-only">My Mint</span><svg class="pm-title-art pm-title-mint" viewBox="361 297 812 223" aria-hidden="true" focusable="false"><image href="artwork/headings/neon-titles.png" width="1536" height="1024"/></svg></h2></div><div class="menuCard"><button data-open-collection="owned"><span class="pm-menu-icon pm-icon-owned" aria-hidden="true"></span><b>My collection</b><i>›</i></button><button data-nav="wishlistView"><span class="pm-menu-icon pm-icon-wishlist" aria-hidden="true"></span><b>Wishlist</b><i>›</i></button><button data-open-collection="favourite"><span class="pm-menu-icon pm-icon-favourites" aria-hidden="true"></span><b>Favourites</b><i>›</i></button><button data-open-collection="duplicates"><span class="pm-menu-icon pm-icon-duplicates" aria-hidden="true"></span><b>Duplicates</b><i>›</i></button><button data-nav="statsView"><span class="pm-menu-icon pm-icon-stats" aria-hidden="true"></span><b>Stats</b><i>›</i></button><button disabled><span class="pm-menu-icon pm-icon-swaps" aria-hidden="true"></span><b>Swaps</b><small>Later</small><i>›</i></button></div><h3 class="menuHeading">Pocket Mint</h3><div class="menuCard"><button data-nav="settingsView"><span class="pm-menu-icon pm-icon-settings" aria-hidden="true"></span><b>Settings</b><i>›</i></button><button data-nav="helpView"><span class="pm-menu-icon pm-icon-help" aria-hidden="true"></span><b>Help &amp; feedback</b><i>›</i></button><button data-static-page="About Pocket Mint"><span class="pm-menu-icon pm-icon-about" aria-hidden="true"></span><b>About Pocket Mint</b><i>›</i></button></div><p class="versionNote">Pocket Mint v0.14.34</p></section>
 
     <section id="settingsView" class="view">
       <div class="sectionHead"><div><div class="eyebrow">PERSONALISE &amp; PORTABILITY</div><h2>Settings</h2></div></div>
@@ -268,7 +270,7 @@
   <script src="camera-entry.js"></script>
   <script src="batch-detection.js"></script>
   <script src="auto-coin-photo.js"></script>
-  <script src="batch-photo-rotation.js"></script><script src="batch-identify.js"></script>
+  <script src="batch-single-adapter.js"></script><script src="batch-photo-rotation.js"></script><script src="batch-identify.js"></script>
   <script src="batch-identification.js"></script>
 </body>
 </html>
