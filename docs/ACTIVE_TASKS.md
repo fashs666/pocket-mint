@@ -56,3 +56,9 @@ Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.
 - [x] Check 24-preview node stability, one mounted workspace, internal Back order and mobile/landscape widths.
 - [ ] Verify scrolling/compositing on physical iPhone and Android; desktop emulation cannot establish that black screens are gone on those devices.
 - [ ] Evaluate actual automatic rotation results on the recovered album photographs and additional designs.
+
+## Upright verification — v0.14.35
+
+- [x] Live testing on 12 supplied-photo crops exposed confidently wrong contact-sheet choices.
+- [x] Require a second, full-photo upright check before applying a candidate. Disagreement preserves the original.
+- [ ] Complete live evaluation of verified outcomes; two model checks do not guarantee a correct orientation.

@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.34";
+const APP_VERSION = "0.14.35";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView", "seriesView", "milestonesView", "helpView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {

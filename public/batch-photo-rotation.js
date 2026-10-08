@@ -17,8 +17,14 @@
       if(!response.ok)return {file,confident:false,reason:'unavailable'};
       const direction=await response.json();
       if(direction.confident!==true||!Number.isFinite(direction.angle)||Math.abs(direction.angle)>180)return {file,confident:false,reason:direction.reason||'uncertain'};
-      if(Math.abs(direction.angle)<1)return {file,confident:true};
-      return {file:await rotate(file,direction.angle),confident:true};
+      const candidate=Math.abs(direction.angle)<1?file:await rotate(file,direction.angle);
+      // Independently check the full-size chosen view; a contact-sheet choice alone
+      // was confidently wrong on real album photos. Do not expose it until verified.
+      const checkImage=await makeAnalysisImage(candidate);
+      const check=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'verify',image:checkImage})});
+      if(!check.ok)return {file,confident:false,reason:'unavailable'};
+      const verification=await check.json();
+      return verification.confident===true?{file:candidate,confident:true}:{file,confident:false,reason:verification.reason||'uncertain'};
     } catch {return {file,confident:false,reason:'unavailable'};}
   }
   async function rotate(file,angle){

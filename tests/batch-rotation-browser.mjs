@@ -16,8 +16,8 @@ const server=http.createServer(async(req,res)=>{
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,args:['--no-sandbox','--disable-gpu']});
 const page=await browser.newPage({viewport:{width:390,height:844},serviceWorkers:'block'});
-let direction={angle:90,confident:false},orientationCalls=0;const requests=[];
-await page.route('**/api/batch-orientation',route=>{orientationCalls++;return route.fulfill({json:direction});});
+let direction={angle:90,confident:false},orientationCalls=0,verified=true;const requests=[];
+await page.route('**/api/batch-orientation',route=>{if(route.request().postDataJSON().phase==='verify')return route.fulfill({json:{confident:verified}});orientationCalls++;return route.fulfill({json:direction});});
 await page.route('**/api/identify',route=>{requests.push(route.request().postDataJSON());return route.fulfill({json:{matches:[],uncertain:true,status:'no_match'}});});
 async function fixture(){await page.evaluate(async()=>{
  showView('findView');showFindTab('identify');const f=window.__batchFixture;f.resetPhoto();
@@ -28,7 +28,7 @@ async function fixture(){await page.evaluate(async()=>{
  });await page.waitForFunction(()=>!document.querySelector('.batchRotationStatus').textContent.includes('Checking'));await page.locator('#batchNextToCoins').click();}
 async function pixels(selector){return page.evaluate(async selector=>{const image=document.querySelector(selector);await image.decode();const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const data=ctx.getImageData(0,0,c.width,c.height).data;let x=0,y=0,n=0;for(let i=0;i<data.length;i+=4)if(data[i]>200&&data[i+1]<70&&data[i+2]<70&&data[i+3]>100){x+=(i/4)%c.width;y+=Math.floor(i/4/c.width);n++;}return {x:x/n/c.width,y:y/n/c.height,n};},selector);}
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.BatchIdentification&&window.__batchFixture&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.34'));await fixture();
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.BatchIdentification&&window.__batchFixture&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.35'));await fixture();
  const outline=await page.locator('.batchRegion').evaluate(el=>{const s=getComputedStyle(el);return {background:s.backgroundImage,radius:s.borderRadius,color:s.backgroundColor,border:s.borderTopWidth};});
  assert.equal(outline.background,'none','Coin outlines must not inherit opaque button backgrounds');
  assert.equal(outline.radius,'50%','Coin outlines remain circular');
@@ -46,6 +46,7 @@ try{
  const requestPixels=await page.evaluate(async image=>{const img=new Image();img.src=image;await img.decode();const canvas=document.createElement('canvas');canvas.width=canvas.height=100;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,100,100);return Array.from(ctx.getImageData(75,50,1,1).data);},requests.at(-1).reverse);assert(requestPixels[0]>150&&requestPixels[1]<100,'Recognition receives rotated pixels');
  direction={angle:90,confident:true};await fixture();await page.locator('#batchIdentifyAll').click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert.equal(orientationCalls,2);assert((await pixels('#batchCrops img')).x>.6,'Auto rotation updates review');
  await page.evaluate(()=>window.__batchFixture.refreshCrops());assert((await pixels('#batchCrops img')).x>.6,'Auto correction survives regenerated crops');
+ verified=false;direction={angle:90,confident:true};await fixture();assert.equal(await page.locator('.batchRotationStatus').textContent(),'Check rotation');assert((await pixels('#batchCrops img')).y<.4,'Rejected upright verification never exposes candidate pixels');verified=true;
  direction={angle:90,confident:false};await fixture();assert.equal(await page.locator('.batchRotationStatus').textContent(),'Check rotation');assert((await pixels('#batchCrops img')).y<.4,'Uncertain orientation retains original');
  direction={angle:999,confident:true};await fixture();assert.equal(await page.locator('.batchRotationStatus').textContent(),'Check rotation');assert((await pixels('#batchCrops img')).y<.4,'Invalid orientation retains original');
  await page.getByRole('button',{name:'Rotate coin 1 right 90 degrees',exact:true}).click();await page.waitForFunction(()=>!BatchIdentification.isBusy());assert((await pixels('#batchCrops img')).x>.6,'Simple rotation control updates review');
