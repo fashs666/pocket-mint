@@ -28,7 +28,7 @@ assert.ok(echidnas.length>1);
 const differentYear=fields({flow:'batch',expectedLabel:`${echidnas[1].year} ${echidnas[1].title}`,expectedCoin:echidnas[1],predictedCoin:echidnas[0]});
 assert.deepEqual([differentYear.denomination_correct,differentYear.design_correct,differentYear.issue_correct],[true,true,false]);
 
-const handlers={batchIdentifyAll:{},batchAddConfirmed:{}};
+const handlers={batchIdentifyAll:{},batchAddConfirmed:{},batchCloseCoin:{},batchNextCoin:{}};
 const batchContext={window:{},document:{getElementById:id=>handlers[id]},catalogue:variants,browseCatalogue:variants,
   coinById:id=>variants.find(coin=>coin.id===id),designVariants:coin=>variants.filter(item=>item.design_id===coin.design_id)};
 vm.runInNewContext(await readFile('public/batch-identification.js','utf8'),batchContext);
@@ -39,7 +39,7 @@ assert.equal(classified.status,'confident');
 assert.equal(classified.ready,false,'Prediction must never confirm a physical coin');
 const noMatch=batchContext.window.BatchIdentificationCore.classify({matches:[],uncertain:true,observed:{denomination:'unknown'}});
 assert.equal(noMatch.predictedCoinId,null);
-assert.match(await readFile('public/batch-identification.js','utf8'),/batch_coin:true/);
+assert.match(await readFile('public/batch-identification.js','utf8'),/BatchSingleAdapter.identify/);
 console.log('PASS single and batch value, design, issue scoring; six-denomination batch routing; no-match recording');
 
 // The correct-result shortcut can save without the denomination, title, or

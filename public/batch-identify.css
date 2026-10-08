@@ -23,3 +23,28 @@
 .batchImageFrame .batchOverlay .batchRegion{touch-action:none}
 
 .batchCrop{flex-basis:128px}.batchRotationControls{display:flex;gap:6px}.batchRotationControls button{flex:1;min-width:44px;font-size:1.25rem}.batchRotationStatus{font-size:.75rem;line-height:1.35;color:#554b60;min-height:2.7em}
+/* Multi-coin workspace: stable grid, then one coin at a time. Keep the drawn
+   frames but avoid large filtered/composited layers during mobile scrolling. */
+#batchIdentify .batchPanel::before,#batchIdentify .batchCrop::before,#batchIdentify .batchResult::before{filter:none}
+#batchIdentify .batchRegion{box-shadow:0 0 0 1px #17202c;text-shadow:0 1px 2px #000}
+#batchIdentify .batchCrops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;scroll-snap-type:none;gap:14px;padding:6px 3px;margin:16px 0}
+#batchIdentify .batchCrop{min-width:0;padding:12px;contain:layout}
+#batchIdentify .batchCrop img{display:block;width:100%;height:auto;aspect-ratio:1;object-fit:contain}
+#batchIdentify .batchCropSelect{width:100%;min-height:44px;background:#faf4e9}
+.batchSteps,.batchWorkspaceNav{display:flex;gap:12px;justify-content:space-between;margin:14px 0}
+.batchSteps button,.batchWorkspaceNav button{min-height:48px;padding:10px 14px;border:2px solid #bc9968;border-radius:18px 23px 17px 22px;background:#fff3dc;color:#493654;font-weight:700}
+.batchSteps button[aria-pressed=true]{background:#d1eee3;border-color:#74ada6}
+#batchCoinStep[hidden],#batchOutlineStep[hidden],#batchWorkspace[hidden]{display:none}
+#batchWorkspace{scroll-margin-top:96px}
+#batchIdentify .batchResult{padding:18px;contain:layout}
+#batchIdentify .batchCompactSummary{display:grid;grid-template-columns:1fr;gap:12px;cursor:default}
+#batchIdentify .batchCompactSummary::after{content:none}
+#batchIdentify .batchCompactSummary img{grid-column:1;grid-row:auto;width:min(100%,240px);height:auto;aspect-ratio:1;object-fit:contain;margin:auto}
+#batchIdentify .batchCompactSummary h4,#batchIdentify .batchCompactSummary p{grid-column:1}
+#batchIdentify .batchResult :is(select,input){max-width:100%}
+#batchIdentify .batchPair{grid-template-columns:repeat(2,minmax(0,1fr))}
+#batchIdentify .batchPair .batchReference{display:grid;gap:8px}
+#batchIdentify .batchPair img{height:auto;aspect-ratio:1;object-fit:contain}
+#batchIdentify .batchResult>button{margin-top:12px;min-height:48px}
+@media(min-width:700px){#batchIdentify .batchCrops{grid-template-columns:repeat(4,minmax(0,1fr))}#batchWorkspace{max-width:720px;margin:0 auto}}
+@media(prefers-reduced-motion:reduce){#batchIdentify *{scroll-behavior:auto}}

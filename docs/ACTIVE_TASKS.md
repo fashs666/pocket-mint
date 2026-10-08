@@ -43,4 +43,16 @@ Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.
 - [x] Replace the Auto rotate button with accessible 90-degree left/right controls beside each preview.
 - [x] Preserve manual priority over late orientation responses and maintain corrected recognition/saved inputs.
 - [x] Restore transparent circles and guard their styling with computed-style browser checks (v0.14.32).
-- [ ] Improve and evaluate real-coin orientation accuracy: Ben reports only 1 of 9 useful corrections. Current conservative angle service remains unchanged; workflow tests do not establish accuracy.
+- [ ] Improve and evaluate real-coin orientation accuracy: Ben reports only 1 of 9 useful corrections. v0.14.34 compares eight orientations using lettering and directional artwork. Workflow tests do not establish real-photo accuracy; live evaluation and device checks remain required.
+
+
+## Batch workspace and orientation — v0.14.34
+
+- [x] Replace expandable matching cards with a stable preview grid and one focused coin workspace.
+- [x] Keep outline circles transparent; retain the established cream wobbly frames and neon heading style.
+- [x] Reuse the unchanged single-coin photo preparation and request flow through an isolated batch adapter.
+- [x] Prevent whole-grid/image recreation on background updates; crop only changed outlines.
+- [x] Prioritise identification over queued orientation checks and preserve manual correction priority.
+- [x] Check 24-preview node stability, one mounted workspace, internal Back order and mobile/landscape widths.
+- [ ] Verify scrolling/compositing on physical iPhone and Android; desktop emulation cannot establish that black screens are gone on those devices.
+- [ ] Evaluate actual automatic rotation results on the recovered album photographs and additional designs.
