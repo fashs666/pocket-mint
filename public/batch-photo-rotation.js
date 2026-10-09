@@ -1,6 +1,15 @@
 /* Orientation only for already isolated batch crops. No detection or grading. */
 (() => {
+  const suggestions=new WeakMap();
   async function suggest(file){
+    if(window.PocketMintVisionAllowance?.blocked())return {file,confident:false,reason:'allowance'};
+    if(suggestions.has(file))return suggestions.get(file);
+    const pending=analyze(file);suggestions.set(file,pending);
+    const result=await pending;
+    if(['allowance','unavailable'].includes(result.reason))suggestions.delete(file);
+    return result;
+  }
+  async function analyze(file){
     try {
       const bitmap=await decodeIdentifyPhoto(file);
       const tile=384,pad=28,canvas=document.createElement('canvas');canvas.width=tile*2;canvas.height=(tile+pad)*2;
@@ -14,16 +23,16 @@
       }
       bitmap.close?.();const image=canvas.toDataURL('image/jpeg',.88);canvas.width=canvas.height=0;
       const response=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({image})});
-      if(!response.ok)return {file,confident:false,reason:'unavailable'};
       const direction=await response.json();
+      if(!response.ok)return {file,confident:false,reason:direction.reason==='allowance'?'allowance':'unavailable'};
       if(direction.confident!==true||!Number.isFinite(direction.angle)||Math.abs(direction.angle)>180)return {file,confident:false,reason:direction.reason||'uncertain'};
       const candidate=Math.abs(direction.angle)<1?file:await rotate(file,direction.angle);
       // Independently check the full-size chosen view; a contact-sheet choice alone
       // was confidently wrong on real album photos. Do not expose it until verified.
       const checkImage=await makeAnalysisImage(candidate);
       const check=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'verify',image:checkImage})});
-      if(!check.ok)return {file,confident:false,reason:'unavailable'};
       const verification=await check.json();
+      if(!check.ok)return {file,confident:false,reason:verification.reason==='allowance'?'allowance':'unavailable'};
       return verification.confident===true?{file:candidate,confident:true}:{file,confident:false,reason:verification.reason||'uncertain'};
     } catch {return {file,confident:false,reason:'unavailable'};}
   }

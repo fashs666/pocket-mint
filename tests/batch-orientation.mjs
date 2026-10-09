@@ -8,7 +8,8 @@ assert.equal((await (await worker.fetch(request(),env)).json()).angle,-90);
 assert.equal(await (await worker.fetch(new Request('https://test/'),env)).text(),'original asset');
 assert.equal((await worker.fetch(new Request('https://test/api/identify'),env)).status,405);
 assert.equal((await (await worker.fetch(new Request('https://test/api/photo-orientation',{method:'POST',body:JSON.stringify({image:'data:image/jpeg;base64,AA=='})}),{...env,AI:{run:async()=>({response:'COIN=yes; UPRIGHT=clear; CLOCKWISE=90; CONFIDENCE=99'})}})).json()).angle,90,'Original single-photo orientation remains unchanged');
-assert.equal(calls,1);env.AI.run=async()=>{throw Error('daily neurons allocation');};assert.equal((await (await worker.fetch(request(),env)).json()).reason,'allowance');
+assert.equal(calls,1);env.AI.run=async()=>{throw Error('4006: daily free allocation exceeded');};const quotaResponse=await worker.fetch(request(),env);assert.equal(quotaResponse.status,429);assert.equal((await quotaResponse.json()).diagnostic_code,'VISION-DAILY-LIMIT');
+env.AI.run=async()=>{throw Error('Rate limit temporary');};assert.equal((await (await worker.fetch(request(),env)).json()).reason,'unavailable');
 assert.equal((await (await worker.fetch(request(),{})).json()).reason,'unavailable');
 console.log('PASS batch orientation choices, conservative parsing, explicit unavailable/quota states and unchanged single-worker routing');
 

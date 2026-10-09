@@ -103,3 +103,13 @@ Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/ci
 - [x] Preserve selections on save failure and disable repeat addition of successfully saved physical crops.
 - [ ] Automatic rotation accuracy remains open; this release clarifies outcomes, not model accuracy.
 - [ ] Validate final review and scrolling on physical Android and iPhone.
+
+## Shared vision allowance — v0.14.40
+
+- [x] Automatically show a styled popup after a confirmed daily-limit response; show local reset time.
+- [x] Keep the cooldown through reload and share it across tabs; stop new vision requests until reset.
+- [x] Reuse exact batch photo/phase/value results in a bounded session cache; single recognition results remain uncached.
+- [x] Reuse orientation work for unchanged crop blobs; failed/unavailable checks remain retryable.
+- [x] Correct the batch orientation instruction to match four supplied views.
+- [ ] Evaluate orientation accuracy after allowance resets; no accuracy claim from mocked tests.
+- [ ] Rights-cleared condition-reference photos remain required.

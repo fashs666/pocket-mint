@@ -21,14 +21,14 @@ await page.route('**/api/batch-orientation',route=>{if(route.request().postDataJ
 await page.route('**/api/identify',route=>{requests.push(route.request().postDataJSON());return route.fulfill({json:{matches:[],uncertain:true,status:'no_match'}});});
 async function fixture(){await page.evaluate(async()=>{
  showView('findView');showFindTab('identify');const f=window.__batchFixture;f.resetPhoto();
- const source=document.createElement('canvas');source.width=source.height=128;const c=source.getContext('2d');c.fillStyle='#d8b36b';c.beginPath();c.arc(64,64,48,0,Math.PI*2);c.fill();c.fillStyle='#ff0000';c.fillRect(54,26,20,20);c.fillStyle='#0000ff';c.fillRect(54,80,20,20);
+ const source=document.createElement('canvas');source.width=source.height=128;const c=source.getContext('2d');window.__fixtureNumber=(window.__fixtureNumber||0)+1;c.fillStyle=`rgb(${216-window.__fixtureNumber*6},179,107)`;c.beginPath();c.arc(64,64,48,0,Math.PI*2);c.fill();c.fillStyle='#ff0000';c.fillRect(54,26,20,20);c.fillStyle='#0000ff';c.fillRect(54,80,20,20);
  f.state.source=source;f.state.sourceUrl=source.toDataURL();document.querySelector('#batchImage').src=f.state.sourceUrl;
  f.state.regions=[{id:'fixture',x:16,y:16,width:96,height:96,centreX:64,centreY:64,radiusX:48,radiusY:48,detectionNumber:1,reviewed:true}];
  f.stage('review',false);await f.refreshCrops();
  });await page.waitForFunction(()=>!document.querySelector('.batchRotationStatus').textContent.includes('Checking'));await page.locator('#batchNextToCoins').click();await page.waitForFunction(()=>!BatchIdentification.isIdentifying());}
 async function pixels(selector){return page.evaluate(async selector=>{const image=document.querySelector(selector);await image.decode();const c=document.createElement('canvas');c.width=image.naturalWidth;c.height=image.naturalHeight;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const data=ctx.getImageData(0,0,c.width,c.height).data;let x=0,y=0,n=0;for(let i=0;i<data.length;i+=4)if(data[i]>200&&data[i+1]<70&&data[i+2]<70&&data[i+3]>100){x+=(i/4)%c.width;y+=Math.floor(i/4/c.width);n++;}return {x:x/n/c.width,y:y/n/c.height,n};},selector);}
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.BatchIdentification&&window.__batchFixture&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.39'));await fixture();
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.BatchIdentification&&window.__batchFixture&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.40'));await fixture();
  const outline=await page.locator('.batchRegion').evaluate(el=>{const s=getComputedStyle(el);return {background:s.backgroundImage,radius:s.borderRadius,color:s.backgroundColor,border:s.borderTopWidth};});
  assert.equal(outline.background,'none','Coin outlines must not inherit opaque button backgrounds');
  assert.equal(outline.radius,'50%','Coin outlines remain circular');

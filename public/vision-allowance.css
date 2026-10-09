@@ -1,0 +1,8 @@
+.visionAllowanceDialog{width:min(92vw,440px);max-height:85dvh;padding:0;border:0;background:transparent;color:#28233d;overflow:visible}
+.visionAllowanceDialog::backdrop{background:rgba(7,10,26,.84)}
+.visionAllowanceDialog article{padding:16px;background:#f6e8ca;border:18px solid transparent;border-image:url('frames/coin-wobble.svg') 9% 15% fill stretch;border-radius:24px;overflow:auto;max-height:85dvh;box-sizing:border-box}
+.visionAllowanceDialog h2{font-size:1.5rem;line-height:1.25;color:#382d49}
+.visionAllowanceDialog p{line-height:1.5}
+.visionAllowanceDialog .visionResetTime{font-weight:700}
+.visionAllowanceDialog button{width:100%;min-height:48px;border:2px solid #b89a6d;border-radius:22px 26px 23px 25px;background:linear-gradient(#fff7e5,#e9d5af);color:#382d49;font:inherit;font-weight:700;box-shadow:0 4px 0 #a77d5055;cursor:pointer}
+.visionAllowanceDialog button:focus-visible{outline:3px solid #55cfd8;outline-offset:3px}
