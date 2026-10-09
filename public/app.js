@@ -1,6 +1,6 @@
 const DB_NAME = "PocketMintPhase0";
 const DB_VERSION = 3;
-const APP_VERSION = "0.14.38";
+const APP_VERSION = "0.14.39";
 const VIEW_IDS = new Set(["homeView", "findView", "wishlistView", "statsView", "collectionView", "myMintView", "settingsView", "seriesView", "milestonesView", "helpView"]);
 const APP_ICON_KEY = "pocketMintAppIcon";
 const APP_ICONS = {
@@ -771,7 +771,7 @@ function wire() {
 
 // Batch confirmation reuses the same collection writes as single-coin confirmation.
 // Each accepted crop remains an independent physical coin, including duplicates.
-async function addConfirmedBatchCoins(items) {
+async function addConfirmedBatchCoins(items,onSaved) {
   const added=[],photoFailures=[];
   for(const item of items){
     const coin=coinById(item.coinId);
@@ -779,6 +779,7 @@ async function addConfirmedBatchCoins(items) {
     const record=state.get(coin.id)||baseRec(coin.id);
     await saveRec(coin.id,{quantity:(record.quantity||0)+1});
     added.push(item.regionId);
+    if(typeof onSaved==='function')onSaved(item.regionId);
     if(item.crop)try{await addPhoto(coin.id,new File([item.crop],`batch-${Date.now()}.jpg`,{type:item.crop.type||"image/jpeg"}));}
     catch{photoFailures.push(item.regionId);}
   }

@@ -81,6 +81,8 @@
       for(const button of card.querySelectorAll('.batchRotationControls button[data-angle]')){const angle=Number(button.dataset.angle);button.setAttribute('aria-label',`Rotate coin ${coin.detectionNumber} ${angle<0?'left':'right'} 90 degrees`);button.disabled=state.checking||window.BatchIdentification?.isBusy?.();button.onclick=()=>window.BatchIdentification?.rotateCrop(coin,angle);}
     }
     $('batchNextToCoins').disabled=!state.crops.length||state.checking;
+    const rotationLabels=state.crops.map(c=>window.BatchIdentification?.rotationStatus(c)||'Check rotation');
+    text($('batchRotationSummary'),`Automatic rotation: ${rotationLabels.filter(s=>s.includes('corrected')).length} corrected · ${rotationLabels.filter(s=>s.includes('already upright')).length} already upright · ${rotationLabels.filter(s=>s.startsWith('Check rotation')).length} need your check · ${rotationLabels.filter(s=>s.startsWith('Checking')).length} checking · ${rotationLabels.filter(s=>s==='Rotation adjusted').length} manually adjusted`);
   }
   const geometry=c=>`${c.x}:${c.y}:${c.width}:${c.height}`;
   async function refreshCrops(){

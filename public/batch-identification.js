@@ -2,7 +2,8 @@
    Diagnostic reports are independent of collection confirmation. */
 (() => {
   const results=new Map(), $=id=>document.getElementById(id);
-  let crops=[],generation=0,busy=false,focusId=null,renderKey="",renderResult=null;
+  let crops=[],generation=0,busy=false,focusId=null,renderKey="",renderResult=null,finalMode=false;
+  const finalRows=new Map();
   let queueEnabled=false,queueRunning=false,queuePaused=false;const inFlight=new Set();let queueAbort=typeof AbortController==='function'?new AbortController():null;
   const orientationJobs=new Map(),orientationQueue=[];let orientationRunning=0;
   function rotationStatus(crop){return results.get(crop.id)?.orientationLabel||(orientationJobs.has(crop.id)?'Checking rotation…':'Check rotation');}
@@ -89,7 +90,7 @@
           result.orientationOnly=false;result.choices=[catalogueChoice(coin)];result.designId=coin.id;
           const variants=designVariants(coin);
           result.coinId=variants.length===1?coin.id:null;
-          result.ready=false;result.status='manual';result.manualOpen=false;
+          result.ready=false;result.reviewConfirmed=false;result.status='manual';result.manualOpen=false;
           render(crops);
         };
         suggestions.append(button);
@@ -114,7 +115,7 @@
     const reverse=adjustment.file!==effectivePhoto(crop).blob?await fileDataUrl(adjustment.file):undefined;
     if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
     results.set(crop.id,{...previous,status:'manual',choices:previous.choices||[],geometry:geometryOf(crop),ready:false,
-      orientationOnly:previous.orientationOnly??!previous.status,orientationAttempted:true,orientationLabel:adjustment.confident?'Rotation checked':adjustment.reason==='unavailable'?'Check rotation · service unavailable':adjustment.reason==='allowance'?'Check rotation · allowance reached':'Check rotation',...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
+      orientationOnly:previous.orientationOnly??!previous.status,orientationAttempted:true,orientationLabel:adjustment.confident?(reverse?'Auto rotation · corrected':'Auto rotation · already upright'):adjustment.reason==='unavailable'?'Check rotation · service unavailable':adjustment.reason==='allowance'?'Check rotation · allowance reached':'Check rotation · automatic check uncertain',...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
       message:adjustment.confident?'Orientation checked. Use Crop / rotate if it needs correcting.':'Orientation unclear. Use Crop / rotate to choose it yourself.'});
     window.BatchReview?.redraw();
   }
@@ -143,7 +144,7 @@
     input.onchange=async()=>{const file=input.files?.[0];if(!file)return;const revision=generation;button.disabled=true;
       try{const firstSideIsPortrait=result.firstSideIsPortrait||result.status==='needs_other_side'||result.observed?.side==='portrait';const source=await BatchCoins.prepareBatchImage(file);const blob=await new Promise((resolve,reject)=>source.toBlob(b=>b?resolve(b):reject(new Error('Could not read photo')),'image/jpeg',.9));source.width=0;source.height=0;
         const data=await fileDataUrl(blob);if(revision!==generation||!activeCrop(crop))return;
-        const current=editable(crop);current.ready=false;current.added=false;current.choices=[];current.designId=null;current.coinId=null;current.status='manual';
+        const current=editable(crop);current.ready=false;current.reviewConfirmed=false;current.added=false;current.choices=[];current.designId=null;current.coinId=null;current.status='manual';
         const updated={...current,firstSideIsPortrait,obverse:data,orientationOnly:true};results.set(crop.id,updated);
         updated.message='Other side added. Waiting to identify again.';window.BatchReview?.redraw();render(crops);startQueue();
       }catch(error){$('batchIdentifyStatus').textContent=error.message;}finally{button.disabled=false;input.value='';}
@@ -156,6 +157,14 @@
   }
   function render(nextCrops){
     crops=nextCrops;
+    if(!crops.length){finalMode=false;finalRows.clear();$('batchFinalList')?.replaceChildren();if($('batchFinalStatus'))$('batchFinalStatus').textContent='';}
+    if($('batchFinalReview'))$('batchFinalReview').hidden=!finalMode;
+    $('batchReview')?.classList?.toggle?.('final-review',finalMode);
+    if($('batchFinishSummary'))$('batchFinishSummary').hidden=!finalMode;
+    if($('batchResults'))$('batchResults').hidden=finalMode;
+    if($('batchFinish'))$('batchFinish').hidden=finalMode;
+    if($('batchNewPhoto')){$('batchNewPhoto').hidden=!finalMode;$('batchNewPhoto').disabled=busy;}
+    if(finalMode)renderFinalReview();
     const root=$('batchResultList');
     $('batchWorkspace').hidden=!focusId;
     const selected=crops.find(c=>c.id===focusId);
@@ -165,7 +174,7 @@
     if(overview){
       const ids=new Set(crops.map(c=>c.id));for(const node of [...overview.children])if(!ids.has(node.dataset.regionId))node.remove();
       for(const crop of crops){let button=[...overview.children].find(n=>n.dataset.regionId===crop.id);if(!button){button=document.createElement('button');button.type='button';button.dataset.regionId=crop.id;overview.append(button);}const label=`Coin ${crop.detectionNumber} · ${identificationStatus(crop)}`;if(button.textContent!==label)button.textContent=label;button.onclick=()=>openCoin(crop.id);}
-      overview.hidden=Boolean(focusId);
+      overview.hidden=Boolean(focusId)||finalMode;
     }
     $('batchCrops').hidden=Boolean(focusId);$('batchResults').classList?.toggle?.('workspace-open',Boolean(focusId));$('batchReview')?.classList?.toggle?.('workspace-open',Boolean(focusId));
     const current=selected?results.get(selected.id):null;
@@ -181,6 +190,7 @@
       const card=document.createElement('article');card.className='batchResult pm-cream-card';card.dataset.regionId=crop.id;
       const cardSummary=document.createElement('div');cardSummary.className='batchCompactSummary';card.append(cardSummary);
       const heading=document.createElement('h4');heading.textContent=`Coin ${crop.detectionNumber}`;card.append(heading);
+      const rotation=document.createElement('p');rotation.className='batchRotationStatus';rotation.textContent=rotationStatus(crop);card.append(rotation);
       const thumbnail=document.createElement('img');thumbnail.src=result?.reverse||crop.cropUrl;thumbnail.alt=`Coin ${crop.detectionNumber} crop`;card.append(thumbnail);
       const support=document.createElement('details');support.className='batchMatchHelp';support.open=Boolean(result.manualOpen);const supportTitle=document.createElement('summary');supportTitle.textContent='Search manually or change coin value';support.append(supportTitle);
       const summary=document.createElement('p');summary.className='batchResultSummary';
@@ -205,7 +215,7 @@
       }
       if(result?.status!=='loading'&&!result?.added){
         const label=document.createElement('label');label.textContent='Coin value (choose if unclear)';const select=document.createElement('select');select.add(new Option('Detect automatically',''));for(const value of ['5c','10c','20c','50c','$1','$2'])select.add(new Option(value,value));select.value=result?.denomination||'';select.disabled=busy||!crop.reviewed;
-        select.onchange=()=>{const current=editable(crop);current.denomination=select.value;current.choices=[];current.designId=null;current.coinId=null;current.ready=false;current.status='manual';render(crops);};label.append(select);support.append(label);
+        select.onchange=()=>{const current=editable(crop);current.denomination=select.value;current.choices=[];current.designId=null;current.coinId=null;current.ready=false;current.reviewConfirmed=false;current.status='manual';render(crops);};label.append(select);support.append(label);
       }
       if(result?.observed){const details=document.createElement('p');details.className='batchEvidence';details.textContent=`Value: ${result.observed.denomination||'unreadable'} · Year: ${result.observed.year||'unreadable'}${result.observed.side?` · ${result.observed.side} side`:''}`;card.append(details);}
       if(result?.choices?.length){
@@ -216,15 +226,15 @@
           title.textContent=result.status==='manual'?'Selected from catalogue':`Suggested match${suggested.confidence!==null?` · ${suggested.confidence}%`:''}`;
           const issue=result.coinId?coinById(result.coinId):null;
           const pair=document.createElement('div');pair.className='batchPair';const ownBox=document.createElement('div');const caption=document.createElement('span');caption.textContent='Your photo';thumbnail.removeAttribute?.('role');thumbnail.removeAttribute?.('tabindex');thumbnail.onclick=null;thumbnail.onkeydown=null;ownBox.append(thumbnail,caption);pair.append(ownBox,reference(issue||selected?.coin||suggested.coin));cardSummary.insertBefore?cardSummary.insertBefore(pair,summary):cardSummary.append(pair);cardSummary.append(title);
-          if(result.choices.length>1){const alternatives=document.createElement('div');alternatives.className='batchAlternatives';for(const choice of result.choices.slice(0,3)){const button=document.createElement('button');button.type='button';button.className='batchSuggestion';button.disabled=busy;const pic=document.createElement('img');pic.src=choice.coin.reference_image;pic.alt='';const text=document.createElement('span');text.textContent=choice.title;button.append(pic,text);button.onclick=()=>{result.designId=choice.id;result.coinId=null;result.ready=false;render(crops);};alternatives.append(button);}card.append(alternatives);}
-          const reject=document.createElement('button');reject.type='button';reject.textContent='Not this coin · choose manually';reject.disabled=busy||result.added;reject.onclick=()=>{result.designId=null;result.coinId=null;result.ready=false;result.manualOpen=true;render(crops);};card.append(reject);
+          if(result.choices.length>1){const alternatives=document.createElement('div');alternatives.className='batchAlternatives';for(const choice of result.choices.slice(0,3)){const button=document.createElement('button');button.type='button';button.className='batchSuggestion';button.disabled=busy;const pic=document.createElement('img');pic.src=choice.coin.reference_image;pic.alt='';const text=document.createElement('span');text.textContent=choice.title;button.append(pic,text);button.onclick=()=>{result.designId=choice.id;result.coinId=null;result.ready=false;result.reviewConfirmed=false;render(crops);};alternatives.append(button);}card.append(alternatives);}
+          const reject=document.createElement('button');reject.type='button';reject.textContent='Not this coin · choose manually';reject.disabled=busy||result.added;reject.onclick=()=>{result.designId=null;result.coinId=null;result.ready=false;result.reviewConfirmed=false;result.manualOpen=true;render(crops);};card.append(reject);
         }
         const designLabel=document.createElement('label');designLabel.textContent='Design';
         const designSelect=document.createElement('select');designSelect.setAttribute('aria-label',`Coin ${crop.detectionNumber} design`);
         designSelect.add(new Option('Choose design',''));
         for(const choice of result.choices)designSelect.add(new Option(`${choice.title}${choice.confidence===null?'':` · ${choice.confidence}%`}`,choice.id));
         designSelect.value=result.designId||'';designSelect.disabled=busy||result.added;
-        designSelect.onchange=()=>{result.designId=designSelect.value;result.coinId=null;result.ready=false;render(crops);};
+        designSelect.onchange=()=>{result.designId=designSelect.value;result.coinId=null;result.ready=false;result.reviewConfirmed=false;render(crops);};
         designLabel.append(designSelect);card.append(designLabel);
         if(selected){
           const variants=designVariants(selected.coin);
@@ -233,7 +243,7 @@
           issueSelect.add(new Option('Choose issue',''));
           for(const variant of variants)issueSelect.add(new Option(variantIssueLabel(variant,variants),variant.id));
           issueSelect.value=result.coinId||'';issueSelect.disabled=busy||result.added;
-          issueSelect.onchange=()=>{result.coinId=issueSelect.value||null;result.ready=false;render(crops);};
+          issueSelect.onchange=()=>{result.coinId=issueSelect.value||null;result.ready=false;result.reviewConfirmed=false;render(crops);};
           issueLabel.append(issueSelect);card.append(issueLabel);
 
         }
@@ -245,7 +255,8 @@
     const count=Boolean(selected?.reviewed&&current?.coinId&&!current?.added);
     $('batchAddConfirmed').hidden=!count;
     $('batchAddConfirmed').disabled=busy;
-    if($('batchAddConfirmed').textContent!=='Confirm & add this coin')$('batchAddConfirmed').textContent='Confirm & add this coin';
+    if($('batchBottomNext')){$('batchBottomNext').disabled=busy;const index=crops.findIndex(c=>c.id===focusId);$('batchBottomNext').textContent=crops.slice(index+1).some(c=>!results.get(c.id)?.added)?'Next coin ›':'Review & add ›';}
+    if($('batchAddConfirmed').textContent!=='Confirm & next')$('batchAddConfirmed').textContent='Confirm & next';
   
   }
   function renderTestReport(card,result,crop){
@@ -331,7 +342,7 @@
       const first=previous.reverseBlob||previous.reverse||crop.crop;const swap=Boolean(previous.firstSideIsPortrait&&previous.obverse);
       const data=await window.BatchSingleAdapter.identify({reverse:swap?previous.obverse:first,obverse:swap?first:previous.obverse||null,denomination:previous.denomination||'',signal:queueAbort&&typeof AbortSignal.any==='function'?AbortSignal.any([queueAbort.signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000)});
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
-      results.set(crop.id,{...previous,...classify(data),orientationOnly:false,geometry,testSaved:false});
+      results.set(crop.id,{...previous,...classify(data),orientationOnly:false,geometry,testSaved:false,reviewConfirmed:false});
     }catch(error){
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
       results.set(crop.id,{...previous,orientationOnly:false,status:'error',ready:false,message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,analysisError:error.analysisError||{message:error.message},quota:Boolean(error.quota),geometry});
@@ -341,24 +352,41 @@
   }
   function openCoin(id){
     if(!crops.some(c=>c.id===id))return;
+    finalMode=false;
     focusId=id;renderKey='';window.BatchReview?.showCoins();render(crops);
     $('batchWorkspace').scrollIntoView({block:'start',behavior:'smooth'});
   }
-  function closeWorkspace(){if(!focusId)return false;focusId=null;render(crops);($('batchIdentificationOverview')||$('batchCrops')).scrollIntoView({block:'start',behavior:'smooth'});return true;}
+  function closeWorkspace(){if(!focusId&&!finalMode)return false;finalMode=false;focusId=null;render(crops);($('batchIdentificationOverview')||$('batchCrops')).scrollIntoView({block:'start',behavior:'smooth'});return true;}
   $('batchCloseCoin').onclick=closeWorkspace;
   function advanceCoin(){
     const index=crops.findIndex(c=>c.id===focusId);const next=crops.slice(index+1).find(c=>!results.get(c.id)?.added);
     if(next)openCoin(next.id);else finishBatch();
   }
   function finishBatch(){
-    closeWorkspace();
-    const added=crops.filter(c=>results.get(c.id)?.added).length,remaining=crops.length-added;
-    const summary=$('batchFinishSummary');if(summary){summary.hidden=false;summary.textContent=`Batch reviewed · ${added} added to My Mint · ${remaining} not added. ${remaining?'Unmatched or unconfirmed coins remain available above; no coin was added automatically.':'All coins confirmed.'}`;$('batchNewPhoto').hidden=false;summary.scrollIntoView({block:'center',behavior:'smooth'});}
+    focusId=null;finalMode=true;render(crops);$('batchFinalReview')?.scrollIntoView({block:'start',behavior:'smooth'});
   }
+  function renderFinalReview(){
+    const root=$('batchFinalList');if(!root)return;
+    const ids=new Set(crops.map(c=>c.id));for(const [id,row] of finalRows)if(!ids.has(id)){row.node.remove();finalRows.delete(id);}
+    let selected=0,added=0;
+    for(const crop of crops){
+      const result=results.get(crop.id),coin=coinById(result?.coinId),eligible=Boolean(crop.reviewed&&coin&&!result?.added&&result?.status!=='loading'&&!result?.orientationOnly);
+      if(result?.added)added++;if(eligible&&result.reviewConfirmed)selected++;
+      let row=finalRows.get(crop.id);
+      if(!row){const node=document.createElement('article');node.className='batchFinalCoin pm-cream-card';const image=document.createElement('img'),label=document.createElement('label'),checkbox=document.createElement('input'),name=document.createElement('span'),review=document.createElement('button');checkbox.type='checkbox';review.type='button';review.textContent='Review';label.append(checkbox,name);node.append(image,label,review);root.append(node);row={node,image,checkbox,name,review};finalRows.set(crop.id,row);}
+      const url=effectivePhoto(crop).url||crop.cropUrl;if(row.image.getAttribute('src')!==url)row.image.src=url;row.image.alt=`Coin ${crop.detectionNumber}`;row.image.decoding='async';
+      row.checkbox.checked=eligible&&Boolean(result.reviewConfirmed);row.checkbox.disabled=busy||!eligible;row.checkbox.setAttribute('aria-label',`Select coin ${crop.detectionNumber} to add`);row.checkbox.onchange=()=>{result.reviewConfirmed=row.checkbox.checked;render(crops);};
+      row.name.textContent=`Coin ${crop.detectionNumber} · ${coin?`${coin.denomination_display} · ${coin.year} ${coin.title}`:identificationStatus(crop)}${result?.added?' · Added':''}`;row.review.textContent='›';row.review.setAttribute('aria-label',`Review coin ${crop.detectionNumber}`);row.review.onclick=()=>openCoin(crop.id);row.review.disabled=busy;
+    }
+    const summary=$('batchFinishSummary');summary.hidden=false;summary.textContent=`${selected} selected to add · ${added} already added · ${crops.length-added-selected} left out`;
+    $('batchQuickAdd').disabled=busy||!selected;$('batchQuickAdd').textContent=busy?'Adding coins…':`Add ${selected} selected coin${selected===1?'':'s'} to My Mint`;
+  }
+  if($('batchReturnReview'))$('batchReturnReview').onclick=closeWorkspace;
+  if($('batchBottomNext'))$('batchBottomNext').onclick=advanceCoin;
   if($('batchFinish'))$('batchFinish').onclick=finishBatch;
   if($('batchNewPhoto'))$('batchNewPhoto').onclick=()=>{if(!crops.some(c=>!results.get(c.id)?.added)||confirm('Start a new photo? Coins not added in this batch will be cleared. Saved coins and test reports are kept.'))$('batchRetake').click();};
   $('batchNextCoin').onclick=advanceCoin;
-  function identificationStatus(crop){const r=results.get(crop.id);return r?.added?'Added':r?.status==='loading'?'Identifying…':r&&!r.orientationOnly?r.status==='error'?'Try again':r.choices?.length?'Ready to review':'Choose manually':queuePaused?'Paused':'Waiting';}
+  function identificationStatus(crop){const r=results.get(crop.id);return r?.added?'Added':r?.reviewConfirmed?'Confirmed for final add':r?.status==='loading'?'Identifying…':r&&!r.orientationOnly?r.status==='error'?'Try again':r.choices?.length?'Ready to review':'Choose manually':queuePaused?'Paused':'Waiting';}
   function queueProgress(){
     const done=crops.filter(c=>{const r=results.get(c.id);return r&&!r.orientationOnly&&r.status!=='loading';}).length;
     const active=crops.find(c=>inFlight.has(c.id));
@@ -403,16 +431,21 @@
   if($('batchSaveTests'))$('batchSaveTests').onclick=()=>saveBatchTests(false);
   if($('batchExportTests'))$('batchExportTests').onclick=()=>saveBatchTests(true);
   $('batchAddConfirmed').onclick=async()=>{
+    const current=results.get(focusId);if(busy||!current?.coinId||current.added||!crops.find(c=>c.id===focusId)?.reviewed)return;
+    current.reviewConfirmed=true;advanceCoin();
+  };
+  if($('batchQuickAdd'))$('batchQuickAdd').onclick=async()=>{
     if(busy)return;
-    const items=crops.filter(crop=>{const result=results.get(crop.id);return crop.id===focusId&&crop.reviewed&&result?.coinId&&!result.added;}).map(crop=>({regionId:crop.id,coinId:results.get(crop.id).coinId,crop:results.get(crop.id).reverseBlob||crop.crop}));
+    const items=crops.filter(crop=>{const result=results.get(crop.id);return crop.reviewed&&result?.reviewConfirmed&&result?.coinId&&!result.added&&result.status!=='loading'&&!result.orientationOnly;}).map(crop=>({regionId:crop.id,coinId:results.get(crop.id).coinId,crop:results.get(crop.id).reverseBlob||crop.crop}));
     if(!items.length)return;
-    const revision=generation;let saved=false;busy=true;render(crops);$('batchIdentifyStatus').textContent='Saving confirmed coins…';
+    const revision=generation,completed=new Set();busy=true;render(crops);$('batchFinalStatus').textContent='Saving selected coins…';
+    const markSaved=id=>{completed.add(id);if(revision===generation){const result=results.get(id);if(result){result.added=true;result.ready=false;result.reviewConfirmed=false;}}};
     try{
-      const added=await window.PocketMintBatchCollection.addConfirmedBatchCoins(items);if(revision!==generation)return;saved=added.includes(focusId);
-      for(const id of added){const result=results.get(id);if(result){result.added=true;result.ready=false;}}
-      $('batchIdentifyStatus').textContent=`${added.length} coin${added.length===1?'':'s'} added. Other crops remain available.`;
-    }catch(error){$('batchIdentifyStatus').textContent=`Could not finish saving: ${error.message}`;}
-    finally{if(revision===generation){busy=false;render(crops);runQueue();if(saved)advanceCoin();}}
+      const added=await window.PocketMintBatchCollection.addConfirmedBatchCoins(items,markSaved);if(revision!==generation)return;
+      for(const id of added)markSaved(id);
+      $('batchFinalStatus').textContent=`${added.length} coin${added.length===1?'':'s'} added to My Mint. ${items.length-added.length?'Some selected coins were not saved; try those again.':'Other coins have been left out.'}`;
+    }catch(error){if(revision===generation)$('batchFinalStatus').textContent=`${completed.size?`${completed.size} already saved. `:''}Could not finish saving: ${error.message}. Unsaved selections are kept; try again.`;}
+    finally{if(revision===generation){busy=false;render(crops);runQueue();}}
   };
   window.BatchIdentification={reset,sync,render,editCrop,autoRotate,rotateCrop,scheduleOrientation,prepareOrientation,rotationStatus,identificationStatus,startQueue,effectivePhoto,openCoin,closeWorkspace,isBusy:()=>busy,isIdentifying:()=>queueRunning||inFlight.size>0};
   window.BatchIdentificationCore={classify};

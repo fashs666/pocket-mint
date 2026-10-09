@@ -92,3 +92,14 @@ Implementation and automated validation are recorded in MULTICOIN_DETECTION_FIX.
 - [ ] Supply rights-cleared photographic condition references for the nine grades and supported denominations (existing condition-image backlog remains active).
 
 Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/twenty-cents and https://www.ramint.gov.au/collect/national-coin-collection/corporate-partnerships/woolworths-programs/afl
+
+## Final quick-add review — v0.14.39
+
+- [x] Finish opens a distinct final screen with compact photo/name/year rows and selection checkboxes.
+- [x] Confirm & next selects a reviewed issue without saving; Add selected coins performs the explicit collection write at the end.
+- [x] Add a bottom Next coin / Review & add control; return to review retains selections.
+- [x] Keep uncertain/unmatched coins out of bulk add until an exact issue is chosen and explicitly selected.
+- [x] Show automatic rotation outcome labels and a crop-screen total: corrected, already upright, needs checking, checking and manual adjustments.
+- [x] Preserve selections on save failure and disable repeat addition of successfully saved physical crops.
+- [ ] Automatic rotation accuracy remains open; this release clarifies outcomes, not model accuracy.
+- [ ] Validate final review and scrolling on physical Android and iPhone.

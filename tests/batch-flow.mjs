@@ -119,3 +119,14 @@ context.window.BatchIdentification.reset();context.window.BatchIdentification.re
 context.window.BatchIdentification.reset();resolveResponse({ok:true,json:async()=>({matches:[],uncertain:true})});await new Promise(r=>setImmediate(r));
 assert.equal(context.window.BatchIdentificationCore.getResult(first.id),undefined,'Reset rejects a late queued response');
 console.log('PASS sequential prefetch, automatic next request, explicit confirmation, no retry loop and reset cancellation');
+
+// A later storage failure must acknowledge earlier writes to the batch UI,
+// so retrying the unsaved remainder cannot add those physical coins twice.
+const appSource=await readFile('public/app.js','utf8');
+const collectionSource=appSource.slice(appSource.indexOf('async function addConfirmedBatchCoins('),appSource.indexOf('window.PocketMintBatchCollection='));
+const committed=[],acknowledged=[];
+const collectionContext={coinById:id=>({id}),state:new Map(),baseRec:id=>({id,quantity:0}),saveRec:async(id)=>{if(id==='second')throw Error('storage failure');committed.push(id);},loadLocal:async()=>{},renderAll(){},showToast(){}};
+vm.createContext(collectionContext);vm.runInContext(collectionSource,collectionContext);
+await assert.rejects(collectionContext.addConfirmedBatchCoins([{coinId:'first',regionId:'physical-first'},{coinId:'second',regionId:'physical-second'}],id=>acknowledged.push(id)),/storage failure/);
+assert.deepEqual(committed,['first']);assert.deepEqual(acknowledged,['physical-first']);
+console.log('PASS partial collection saves acknowledge committed crops before a later failure');
