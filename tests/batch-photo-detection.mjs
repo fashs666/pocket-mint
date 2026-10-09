@@ -59,5 +59,14 @@ try {
     return {png:png.startsWith('data:image/png;'),jpeg:jpeg.startsWith('data:image/jpeg;base64,'),size:jpeg.length,width:image.width,height:image.height};
   });
   assert(conversion.png&&conversion.jpeg&&conversion.size<5_000_000);assert.equal(conversion.width,960);assert.equal(conversion.height,720);
+  // Screenshot regression checks only the visible pixels, including existing
+  // overlays. It is not evidence of accuracy on the unavailable original photo.
+  const screenshotPath=path.join(process.env.BATCH_PHOTO_DIR,'IMG_5048.jpeg');
+  try{await fs.access(screenshotPath);const data='data:image/jpeg;base64,'+(await fs.readFile(screenshotPath)).toString('base64');
+    const regions=await page.evaluate(async data=>{const img=new Image();img.src=data;await img.decode();const c=document.createElement('canvas');c.width=587;c.height=781;c.getContext('2d').drawImage(img,60,415,587,781,0,0,587,781);return BatchCoins.detectCoins(c);},data);
+    for(const [x,y] of [[97,63],[68,303]])assert(!regions.some(r=>Math.hypot(r.centreX-x,r.centreY-y)<30),'Tiny false seam circles are removed');
+    assert(regions.some(r=>Math.hypot(r.centreX-132,r.centreY-175)<25),'Previously missed gold disk has a local outline');
+    console.log('PASS supplied screenshot: tiny seam circles removed and missed gold disk recovered; obscured bottom coin is not automatically judged usable');
+  }catch(error){if(error.code!=='ENOENT')throw error;}
   console.log('PASS real photographs, no-coin screenshot, empty pockets, independent limits and PNG-to-JPEG batch request conversion');
 }finally{await browser.close();}

@@ -11,7 +11,7 @@
       "https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/two-dollars"
     ],
     "canonical_target": 270,
-    "taxonomy_correction": "Tokyo 2020 six designs are $1, per Royal Australian Mint Woolworths program. 2025 Torres Strait Islander Flag $2 circulated. Researched denomination targets: $1 136, $2 75."
+    "taxonomy_correction": "Tokyo 2020 six coloured designs are $2, confirmed by the Mint 2021–22 annual report. The partner webpage incorrectly labels the program $1. Stable historical design/issue IDs are retained. Design totals: $1 130, $2 81."
   },
   "series": [
     {
@@ -5578,11 +5578,11 @@
     {
       "id": "D100-TOKYO-2020-OLYMPIC-TEAM-COURAGE-OLYMPIC-OLYMPIC-TOKYO-2020",
       "title": "Tokyo 2020 Olympic Team — Courage",
-      "denomination": 100,
-      "denomination_display": "$1",
+      "denomination": 200,
+      "denomination_display": "$2",
       "composition": "Aluminium bronze",
-      "mass_grams": 9,
-      "diameter_mm": 25,
+      "mass_grams": 6.6,
+      "diameter_mm": 20.5,
       "seriesId": "olympic",
       "releaseId": "olympic_tokyo_2020",
       "collectionTags": [],
@@ -5599,7 +5599,7 @@
         }
       ],
       "searchAliases": [],
-      "source_id": "ram_tokyo",
+      "source_id": "ram_tokyo_annual_report",
       "image_status": "catalogue",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-one-dollar-2020-australian-olympic-courage.jpg",
       "reference_image_kind": "reverse",
@@ -5611,11 +5611,11 @@
     {
       "id": "D100-TOKYO-2020-OLYMPIC-TEAM-DEDICATION-OLYMPIC-OLYMPIC-TOKYO-2020",
       "title": "Tokyo 2020 Olympic Team — Dedication",
-      "denomination": 100,
-      "denomination_display": "$1",
+      "denomination": 200,
+      "denomination_display": "$2",
       "composition": "Aluminium bronze",
-      "mass_grams": 9,
-      "diameter_mm": 25,
+      "mass_grams": 6.6,
+      "diameter_mm": 20.5,
       "seriesId": "olympic",
       "releaseId": "olympic_tokyo_2020",
       "collectionTags": [],
@@ -5632,7 +5632,7 @@
         }
       ],
       "searchAliases": [],
-      "source_id": "ram_tokyo",
+      "source_id": "ram_tokyo_annual_report",
       "image_status": "catalogue",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-one-dollar-2020-australian-olympic-dedication.jpg",
       "reference_image_kind": "reverse",
@@ -5644,11 +5644,11 @@
     {
       "id": "D100-TOKYO-2020-OLYMPIC-TEAM-PASSION-OLYMPIC-OLYMPIC-TOKYO-2020",
       "title": "Tokyo 2020 Olympic Team — Passion",
-      "denomination": 100,
-      "denomination_display": "$1",
+      "denomination": 200,
+      "denomination_display": "$2",
       "composition": "Aluminium bronze",
-      "mass_grams": 9,
-      "diameter_mm": 25,
+      "mass_grams": 6.6,
+      "diameter_mm": 20.5,
       "seriesId": "olympic",
       "releaseId": "olympic_tokyo_2020",
       "collectionTags": [],
@@ -5665,7 +5665,7 @@
         }
       ],
       "searchAliases": [],
-      "source_id": "ram_tokyo",
+      "source_id": "ram_tokyo_annual_report",
       "image_status": "catalogue",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-one-dollar-2020-australian-olympic-passion.jpg",
       "reference_image_kind": "reverse",
@@ -5677,11 +5677,11 @@
     {
       "id": "D100-TOKYO-2020-OLYMPIC-TEAM-RESILIENCE-OLYMPIC-OLYMPIC-TOKYO-2020",
       "title": "Tokyo 2020 Olympic Team — Resilience",
-      "denomination": 100,
-      "denomination_display": "$1",
+      "denomination": 200,
+      "denomination_display": "$2",
       "composition": "Aluminium bronze",
-      "mass_grams": 9,
-      "diameter_mm": 25,
+      "mass_grams": 6.6,
+      "diameter_mm": 20.5,
       "seriesId": "olympic",
       "releaseId": "olympic_tokyo_2020",
       "collectionTags": [],
@@ -5698,7 +5698,7 @@
         }
       ],
       "searchAliases": [],
-      "source_id": "ram_tokyo",
+      "source_id": "ram_tokyo_annual_report",
       "image_status": "catalogue",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-one-dollar-2020-australian-olympic-resilience.jpg",
       "reference_image_kind": "reverse",
@@ -5710,11 +5710,11 @@
     {
       "id": "D100-TOKYO-2020-OLYMPIC-TEAM-STRIVING-OLYMPIC-OLYMPIC-TOKYO-2020",
       "title": "Tokyo 2020 Olympic Team — Striving",
-      "denomination": 100,
-      "denomination_display": "$1",
+      "denomination": 200,
+      "denomination_display": "$2",
       "composition": "Aluminium bronze",
-      "mass_grams": 9,
-      "diameter_mm": 25,
+      "mass_grams": 6.6,
+      "diameter_mm": 20.5,
       "seriesId": "olympic",
       "releaseId": "olympic_tokyo_2020",
       "collectionTags": [],
@@ -5731,7 +5731,7 @@
         }
       ],
       "searchAliases": [],
-      "source_id": "ram_tokyo",
+      "source_id": "ram_tokyo_annual_report",
       "image_status": "catalogue",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-one-dollar-2020-australian-olympic-striving.jpg",
       "reference_image_kind": "reverse",
@@ -5743,11 +5743,11 @@
     {
       "id": "D100-TOKYO-2020-PARALYMPIC-TEAM-SET-TO-SOAR-OLYMPIC-OLYMPIC-TOKYO-2020",
       "title": "Tokyo 2020 Paralympic Team — Set to Soar",
-      "denomination": 100,
-      "denomination_display": "$1",
+      "denomination": 200,
+      "denomination_display": "$2",
       "composition": "Aluminium bronze",
-      "mass_grams": 9,
-      "diameter_mm": 25,
+      "mass_grams": 6.6,
+      "diameter_mm": 20.5,
       "seriesId": "olympic",
       "releaseId": "olympic_tokyo_2020",
       "collectionTags": [],
@@ -5764,7 +5764,7 @@
         }
       ],
       "searchAliases": [],
-      "source_id": "ram_tokyo",
+      "source_id": "ram_tokyo_annual_report",
       "image_status": "catalogue",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-one-dollar-2020-australian-paralympic-set-to-soar.jpg",
       "reference_image_kind": "reverse",
@@ -9752,7 +9752,12 @@
           "colour": null
         }
       ],
-      "searchAliases": [],
+      "searchAliases": [
+        "AUS Commonwealth",
+        "aus commonwealth coin",
+        "2018 Australian Commonwealth Games Team",
+        "Gold Coast green team logo"
+      ],
       "source_id": "ram_partner_gold-coast-commonwealth",
       "image_status": "exact",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-two-dollars-2018-gold-coast-commonwealth-games-logo-green.jpg?itok=zu5M1BiK",
@@ -9889,7 +9894,13 @@
           "colour": null
         }
       ],
-      "searchAliases": [],
+      "searchAliases": [
+        "AUS Commonwealth",
+        "aus commonwealth coin",
+        "2022 Commonwealth Games",
+        "Birmingham Commonwealth Games",
+        "Commonwealth team A"
+      ],
       "source_id": "ram_partner_australian-commonwealth",
       "image_status": "exact",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-two-dollars-2022-australian-commonwealth-games-team-a.jpg?itok=izzQUg80",
@@ -9918,7 +9929,13 @@
           "colour": null
         }
       ],
-      "searchAliases": [],
+      "searchAliases": [
+        "AUS Commonwealth",
+        "aus commonwealth coin",
+        "2022 Commonwealth Games",
+        "Birmingham Commonwealth Games",
+        "Commonwealth team U"
+      ],
       "source_id": "ram_partner_australian-commonwealth",
       "image_status": "exact",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-two-dollars-2022-australian-commonwealth-games-team-u.jpg?itok=P4CBDSR2",
@@ -9947,7 +9964,13 @@
           "colour": null
         }
       ],
-      "searchAliases": [],
+      "searchAliases": [
+        "AUS Commonwealth",
+        "aus commonwealth coin",
+        "2022 Commonwealth Games",
+        "Birmingham Commonwealth Games",
+        "Commonwealth team S"
+      ],
       "source_id": "ram_partner_australian-commonwealth",
       "image_status": "exact",
       "reference_image": "https://www.ramint.gov.au/sites/default/files/styles/medium/public/2025-04/uncirculated-coins-two-dollars-2022-australian-commonwealth-games-team-s.jpg?itok=LsdKCoLn",

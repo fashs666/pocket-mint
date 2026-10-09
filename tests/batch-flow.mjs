@@ -70,6 +70,9 @@ assert.deepEqual(requestImages.slice(-2),[edited,portrait],'Both edited design a
 resolveResponse({ok:true,json:async()=>({matches:[],uncertain:true})});await editedRequest;
 assert.equal(context.window.BatchIdentificationCore.getResult(crop.id).reverse,edited,'Keep the saved transparent specimen unchanged');
 console.log('PASS batch edited PNG request preparation without changing saved specimen');
+context.window.BatchIdentification.reset();context.window.BatchIdentification.render([{...crop,reviewed:false}]);
+let prematureRotation=0;context.window.BatchPhotoRotation={suggest:async()=>{prematureRotation++;return {file:crop.crop,confident:false};}};
+context.window.BatchIdentification.scheduleOrientation();assert.equal(prematureRotation,0,'Unconfirmed outlines must not consume orientation requests');
 context.window.BatchIdentification.reset();context.window.BatchIdentification.render([crop]);
 let resolveOrientation;
 context.window.BatchPhotoRotation={suggest:()=>new Promise(resolve=>resolveOrientation=resolve)};

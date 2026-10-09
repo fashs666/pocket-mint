@@ -93,22 +93,25 @@ async function detectCoins(source) {
   }
   // Gradient voting adds candidates when foreground segmentation fails on a textured
   // surface. Each strong edge votes for plausible centres on both sides of its rim.
-  const gray=new Uint8Array(width*height);
-  for(let i=0;i<gray.length;i++)gray[i]=Math.round(.299*rgba[i*4]+.587*rgba[i*4+1]+.114*rgba[i*4+2]);
+  const gray=new Uint8Array(width*height),luminance=new Uint8Array(width*height);
+  // The brightest colour channel preserves bronze rims against dark album
+  // strips where weighted luminance flattens their contrast. Neutral silver
+  // and paper keep the same intensity; geometry checks still reject texture.
+  for(let i=0;i<gray.length;i++){gray[i]=Math.max(rgba[i*4],rgba[i*4+1],rgba[i*4+2]);luminance[i]=Math.round(.299*rgba[i*4]+.587*rgba[i*4+1]+.114*rgba[i*4+2]);}
   // Suppress album stitching and fabric grain before checking rim direction.
   // Strong raw texture gradients are not evidence of a continuous disk edge.
-  const smooth=new Uint8Array(gray.length);
+  const smooth=new Uint8Array(gray.length),luminanceSmooth=new Uint8Array(gray.length);
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){
-    let sum=0,count=0;
+    let sum=0,lumSum=0,count=0;
     for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
       const sx=x+dx,sy=y+dy;if(sx<0||sy<0||sx>=width||sy>=height)continue;
-      sum+=gray[sy*width+sx];count++;
+      sum+=gray[sy*width+sx];lumSum+=luminance[sy*width+sx];count++;
     }
-    smooth[y*width+x]=Math.round(sum/count);
+    smooth[y*width+x]=Math.round(sum/count);luminanceSmooth[y*width+x]=Math.round(lumSum/count);
   }
-  function rimEvidence({x,y,rx,ry}) {
+  function rimEvidence({x,y,rx,ry},field=gray,blur=smooth) {
     let hits=0,contrast=0,positive=0,negative=0,surface=0,surfacePositive=0,surfaceNegative=0,radialHits=0;
-    const quarters=[0,0,0,0];
+    const quarters=[0,0,0,0],quarterPositive=[0,0,0,0],quarterNegative=[0,0,0,0],surfaceQuarters=Array.from({length:4},()=>[0,0]);
     // A real coin has a continuous edge all around its perimeter. A textured
     // table can generate centre votes but usually fails this angular check.
     for(let angle=0;angle<48;angle++){
@@ -118,28 +121,30 @@ async function detectCoins(source) {
       for(const adjustment of [.94,1,1.06]){
         const ex=Math.round(x+ux*rx*adjustment),ey=Math.round(y+uy*ry*adjustment);
         if(ex>0&&ey>0&&ex<width-1&&ey<height-1){
-          const index=ey*width+ex,gx=smooth[index+1]-smooth[index-1],gy=smooth[index+width]-smooth[index-width],strength=Math.hypot(gx,gy);
+          const index=ey*width+ex,gx=blur[index+1]-blur[index-1],gy=blur[index+width]-blur[index-width],strength=Math.hypot(gx,gy);
           const nx=ux/rx,ny=uy/ry,alignment=strength?Math.abs(gx*nx+gy*ny)/(strength*Math.hypot(nx,ny)):0;
           if(strength>=12&&alignment>=.85)radial=true;
         }
         const insideX=Math.round(x+ux*rx*(adjustment-.10)),insideY=Math.round(y+uy*ry*(adjustment-.10));
         const outsideX=Math.round(x+ux*rx*(adjustment+.10)),outsideY=Math.round(y+uy*ry*(adjustment+.10));
         if(insideX<1||outsideX<1||insideY<1||outsideY<1||insideX>=width-1||outsideX>=width-1||insideY>=height-1||outsideY>=height-1)continue;
-        const difference=gray[outsideY*width+outsideX]-gray[insideY*width+insideX];
+        const difference=field[outsideY*width+outsideX]-field[insideY*width+insideX];
         if(Math.abs(difference)>strongest){strongest=Math.abs(difference);signed=difference;}
       }
       if(radial)radialHits++;
-      if(strongest>=BATCH_CONFIG.minRimContrast){hits++;quarters[Math.floor(angle/12)]++;contrast+=strongest;if(signed>0)positive++;else negative++;}
+      if(strongest>=BATCH_CONFIG.minRimContrast){hits++;const q=Math.floor(angle/12);quarters[q]++;contrast+=strongest;if(signed>0){positive++;quarterPositive[q]++;}else{negative++;quarterNegative[q]++;}}
       // A real disk has a consistent inside/outside appearance across its rim.
       // Periodic tabletop grain can cast strong edge votes without this signal.
       const ix=Math.round(x+ux*rx*.72),iy=Math.round(y+uy*ry*.72);
       const ox=Math.round(x+ux*rx*1.22),oy=Math.round(y+uy*ry*1.22);
       if(ix>=0&&iy>=0&&ox>=0&&oy>=0&&ix<width&&iy<height&&ox<width&&oy<height){
-        const difference=gray[iy*width+ix]-gray[oy*width+ox];
-        surface+=Math.abs(difference);if(difference>6)surfacePositive++;else if(difference< -6)surfaceNegative++;
+        const difference=field[iy*width+ix]-field[oy*width+ox];
+        surface+=Math.abs(difference);if(difference>6){surfacePositive++;surfaceQuarters[Math.floor(angle/12)][0]++;}else if(difference< -6){surfaceNegative++;surfaceQuarters[Math.floor(angle/12)][1]++;}
       }
     }
     return {coverage:hits/48,radialCoverage:radialHits/48,balanced:quarters.every(count=>count>=5),contrast:hits?contrast/hits:0,polarity:hits?Math.max(positive,negative)/hits:0,
+      localPolarity:hits?quarters.reduce((sum,_,q)=>sum+Math.max(quarterPositive[q],quarterNegative[q]),0)/hits:0,
+      localSurfaceConsistency:surfaceQuarters.reduce((sum,q)=>sum+Math.max(...q),0)/48,
       surfaceDifference:surface/48,surfaceConsistency:Math.max(surfacePositive,surfaceNegative)/48};
   }
   // Below this analysis resolution, seam bumps and tiny disks cannot be
@@ -198,12 +203,27 @@ async function detectCoins(source) {
     // centre. A coin's outer-rim gradients should follow the ellipse normal.
     if(evidence.radialCoverage<.70)continue;
     if(c.kind==='shape'&&(evidence.polarity<.62||evidence.surfaceConsistency<.58))continue;
-    if(c.kind==='ring'&&(evidence.contrast<24||evidence.polarity<BATCH_CONFIG.minRingPolarity||
-      evidence.surfaceDifference<BATCH_CONFIG.minRingSurfaceDifference||evidence.surfaceConsistency<BATCH_CONFIG.minRingSurfaceConsistency))continue;
+    // Album pockets can put white paper beside a dark strip. Opposite halves of
+    // the same real rim then have opposite contrast signs. Require coherent
+    // signs within quarters plus stronger geometry rather than relaxing texture checks.
+    const splitSurface=evidence.localPolarity>=.90&&evidence.localSurfaceConsistency>=.70&&evidence.radialCoverage>=.80&&evidence.coverage>=.80;
+    if(c.kind==='ring'&&(evidence.contrast<24||!splitSurface&&(evidence.polarity<BATCH_CONFIG.minRingPolarity||evidence.surfaceConsistency<BATCH_CONFIG.minRingSurfaceConsistency)||
+      evidence.surfaceDifference<BATCH_CONFIG.minRingSurfaceDifference))continue;
+    const neutral=rimEvidence(c,luminance,luminanceSmooth);
+    // Colour rescue requires a nearly complete, roughly circular boundary.
+    // Otherwise retain the original neutral-light test to reject coloured artwork.
+    const colourRescue=evidence.coverage>=.94&&evidence.radialCoverage>=.70&&evidence.polarity>=.70&&evidence.surfaceConsistency>=.60&&Math.min(c.rx,c.ry)/Math.max(c.rx,c.ry)>=.80;
+    const neutralValid=neutral.balanced&&neutral.radialCoverage>=.70&&neutral.coverage>=(c.kind==='shape'?BATCH_CONFIG.minShapeRimCoverage:BATCH_CONFIG.minRingRimCoverage)&&neutral.polarity>=(c.kind==='shape'?.62:BATCH_CONFIG.minRingPolarity)&&neutral.surfaceConsistency>=(c.kind==='shape'?.58:BATCH_CONFIG.minRingSurfaceConsistency);
+    if(!colourRescue&&!neutralValid)continue;
     if(accepted.some(previous=>Math.hypot(previous.x-c.x,previous.y-c.y)<Math.max(previous.rx,previous.ry,c.rx,c.ry)*.9))continue;
     accepted.push({...c,evidence});
   }
-  return updateRelativeDiameters(accepted.sort((a,b)=>a.y-b.y||a.x-b.x).map(c=>({...regionAt(c.x/scale,c.y/scale,c.rx/scale,c.ry/scale,Math.min(1,c.evidence.coverage*c.evidence.polarity)),detectionStatus:'unchecked',reviewed:false,rimEvidence:c.evidence})));
+  // The smallest Australian denomination is still over half the diameter of
+  // a 50c. Several similarly sized disks make tiny seam bumps implausible coins.
+  // With fewer than three credible large disks, keep the normal local checks.
+  const sizes=accepted.map(c=>Math.max(c.rx,c.ry)).sort((a,b)=>b-a);
+  const cohort=sizes.length>=3&&sizes[2]>=sizes[0]*.60?sizes[2]:0;
+  return updateRelativeDiameters(accepted.filter(c=>!cohort||Math.max(c.rx,c.ry)>=cohort*.55).sort((a,b)=>a.y-b.y||a.x-b.x).map(c=>({...regionAt(c.x/scale,c.y/scale,c.rx/scale,c.ry/scale,Math.min(1,c.evidence.coverage*c.evidence.polarity)),detectionStatus:'unchecked',reviewed:false,rimEvidence:c.evidence})));
 }
 async function cropCoins(source,regions) {
   const crops=[];

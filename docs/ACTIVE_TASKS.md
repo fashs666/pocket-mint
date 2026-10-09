@@ -113,3 +113,15 @@ Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/ci
 - [x] Correct the batch orientation instruction to match four supplied views.
 - [ ] Evaluate orientation accuracy after allowance resets; no accuracy claim from mocked tests.
 - [ ] Rights-cleared condition-reference photos remain required.
+
+## Tokyo correction and batch review — v0.14.41
+
+- [x] Correct six Tokyo 2020 coloured designs to $2 (6.6g/20.5mm), retaining historical design and owned-item IDs. Source: Mint 2021–22 annual report; partner webpage labels are incorrect.
+- [x] Add Commonwealth 2018/2022/AUS/Birmingham search aliases and allow batch manual search to suggest names at another denomination.
+- [x] Defer automatic orientation until outlines are confirmed; removed false outlines use no orientation allowance.
+- [x] Strengthen local colour/rim evidence and suppress tiny seam circles beside a credible coin-size cohort. Preserve no-coin rejection.
+- [x] Add Skip unclear coin to crop review.
+- [ ] Heavily obscured/poor coin photos such as reported number 6 must not be treated as automatically usable: reliable automatic quality rejection remains open.
+- [ ] Two missed coins remain in IMG_5049 screenshot (one touches the image edge, one has a weak rim); original photo testing still required.
+- [ ] Live automatic rotation accuracy remains unverified while daily vision allowance is exhausted.
+- [ ] Rights-cleared condition photographs remain required.

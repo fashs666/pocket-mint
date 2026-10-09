@@ -6,8 +6,8 @@
       "10c": 2,
       "20c": 20,
       "50c": 35,
-      "$1": 136,
-      "$2": 75
+      "$1": 130,
+      "$2": 81
     },
     "series": 24,
     "releases": 32,
@@ -25,8 +25,8 @@
     "total": 269
   },
   "researchedTargets": {
-    "$1": 136,
-    "$2": 75,
+    "$1": 130,
+    "$2": 81,
     "5c": 2,
     "10c": 2,
     "20c": 20,
@@ -36,8 +36,8 @@
   "corrections": [
     {
       "type": "denomination",
-      "details": "Tokyo 2020 six coloured Olympic and Paralympic coins are $1 till-change issues, not $2.",
-      "source": "https://www.ramint.gov.au/collect/national-coin-collection/corporate-partnerships/woolworths-programs/tokyo-olympic-and"
+      "details": "Tokyo 2020 six coloured Olympic and Paralympic coins are $2 till-change issues. Annual report overrides incorrect denomination on partner webpage. Historical IDs retained.",
+      "source": "https://www.ramint.gov.au/sites/default/files/2022/Corporate_site/2021-22_ram_annual-report_digital.pdf"
     },
     {
       "type": "missing_design",
