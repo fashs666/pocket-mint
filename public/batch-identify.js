@@ -158,7 +158,7 @@
       status.textContent=`Checking object ${crop.detectionNumber} · ${progress.value+1} of ${queue.length}…`;
       const reverse=await BatchCoins.batchVisionImage(window.BatchIdentification?.effectivePhoto(crop).blob||crop.crop);
       if(job!==state.job)break;
-      const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json'},body:JSON.stringify({mode:'circulating',batch_check:true,reverse})});
+      const response=await fetch('/api/identify',{method:'POST',signal:AbortSignal.timeout(45000),headers:{'content-type':'application/json','x-pocket-mint-batch':'1'},body:JSON.stringify({mode:'circulating',batch_check:true,reverse})});
       const data=await response.json();if(!response.ok)throw new Error(data.error||'Coin check unavailable');
       if(job!==state.job)break;
       const region=state.regions.find(r=>r.id===crop.id);
