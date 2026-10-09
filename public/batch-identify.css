@@ -72,3 +72,12 @@
 #batchIdentify .batchDiagnostics>button{display:block;width:100%;min-height:48px;margin-top:12px}
 
 #batchIdentify .batchDiagnostics>button[hidden]{display:none!important}
+#batchFinalReview[hidden],#batchResults[hidden],#batchFinish[hidden],#batchNewPhoto[hidden]{display:none!important}
+#batchFinalList{display:grid;gap:12px;margin:18px 0}
+.batchFinalCoin{display:grid;grid-template-columns:48px minmax(0,1fr) 44px;gap:8px;align-items:center;padding:16px}
+.batchFinalCoin img{width:48px;height:48px;object-fit:contain;border-radius:14px}
+.batchFinalCoin label{display:flex;align-items:center;gap:10px;font-size:.9rem;overflow-wrap:anywhere}
+.batchFinalCoin input{min-width:24px;width:24px;height:44px;margin:0}
+.batchFinalCoin button{grid-column:3;min-height:44px;padding:4px;font-size:1.4rem}
+#batchQuickAdd,#batchBottomNext{width:100%;min-height:48px;margin:16px 0}
+#batchReview.final-review> :is(.eyebrow,#batchCount,#batchStatus),#batchReview.final-review #batchProgress{display:none}
