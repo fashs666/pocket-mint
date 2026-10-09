@@ -11,7 +11,7 @@
     if(!window.BatchPhotoRotation)return;
     for(const crop of crops){
       const result=results.get(crop.id),existing=orientationJobs.get(crop.id);
-      if(result?.orientationAttempted||result?.reverse||existing?.geometry===geometryOf(crop))continue;
+      if(!crop.reviewed||result?.orientationAttempted||result?.reverse||existing?.geometry===geometryOf(crop))continue;
       if(!result)results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,orientationOnly:true});
       let resolve;const job={crop,geometry:geometryOf(crop),revision:generation,promise:new Promise(r=>resolve=r),resolve:()=>resolve()};
       orientationJobs.set(crop.id,job);orientationQueue.push(job);
@@ -66,7 +66,7 @@
       if(denomination&&coin.denomination_display!==denomination)continue;
       const key=`${coin.denomination_display}:${coin.title}`;
       if(unique.has(key))continue;
-      const haystack=`${coin.year} ${coin.title} ${coin.denomination_display} ${coin.series_id||''} ${coin.id}`.toLocaleLowerCase();
+      const haystack=`${coin.year} ${coin.title} ${coin.denomination_display} ${coin.series_id||''} ${coin.id} ${(coin.searchAliases||[]).join(' ')}`.toLocaleLowerCase();
       if(words.every(word=>haystack.includes(word)))unique.set(key,coin);
     }
     return [...unique.values()].slice(0,8);
@@ -78,8 +78,9 @@
     input.value=result.manualQuery||'';label.append(input);
     const suggestions=document.createElement('div');suggestions.className='batchSuggestions';
     function update(){
-      suggestions.replaceChildren();const matches=searchCatalogue(input.value,result.denomination||'');
+      suggestions.replaceChildren();let matches=searchCatalogue(input.value,result.denomination||'');
       if(!input.value.trim())return;
+      if(!matches.length&&result.denomination){matches=searchCatalogue(input.value);if(matches.length){const message=document.createElement('p');message.textContent='No match for that coin value. These names match at another value:';suggestions.append(message);}}
       if(!matches.length){const message=document.createElement('p');message.textContent='No catalogue names match. Try another word or year.';suggestions.append(message);return;}
       for(const coin of matches){
         const button=document.createElement('button');button.type='button';button.className='batchSuggestion';
@@ -87,7 +88,7 @@
         const caption=document.createElement('span');caption.textContent=`${coin.title} · ${coin.denomination_display} · ${coin.year}`;
         button.append(thumbnail,caption);
         button.onclick=()=>{
-          result.orientationOnly=false;result.choices=[catalogueChoice(coin)];result.designId=coin.id;
+          result.orientationOnly=false;result.choices=[catalogueChoice(coin)];result.designId=coin.id;result.denomination=coin.denomination_display;
           const variants=designVariants(coin);
           result.coinId=variants.length===1?coin.id:null;
           result.ready=false;result.reviewConfirmed=false;result.status='manual';result.manualOpen=false;

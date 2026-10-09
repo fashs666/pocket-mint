@@ -67,7 +67,8 @@
         const title=document.createElement('strong'),picture=document.createElement('img'),select=document.createElement('button'),hint=document.createElement('span'),rotation=document.createElement('div');
         picture.decoding='async';select.type='button';select.className='batchCropSelect';select.append(picture);const edit=document.createElement('button');edit.type='button';edit.className='batchCropEdit';edit.textContent='Crop';edit.onclick=()=>{const current=state.crops.find(c=>c.id===coin.id);if(current)window.BatchIdentification.editCrop(current);};rotation.append(edit);hint.className='batchRotationStatus';hint.setAttribute('role','status');rotation.className='batchRotationControls';
         for(const [angle,label] of [[-90,'↶'],[90,'↷']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.angle=angle;rotation.append(button);}
-        card.append(title,select,hint,rotation);cropNodes.set(coin.id,card);grid.append(card);
+        const skip=document.createElement('button');skip.type='button';skip.className='batchCropSkip';skip.textContent='Skip unclear coin';skip.onclick=()=>removeRegion(coin.id);
+        card.append(title,select,hint,rotation,skip);cropNodes.set(coin.id,card);grid.append(card);
       }
       card.classList.toggle('selected',coin.id===state.selected);
       text(card.querySelector('strong'),`Coin ${coin.detectionNumber}`);
@@ -76,6 +77,7 @@
       picture.alt=`Crop of coin ${coin.detectionNumber}`;
       const select=card.querySelector('.batchCropSelect');select.setAttribute('aria-label',`Open crop preview for coin ${coin.detectionNumber}`);select.onclick=()=>window.BatchIdentification?.editCrop(coin);
       text(card.querySelector('.batchRotationStatus'),window.BatchIdentification?.rotationStatus(coin)||'Check rotation');
+      card.querySelector('.batchCropSkip').disabled=state.checking||window.BatchIdentification?.isBusy?.();
       let matchStatus=card.querySelector('.batchMatchStatus');if(!matchStatus){matchStatus=document.createElement('span');matchStatus.className='batchMatchStatus';card.append(matchStatus);}text(matchStatus,window.BatchIdentification?.identificationStatus(coin)||'Waiting');
       const edit=card.querySelector('.batchCropEdit');edit.setAttribute('aria-label',`Crop coin ${coin.detectionNumber}`);edit.disabled=state.checking||window.BatchIdentification?.isBusy?.();
       for(const button of card.querySelectorAll('.batchRotationControls button[data-angle]')){const angle=Number(button.dataset.angle);button.setAttribute('aria-label',`Rotate coin ${coin.detectionNumber} ${angle<0?'left':'right'} 90 degrees`);button.disabled=state.checking||window.BatchIdentification?.isBusy?.();button.onclick=()=>window.BatchIdentification?.rotateCrop(coin,angle);}

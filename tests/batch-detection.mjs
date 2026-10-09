@@ -58,3 +58,11 @@ const polygons=await detect(polygon);
 assert.equal(polygons.length,1,'Twelve-sided 50c outline remains supported');
 assert(Math.hypot(polygons[0].centreX-cx,polygons[0].centreY-cy)<10);
 console.log('PASS twelve-sided 50c outline');
+
+const cohort=fixture(0),disks=[[90,100,48],[240,100,48],[390,100,48],[90,280,16]];
+for(let y=0;y<cohort.height;y++)for(let x=0;x<cohort.width;x++){
+  let value=230;for(const [cx,cy,r] of disks){const d=Math.hypot(x-cx,y-cy);if(d<r){value=d>r-4?65:140;break;}}
+  const i=(y*cohort.width+x)*4;cohort.data[i]=cohort.data[i+1]=cohort.data[i+2]=value;
+}
+const foundCohort=await detect(cohort);assert.equal(foundCohort.length,3);assert(foundCohort.every(r=>r.centreY<180),'Tiny seam-sized disks beside credible coins are excluded');
+console.log('PASS credible size cohort suppresses seam-sized circles');
