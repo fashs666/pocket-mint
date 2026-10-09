@@ -4,7 +4,7 @@ import {webcrypto} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 const source=await readFile('public/vision-allowance.js','utf8');
 const store=new Map(),listeners={},history={state:{view:'findView'},pushState(state){this.state=state;},back(){this.state={view:'findView'};listeners.popstate?.({stopImmediatePropagation(){}});}};
-let calls=0,answer={matches:[],uncertain:true},status=200,focusRestored=false;
+let calls=0,answer={matches:[],uncertain:true},status=200,focusRestored=false,stopped=false;
 const elements={button:{focus(){},onclick:null},'.visionResetTime':{textContent:''}};
 const dialog={open:false,setAttribute(){},querySelector(key){return elements[key];},addEventListener(){},showModal(){this.open=true;},close(){this.open=false;}};
 const window={crypto:webcrypto,fetch:async()=>{calls++;return new Response(JSON.stringify(answer),{status,headers:{'content-type':'application/json'}});},addEventListener(name,fn){listeners[name]=fn;},dispatchEvent(){}};
@@ -18,7 +18,7 @@ status=429;answer={error:'Rate limited',diagnostic_code:'OTHER'};await batch({re
 answer={error:'Daily allocation',diagnostic_code:'VISION-DAILY-LIMIT'};const real=await batch({reverse:'exhausted'});assert.equal(real.status,429);assert(window.PocketMintVisionAllowance.blocked());assert(dialog.open);assert.match(elements['.visionResetTime'].textContent,/daily allowance resets/);
 const before=calls;await window.fetch('/api/identify',{method:'POST',body:'single'});assert.equal(calls,before,'Known daily limit prevents further single and batch network requests');
 assert.equal((await batch({reverse:'photo-a',denomination:'$1'})).status,200,'Previously cached batch results remain available');
-elements.button.onclick();assert(!dialog.open);assert(focusRestored);assert.equal(history.state.view,'findView');
+history.back=()=>{history.state={view:'findView'};listeners.popstate({stopImmediatePropagation(){stopped=true;}});};elements.button.onclick();assert(!dialog.open);assert(focusRestored);assert.equal(history.state.view,'findView');assert(stopped,'Button dismissal consumes its history layer before batch navigation');
 listeners.storage({key:'pm-vision-reset',newValue:String(Date.now()-1)});assert(!window.PocketMintVisionAllowance.blocked());
 status=200;answer={reason:'unavailable'};await window.fetch('/api/batch-orientation',{method:'POST',body:'{}'});await window.fetch('/api/batch-orientation',{method:'POST',body:'{}'});assert.equal(calls,before+2,'Temporary service errors are not cached');
 answer={reason:'allowance'};await window.fetch('/api/batch-orientation',{method:'POST',body:'{"image":"new"}'});assert(window.PocketMintVisionAllowance.blocked(),'Rotation quota also pauses identification');

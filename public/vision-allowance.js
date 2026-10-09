@@ -2,10 +2,10 @@
    Batch responses are reused only for identical photos, phases and user clues. */
 (() => {
   const nativeFetch=window.fetch.bind(window),storageKey='pm-vision-reset',cache=new Map();
-  let resetAt=0,dialog=null,previousFocus=null;
+  let resetAt=0,dialog=null,previousFocus=null,dismissing=false;
   try{resetAt=Number(localStorage.getItem(storageKey))||0;}catch{}
   function blocked(){if(resetAt<=Date.now()){resetAt=0;return false;}return true;}
-  function close(fromBack=false){if(!dialog?.open)return;dialog.close();previousFocus?.focus?.();if(!fromBack&&history.state?.visionAllowance)history.back();}
+  function close(fromBack=false){if(!dialog?.open)return;dialog.close();previousFocus?.focus?.();if(!fromBack&&history.state?.visionAllowance){dismissing=true;history.back();}}
   function show(){
     if(!blocked())return;
     if(!dialog){
@@ -24,7 +24,7 @@
   }
   function exhaustedResponse(){return new Response(JSON.stringify({error:'Today’s photo-identification allowance is used up. Please try again after the daily reset.',diagnostic_code:'VISION-DAILY-LIMIT',reason:'allowance',angle:0,confident:false}),{status:429,headers:{'content-type':'application/json'}});}
   window.addEventListener('storage',event=>{if(event.key===storageKey)resetAt=Number(event.newValue)||0;});
-  window.addEventListener('popstate',event=>{if(dialog?.open){close(true);event.stopImmediatePropagation();}},true);
+  window.addEventListener('popstate',event=>{if(dialog?.open||dismissing){if(dialog?.open)close(true);dismissing=false;event.stopImmediatePropagation();}},true);
   window.PocketMintVisionAllowance={blocked,show};
   window.fetch=async(input,init)=>{
     const url=new URL(typeof input==='string'||input instanceof URL?input:input.url,location.href);
