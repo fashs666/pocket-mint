@@ -18,10 +18,10 @@
       if(!response.ok)return {file,confident:false,reason:direction.reason==='allowance'?'allowance':'unavailable'};
       if(direction.confident!==true||!Number.isFinite(direction.angle)||Math.abs(direction.angle)>180)return {file,confident:false,reason:direction.reason||'uncertain'};
       const candidate=Math.abs(direction.angle)<1?file:await rotate(file,direction.angle);
-      // Independently check the full-size chosen view; a contact-sheet choice alone
-      // was confidently wrong on real album photos. Do not expose it until verified.
+      // A yes/no upright check accepted a sideways real photo. Measure the
+      // proposed view afresh, without telling the model the previous angle.
       const checkImage=await makeAnalysisImage(candidate);
-      const check=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'verify',image:checkImage})});
+      const check=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'verify_direction',image:checkImage})});
       const verification=await check.json();
       if(!check.ok)return {file,confident:false,reason:verification.reason==='allowance'?'allowance':'unavailable'};
       return verification.confident===true?{file:candidate,confident:true,angle:direction.angle}:{file,confident:false,reason:verification.reason||'uncertain'};
