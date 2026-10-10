@@ -135,7 +135,8 @@ Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/ci
 - [x] Add Settings testing counter: device-local requests, model calls, reused results, missing usage and token-based estimated neurons; persist through reload and reset on the UTC day.
 - [x] Keep single model inputs, outputs, request bodies and recognition/camera code unchanged; usage is an outer response-header observer.
 - [ ] Account-wide neuron usage/remaining balance requires authenticated provider usage data; local estimates must not be labelled an account balance.
-- [ ] Real-photo rotation accuracy and physical-device checks still require evaluation. Mocked workflow tests do not establish model accuracy.
+- [x] Live trial on three turns of an ANZAC photo: one correct direction proposal, two wrong; binary verification falsely accepted one wrong proposal. Replaced binary acceptance with a fresh near-zero angle requirement (±8°, confidence ≥95), without another model call.
+- [ ] Real-photo rotation accuracy remains unresolved: fresh direction measurements on both a wrong candidate and the correctly rotated candidate still returned -90°. The stricter guard rejects both; do not claim successful general auto-rotation.
 - [ ] Diagnose the reported connection error and recognition failures separately; preserve the shared single identifier.
 - [ ] Repair the source/local reference asset for Great Aussie Coin Hunt 3 — Y for Yarra Valley; fallback presentation does not restore the asset.
 - [ ] Obtain the rights-cleared condition photographs already listed above.

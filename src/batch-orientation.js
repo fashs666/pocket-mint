@@ -22,6 +22,12 @@ export function parseDirectOrientation(text){
  if(!raw||!Number.isFinite(angle)||Math.abs(angle)>180||!Number.isFinite(confidence)||confidence<90||confidence>100||cue.length<4||/^(unknown|none|symmetr|rim only|circle)/i.test(cue))return {angle:0,confident:false,reason:'uncertain'};
  return {angle,confident:true,reason:'visual_orientation'};
 }
+export function parseVerifiedDirection(text){
+ const result=parseDirectOrientation(text);
+ const confidence=Number(String(text||'').match(/(?:^|[;\n])\s*CONFIDENCE\s*=\s*([^;\n]+)/i)?.[1]);
+ const confident=result.confident&&Math.abs(result.angle)<=8&&confidence>=95;
+ return {confident,reason:confident?'upright_verified':'uncertain'};
+}
 const worker={async fetch(request,env,ctx){
  if(new URL(request.url).pathname!=='/api/batch-orientation')return originalWorker.fetch(request,env,ctx);
  if(request.method!=='POST')return reply({error:'Method not allowed'},405);
@@ -29,12 +35,13 @@ const worker={async fetch(request,env,ctx){
  if(typeof body.image!=='string'||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(body.image))return reply({error:'Invalid photo'},400);
  if(!env.AI)return reply({angle:0,confident:false,reason:'unavailable'});
  try{
-  if(body.phase==='direction'){
+  if(body.phase==='direction'||body.phase==='verify_direction'){
    const output=await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct',{messages:[
     {role:'system',content:'Measure the orientation of one isolated coin photograph. Return unknown when visual evidence is weak. Do not identify, date or grade the coin.'},
     {role:'user',content:[{type:'text',text:'What CLOCKWISE rotation, between -180 and 180 degrees, would put this coin design upright? Use the readable letter shapes and baseline of straight words, large digits or a portrait head. Mentally rotate the actual visible letters until they read naturally left to right with their tops upward. Negative means counterclockwise. Include small tilts as well as quarter turns. Curved rim words can support readable letter direction but their location alone is not evidence. Ignore the album and photo edges. Animals such as a swimming platypus are naturally horizontal: do not turn them to stand on their tails. A landscape has sky above ground. Do not assume every denomination sits at the bottom. Symmetric artwork or unreadable lettering without a clear portrait means unknown. Report exactly CLOCKWISE=number/unknown; CONFIDENCE=0-100; CUE=the visible letters or portrait evidence that establishes the direction.'},{type:'image_url',image_url:{url:body.image}}]}
    ],temperature:0,max_tokens:160,stream:false});
-   return reply(parseDirectOrientation(typeof output==='string'?output:output?.response||output?.answer||output?.result?.response||''));
+   const text=typeof output==='string'?output:output?.response||output?.answer||output?.result?.response||'';
+   return reply(body.phase==='verify_direction'?parseVerifiedDirection(text):parseDirectOrientation(text));
   }
   if(body.phase==='verify'){
    const verification=await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct',{messages:[{role:'system',content:'Check one coin photo for upright orientation. Do not assume it is upright. Never identify, date or grade it.'},{role:'user',content:[{type:'text',text:'Is this single coin already upright as displayed? Inspect actual letters: horizontal words must read naturally left to right, not sideways, tilted or upside down. Portraits and directional figures should stand naturally. Curved text alone is insufficient unless its placement and readable direction clearly establish the top. A circular rim or symmetric motif cannot establish upright. If any visible directional clue contradicts upright, answer no. If you cannot tell, answer unknown. Report exactly UPRIGHT=yes/no/unknown; CONFIDENCE=0-100; CUE=visible orientation evidence.'},{type:'image_url',image_url:{url:body.image}}]}],temperature:0,max_tokens:130,stream:false});

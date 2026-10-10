@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import worker,{parseBatchOrientation,parseUpright,parseDirectOrientation} from '../src/batch-orientation.js';
+import worker,{parseBatchOrientation,parseUpright,parseDirectOrientation,parseVerifiedDirection} from '../src/batch-orientation.js';
+assert.equal(parseVerifiedDirection('CLOCKWISE=0; CONFIDENCE=97; CUE=horizontal lettering').confident,true);
+for(const angle of [-90,90,180,12])assert.equal(parseVerifiedDirection(`CLOCKWISE=${angle}; CONFIDENCE=99; CUE=straight lettering`).confident,false);
+assert.equal(parseVerifiedDirection('CLOCKWISE=0; CONFIDENCE=94; CUE=horizontal lettering').confident,false);
 for(const angle of [-180,-90,-17,0,12,90,180])assert.equal(parseDirectOrientation(`CLOCKWISE=${angle}; CONFIDENCE=94; CUE=straight ONE DOLLAR lettering`).angle,angle);
 for(const raw of ['unknown','','NaN','190'])assert.equal(parseDirectOrientation(`CLOCKWISE=${raw}; CONFIDENCE=99; CUE=portrait upright`).confident,false);
 assert.equal(parseDirectOrientation('CLOCKWISE=90; CONFIDENCE=89; CUE=sideways lettering').confident,false);
