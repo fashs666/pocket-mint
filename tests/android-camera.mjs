@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
+const elements=new Map();
+const el=id=>{if(!elements.has(id))elements.set(id,{id,hidden:false,value:'',style:{},getBoundingClientRect:()=>({left:0,top:0,width:390,height:844}),videoWidth:1920,videoHeight:1080});return elements.get(id);};
+let settings={focusMode:'manual',focusDistance:1},calls=[],supported=true,rejectPoint=false,ignored=false;
+const track={getCapabilities:()=>supported?{focusMode:['continuous','single-shot','manual'],focusDistance:{min:0,max:10,step:.1}}:{},getSettings:()=>settings,applyConstraints:async c=>{
+ calls.push(c);const v=c.advanced?.[0]||Object.fromEntries(Object.entries(c).map(([k,v])=>[k,v.exact]));if(rejectPoint&&v.pointsOfInterest)throw Error('no point');if(ignored&&c.advanced)return;
+ settings={...settings,...v};
+}};
+const context={navigator:{userAgent:'Android',mediaDevices:{getSupportedConstraints:()=>({pointsOfInterest:true})}},document:{getElementById:el,createElement:()=>({style:{}}),querySelector:s=>s==='.cameraAlternatives'?{prepend:b=>elements.set(b.id,b)}:null},setTimeout:fn=>fn(),openCoinCamera:async()=>{},loadIdentifyPhoto:async()=>{},clearIdentifyPhoto:()=>{},setupCoinCameraControls:async()=>{},setCoinCameraFocus:async()=>{},coinCameraTrack:track,coinCameraDiagnostics:{focus_modes:['continuous','manual']},coinCameraFocusQueue:Promise.resolve()};
+vm.createContext(context);vm.runInContext(await readFile('public/camera-entry.js','utf8'),context);
+assert(await vm.runInContext('refocusAndroidCoin()',context));assert.equal(settings.focusMode,'continuous');assert.equal(calls[0].advanced[0].pointsOfInterest[0].x,.5);assert.equal(calls[0].advanced[0].focusMode,'single-shot');
+await vm.runInContext('setCoinCameraFocus(3)',context);assert.equal(settings.focusDistance,3);assert.equal(settings.focusMode,'manual');assert.match(el('coinCameraStatus').textContent,/Manual focus/);
+await vm.runInContext('setupCoinCameraControls()',context);assert.equal(el('coinCameraAutofocus').hidden,false);
+const point=vm.runInContext('coinCameraSensorPoint(document.getElementById("coinCameraVideo"),0,422)',context);assert(point.x>.3&&point.x<.5);assert.equal(point.y,.5,'Cover preview is mapped back to the sensor');
+const before=calls.length;el('coinCameraVideo').onpointerdown({isPrimary:true,pointerId:1,clientX:195,clientY:422});el('coinCameraVideo').onpointerup({pointerId:1,clientX:195,clientY:422});await context.coinCameraFocusQueue;assert(calls.length>before);
+rejectPoint=true;assert(await vm.runInContext('refocusAndroidCoin()',context));assert.equal(settings.focusMode,'continuous','Unsupported metering point falls back to autofocus');
+ignored=true;settings.focusMode='manual';assert(await vm.runInContext('refocusAndroidCoin()',context));assert(calls.some(c=>c.focusMode?.exact==='single-shot'),'Ignored advanced mode retries exact constraints');
+supported=false;const n=calls.length;assert.equal(await vm.runInContext('refocusAndroidCoin()',context),false);assert.equal(calls.length,n);await vm.runInContext('setupCoinCameraControls()',context);assert.equal(el('coinCameraAutofocus').hidden,true);
+supported=true;track.applyConstraints=async()=>{context.coinCameraTrack=null;};settings.focusMode='continuous';const status=el('coinCameraStatus').textContent;await vm.runInContext('refocusAndroidCoin()',context);assert.equal(el('coinCameraStatus').textContent,'Refocusing on the coin… Hold still and check the small lettering.','Closed-camera jobs do not publish success');
+console.log('PASS Android centre/tap autofocus, sensor coordinates, manual/auto return, point rejection, ignored constraints, unsupported hardware and stale track handling');
