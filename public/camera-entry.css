@@ -1,8 +1,27 @@
-/* Android capture presentation only; the guide stays clear of its controls. */
+/* Android capture only. Keep secondary controls behind Options. */
 .coinCamera.androidGuided{height:100vh;height:100dvh;bottom:auto}
 .coinCamera.androidGuided .cameraShade{z-index:1}
-.coinCamera.androidGuided .cameraAlternatives{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.coinCamera.androidGuided .cameraTop{grid-template-columns:46px 1fr 76px;gap:8px}
+.coinCamera.androidGuided #coinCameraOptions{width:76px;font-size:.8rem;border:1px solid #89e6e8;border-radius:17px 20px 15px 19px;background:#151a33;color:#faedce}
+.coinCamera.androidGuided .coinCameraGuide{border-color:#8ee7e7;box-shadow:0 0 0 120vmax rgba(8,12,30,.66),0 0 0 5px rgba(137,230,232,.15)}
+.coinCamera.androidGuided .cameraAlternatives{display:flex;justify-content:center}
 .coinCamera.androidGuided .cameraShutter{flex-shrink:0;min-height:72px}
-.coinCamera.androidGuided .cameraBottom{max-height:48dvh;overflow-y:auto;box-sizing:border-box;touch-action:pan-y;padding-bottom:6px}
-.coinCamera.androidGuided .cameraControl input{min-height:44px}
-.coinCamera.androidGuided .cameraChoose{min-height:44px}
+.coinCamera.androidGuided .cameraBottom{box-sizing:border-box;gap:8px;padding:0 16px;bottom:max(12px,env(safe-area-inset-bottom))}
+.coinCamera.androidGuided .cameraBottom p{min-height:0;max-width:340px;padding:6px 10px;border-radius:14px;background:rgba(8,12,30,.8);font-size:.78rem;line-height:1.35;color:#faedce}
+.coinCamera.androidGuided .cameraChoose{min-height:44px;background:#151a33;color:#faedce;border:1px solid #89e6e8;border-radius:18px 22px 17px 21px}
+.coinCamera.androidGuided .cameraSettings{position:absolute;z-index:4;top:max(78px,calc(env(safe-area-inset-top) + 62px));right:16px;width:min(310px,calc(100% - 32px));max-height:calc(100dvh - 200px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;box-sizing:border-box;padding:16px;display:grid;gap:12px;background:#faedce;color:#17172d;border:2px solid #89e6e8;border-radius:20px 27px 19px 24px;box-shadow:0 5px 20px #05091ba6}
+.coinCamera.androidGuided .cameraSettings[hidden]{display:none}
+.coinCamera.androidGuided .cameraSettings p{font-size:.8rem;line-height:1.4;margin:0}
+.coinCamera.androidGuided .cameraSettings label{display:grid;gap:6px;font-size:.85rem;font-weight:700}
+.coinCamera.androidGuided .cameraSettings label[hidden]{display:none}
+.coinCamera.androidGuided .cameraSettings select{width:100%;min-height:44px;background:#fffaf0;color:#17172d;font-size:.8rem}
+.coinCamera.androidGuided .cameraSettings .cameraControl{width:100%;box-sizing:border-box;border-radius:16px;background:#e8dfc8;color:#17172d;grid-template-columns:44px 1fr 42px;gap:7px}
+.coinCamera.androidGuided .cameraControl input{min-height:44px;accent-color:#376b72}
+.coinCamera.androidGuided .cameraSettings .cameraChoose{width:100%}
+.coinCamera.androidGuided .cameraFocusPoint{position:absolute;z-index:2;width:46px;height:46px;border:2px solid #faedce;border-radius:16px;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 1px #17172d}
+.coinCamera.androidGuided .cameraFocusPoint[hidden]{display:none}
+@media (orientation:landscape) and (max-height:500px){
+ .coinCamera.androidGuided .cameraBottom{grid-template-columns:1fr 72px 1fr;align-items:center;gap:16px}
+ .coinCamera.androidGuided .cameraBottom p{max-width:230px}
+ .coinCamera.androidGuided .cameraSettings{max-height:calc(100dvh - 170px)}
+}

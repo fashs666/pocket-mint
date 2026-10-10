@@ -161,3 +161,15 @@ Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/ci
 - [ ] Confirm the guide, controls and actual lens focus on Ben’s Samsung Galaxy. Browser simulation cannot validate physical autofocus or device-specific rendering.
 
 Single-coin recognition, batch logic and catalogue files are unchanged in this release.
+
+
+## Android focus and uncluttered camera — v0.14.46
+
+- [x] Hide zoom/manual focus/gallery/lens choice behind Options; retain circle, capture and Phone camera in the main view.
+- [x] Enable continuous focus on opening and retain tap single-shot mode instead of interrupting it after 450 ms.
+- [x] Verify reported focus points; accepted-but-ignored points show an unsupported message rather than claiming focus success.
+- [x] Provide a brief tap marker, hardware-supported controls and camera-lens selection after permission.
+- [x] Test hidden options, tap/automatic/manual controls, ignored and rejected points, opening failures, portrait/landscape and existing guided capture.
+- [ ] Verify actual focus and compact layout on Ben’s Samsung (likely Chrome; exact model/browser still unconfirmed). Software request/settings tests do not establish physical sharpness. Use the native Phone camera when browser focus remains ineffective.
+
+No AI calls are added for camera focusing. Single recognition, catalogue and multi-coin code are unchanged.

@@ -18,11 +18,12 @@ await page.addInitScript(()=>{
  navigator.mediaDevices.getSupportedConstraints=()=>({pointsOfInterest:true});
 });
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.45'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.46'));
  await page.evaluate(()=>{navigate('findView');showFindTab('identify');});await page.evaluate(()=>openCoinCamera('reverse'));
  await page.waitForFunction(()=>document.querySelector('#coinCameraAutofocus')&&!document.querySelector('#coinCameraAutofocus').hidden);await page.evaluate(()=>coinCameraFocusQueue);
- assert(await page.locator('#coinCameraGuide').isVisible());assert(await page.locator('#coinCameraAutofocus').isVisible());
- assert(await page.evaluate(()=>__focusCalls.some(c=>c.pointsOfInterest&&c.focusMode==='single-shot')));
+ assert(await page.locator('#coinCameraGuide').isVisible());assert.equal(await page.locator('#coinCameraAutofocus').isVisible(),false,'Advanced controls are hidden on opening');
+ assert.equal(await page.locator('#coinCameraFocus').isVisible(),false);assert.equal(await page.locator('#coinCameraChoose').isVisible(),false);
+ assert(await page.evaluate(()=>__focusCalls.some(c=>c.pointsOfInterest&&c.focusMode==='continuous')));
  for(const size of [{width:320,height:568},{width:390,height:844},{width:844,height:390}]){
   await page.setViewportSize(size);await page.evaluate(()=>layoutAndroidCoinGuide());
   const g=await page.locator('#coinCameraGuide').boundingBox(),top=await page.locator('.cameraTop').boundingBox(),bottom=await page.locator('.cameraBottom').boundingBox();
@@ -30,9 +31,17 @@ try{
  }
  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>layoutAndroidCoinGuide());
  const guide=await page.locator('#coinCameraGuide').boundingBox();const before=await page.evaluate(()=>__focusCalls.length);await page.mouse.click(guide.x+guide.width/2,guide.y+guide.height/2);await page.evaluate(()=>coinCameraFocusQueue);assert(await page.evaluate(n=>__focusCalls.length>n,before));
+ assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'single-shot');assert.match(await page.locator('#coinCameraStatus').textContent(),/Focus requested/);
+ await page.locator('#coinCameraOptions').click();assert(await page.locator('#coinCameraFocus').isVisible());assert(await page.locator('#coinCameraZoom').isVisible());
+ await page.evaluate(async()=>{const original=navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);navigator.mediaDevices.enumerateDevices=async()=>[{kind:'videoinput',deviceId:'rear-main',label:'Back camera'},{kind:'videoinput',deviceId:'rear-wide',label:'Wide camera'}];await listAndroidCameraDevices(coinCameraTrack);navigator.mediaDevices.enumerateDevices=original;});
+ assert(await page.locator('#coinCameraDevice').isVisible());assert.equal(await page.locator('#coinCameraDevice option').count(),2);
+ await page.evaluate(()=>{window.__originalOpenCamera=openCoinCamera;openCoinCamera=(side,deviceId)=>window.__lensChoice={side,deviceId};});
+ await page.locator('#coinCameraDevice').selectOption('rear-wide');assert.deepEqual(await page.evaluate(()=>__lensChoice),{side:'reverse',deviceId:'rear-wide'});await page.evaluate(()=>openCoinCamera=__originalOpenCamera);
  await page.locator('#coinCameraFocus').evaluate(e=>{e.value='3';e.dispatchEvent(new Event('input'));});await page.evaluate(()=>coinCameraFocusQueue);assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'manual');
  await page.locator('#coinCameraAutofocus').click();await page.evaluate(()=>coinCameraFocusQueue);assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'continuous');
- await page.screenshot({path:'/workspace/scratch/60af6b8f0471/android44-camera.png'});
+ assert.match(await page.locator('#coinCameraStatus').textContent(),/full rim/);
+ await page.locator('#coinCameraOptions').click();
+ await page.screenshot({path:'/workspace/scratch/60af6b8f0471/android46-camera.png'});
  await page.locator('#coinCameraShutter').click();await page.waitForFunction(()=>document.querySelector('#coinCamera').hidden&&identifyState.reverse?.file);
  assert.match(await page.evaluate(()=>identifyState.reverse.file.name),/^guided-reverse-/);
  const dimensions=await page.evaluate(async()=>{const b=await createImageBitmap(identifyState.reverse.file);const r=[b.width,b.height];b.close();return r;});assert.deepEqual(dimensions,[768,768]);
@@ -42,6 +51,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('#coinCameraShutter').disabled===false);
  assert(await page.locator('#coinCameraGuide').isVisible());assert(await page.locator('#coinCameraShutter').isVisible());
  assert.equal(await page.evaluate(()=>document.querySelector('#coinCamera').classList.contains('fallback')),false);
+ await page.mouse.click(guide.x+guide.width/2,guide.y+guide.height/2);await page.evaluate(()=>coinCameraFocusQueue);assert.match(await page.locator('#coinCameraStatus').textContent(),/Tap focus unavailable/);
  await page.locator('#coinCameraShutter').click();await page.waitForFunction(()=>document.querySelector('#coinCamera').hidden);
  // Even a driver that never resolves focus constraints must not block opening.
  await page.evaluate(()=>{MediaStreamTrack.prototype.getCapabilities=()=>({focusMode:['continuous']});MediaStreamTrack.prototype.applyConstraints=()=>new Promise(()=>{});});
@@ -52,6 +62,8 @@ try{
  await page.evaluate(()=>{document.querySelector('#coinCamera').classList.add('fallback');MediaStreamTrack.prototype.getCapabilities=()=>({});MediaStreamTrack.prototype.applyConstraints=async()=>{};});
  await page.evaluate(()=>openCoinCamera('reverse'));
  assert(await page.locator('#coinCameraShutter').isVisible());assert(await page.locator('#coinCameraShutter').isEnabled());
+ await page.evaluate(()=>{window.__nativeSide=null;const input=document.querySelector('#identifyReverseCamera');input.click=()=>window.__nativeSide='reverse';});
+ await page.locator('#coinCameraNative').click();assert.equal(await page.evaluate(()=>__nativeSide),'reverse');assert(await page.locator('#coinCamera').isHidden());
  await page.evaluate(()=>closeCoinCamera());
  console.log('PASS Android guided camera: real simulated stream, centre/tap focus, manual-to-auto, unobstructed circle at three viewports and unchanged 768px guided capture');
 }finally{await browser.close();await new Promise(r=>server.close(r));}
