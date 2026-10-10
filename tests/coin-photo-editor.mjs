@@ -22,3 +22,5 @@ calls.length=0;await element('.applyPhotoEdit').onclick();const file=await editi
 assert.equal(file.type,'image/png');assert.ok(calls.includes('mask'));assert.ok(!calls.includes('guide'),'Export excludes yellow preview guide');assert.equal(closed,1);
 const cancelled=api.edit(new Blob());await new Promise(resolve=>setImmediate(resolve));element('.cancelPhotoEdit').onclick();assert.equal(await cancelled,null);assert.equal(closed,2);
 assert.ok(removed>=2);console.log('PASS photo editor: rotation, pan, transparent mask, guide-free export, cancel and resource cleanup');
+context.window.AutoCoinPhoto={suggest(){throw Error('Manual crop must not request orientation');}};
+const manual=api.edit(new Blob(),{suggest:false});await new Promise(resolve=>setImmediate(resolve));element('.cancelPhotoEdit').onclick();assert.equal(await manual,null);

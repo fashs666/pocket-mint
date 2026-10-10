@@ -18,8 +18,11 @@ await page.addInitScript(()=>{
  navigator.mediaDevices.getSupportedConstraints=()=>({pointsOfInterest:true});
 });
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.46'));
- await page.evaluate(()=>{navigate('findView');showFindTab('identify');});await page.evaluate(()=>openCoinCamera('reverse'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.47'));
+ await page.evaluate(()=>{navigate('findView');showFindTab('identify');window.__defaultNative=null;document.querySelector('#identifyReverseCamera').click=()=>window.__defaultNative='reverse';});
+ await page.locator('[data-camera-side="reverse"]').click();assert.equal(await page.evaluate(()=>__defaultNative),'reverse');assert(await page.locator('#coinCamera').isHidden(),'Default capture uses the native phone camera');
+ await page.locator('#identifyBrowserCamera').click();
+ await page.waitForFunction(()=>__focusCalls.some(c=>c.pointsOfInterest&&c.focusMode==='continuous'));
  await page.waitForFunction(()=>document.querySelector('#coinCameraAutofocus')&&!document.querySelector('#coinCameraAutofocus').hidden);await page.evaluate(()=>coinCameraFocusQueue);
  assert(await page.locator('#coinCameraGuide').isVisible());assert.equal(await page.locator('#coinCameraAutofocus').isVisible(),false,'Advanced controls are hidden on opening');
  assert.equal(await page.locator('#coinCameraFocus').isVisible(),false);assert.equal(await page.locator('#coinCameraChoose').isVisible(),false);
@@ -65,5 +68,15 @@ try{
  await page.evaluate(()=>{window.__nativeSide=null;const input=document.querySelector('#identifyReverseCamera');input.click=()=>window.__nativeSide='reverse';});
  await page.locator('#coinCameraNative').click();assert.equal(await page.evaluate(()=>__nativeSide),'reverse');assert(await page.locator('#coinCamera').isHidden());
  await page.evaluate(()=>closeCoinCamera());
+ // A native photo returns directly to the circle editor without AI orientation.
+ let orientationCalls=0;await page.route('**/api/photo-orientation',r=>{orientationCalls++;return r.fulfill({json:{confident:false}});});
+ await page.evaluate(async()=>{const c=document.createElement('canvas');c.width=c.height=600;const ctx=c.getContext('2d');ctx.fillStyle='#ccc';ctx.fillRect(0,0,600,600);ctx.fillStyle='#985';ctx.beginPath();ctx.arc(300,300,230,0,Math.PI*2);ctx.fill();const file=new File([await new Promise(r=>c.toBlob(r,'image/png'))],'native.png',{type:'image/png'});window.__nativeCropInput={files:[file],value:'photo'};window.__nativeCropDone=readAndroidCameraPhoto(__nativeCropInput,'reverse');});
+ await page.waitForSelector('.coinPhotoEditor[open]');assert.equal(await page.locator('.coinPhotoEditor h3').textContent(),'Crop your coin');
+ const originalPhoto=await page.evaluate(()=>{window.__recognitionPhoto=identifyState.reverse.file;return identifyState.reverse.specimenFile.name;});assert.equal(originalPhoto,'native.png');
+ await page.locator('.applyPhotoEdit').click();await page.evaluate(()=>__nativeCropDone);
+ assert(await page.evaluate(()=>identifyState.reverse.file===__recognitionPhoto),'Native crop does not change the protected recognition input');
+ assert.equal(await page.evaluate(()=>identifyState.reverse.specimenFile.name),'coin-cropped.png');assert.equal(await page.evaluate(()=>__nativeCropInput.value),'');assert.equal(orientationCalls,0);
+ await page.evaluate(()=>{window.__nativeCropDone=readAndroidCameraPhoto(__nativeCropInput={files:[identifyState.reverse.specimenFile],value:'photo'},'obverse');});
+ await page.waitForSelector('.coinPhotoEditor[open]');await page.locator('.cancelPhotoEdit').click();await page.evaluate(()=>__nativeCropDone);assert(await page.evaluate(()=>Boolean(identifyState.obverse?.file)),'Cancel keeps the captured portrait photo');
  console.log('PASS Android guided camera: real simulated stream, centre/tap focus, manual-to-auto, unobstructed circle at three viewports and unchanged 768px guided capture');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

@@ -10,12 +10,14 @@
     active=true;let bitmap,originalBitmap,dialog;
     try{
       originalBitmap=await decodeIdentifyPhoto(file);bitmap=originalBitmap;
-      const suggestion=await window.AutoCoinPhoto?.suggest(file);
+      const suggestion=options.suggest===false?null:await window.AutoCoinPhoto?.suggest(file);
       if(suggestion&&suggestion.file!==file)bitmap=await decodeIdentifyPhoto(suggestion.file);
       return await new Promise(resolve=>{
         dialog=document.createElement('dialog');dialog.className='coinPhotoEditor';
         dialog.innerHTML='<form method="dialog"><h3>Adjust coin photo</h3><p>Check the automatic suggestion. Drag to centre the coin, zoom to its outer rim, or correct its direction.</p><canvas width="768" height="768" aria-label="Coin crop preview"></canvas><label>Crop zoom <input class="photoZoom" type="range" min="0.25" max="8" step="0.01" value="1"></label><label>Rotation <input class="photoAngle" type="range" min="-180" max="180" step="1" value="0"><output>0°</output></label><div class="photoEditorActions"><button type="button" class="rotateLeft">↶ 90°</button><button type="button" class="rotateRight">↷ 90°</button><button type="button" class="resetPhotoEdit">Start from original</button></div><p class="photoEditStatus" role="status"></p><div class="photoEditorActions"><button type="button" class="cancelPhotoEdit">Cancel</button><button type="button" class="applyPhotoEdit">Use cropped photo</button></div></form>';
         document.body.append(dialog);
+        if(options.title)dialog.querySelector('h3').textContent=options.title;
+        if(options.description)dialog.querySelector('p').textContent=options.description;
         const canvas=dialog.querySelector('canvas'),ctx=canvas.getContext('2d'),zoom=dialog.querySelector('.photoZoom'),angle=dialog.querySelector('.photoAngle');
         let x=0,y=0,drag=null,done=false;
         function draw(target=ctx,guide=true){
