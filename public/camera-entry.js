@@ -193,12 +193,29 @@ function setupCameraEntry(){
   optional.onclick=()=>guidedCoinCamera('reverse');
   window.CoinPhotoEditor?.setupSingle();
   if(!androidCoinCamera())return;
-  document.querySelectorAll('[data-camera-side] small').forEach(item=>item.textContent='Guided circle · centre the coin');
-  document.querySelector('.identifyIntro').textContent='Centre the coin inside the guide and keep the phone straight above it. If focus stays soft, use the phone camera instead, then adjust its crop. The portrait side is optional.';
+  optional.hidden=false;optional.textContent='Use Pocket Mint live guide';optional.onclick=()=>openCoinCamera('reverse');
+  document.querySelectorAll('[data-camera-side]').forEach(button=>{button.onclick=()=>openNativeCoinCamera(button.dataset.cameraSide);button.querySelector('small').textContent='Phone camera · crop afterward';});
+  for(const side of ['obverse','reverse'])document.getElementById(side==='obverse'?'identifyObverseCamera':'identifyReverseCamera').onchange=event=>readAndroidCameraPhoto(event.target,side);
+  document.querySelector('.identifyIntro').textContent='Use your phone camera to focus on the coin, then centre it in Pocket Mint’s circular crop guide. The portrait side is optional.';
+}
+async function readAndroidCameraPhoto(input,side){
+  const file=input.files?.[0];if(!file)return;
+  let loaded=false;
+  try{
+    await loadIdentifyPhoto(side,file);loaded=true;const original=identifyState[side];
+    const adjusted=await window.CoinPhotoEditor?.edit(file,{suggest:false,title:'Crop your coin',description:'Drag to centre the coin. Zoom until the full rim fits inside the circle.',status:'Your captured photo is kept. This crop adjusts the saved collection photo.'});
+    if(adjusted&&identifyState[side]===original){
+      original.specimenFile=adjusted;URL.revokeObjectURL(original.url);original.url=URL.createObjectURL(adjusted);
+      document.querySelector(`#${side}Capture .capturePreview`).style.backgroundImage=`url("${original.url}")`;
+      setAnalyseStatus('Coin photo cropped. Ready to identify.');
+    }
+  }catch{setAnalyseStatus(loaded?'Could not prepare the crop. Your photo is kept; use Crop / rotate photo to try again.':'That photo could not be loaded. Please take it again.',true);}
+  finally{input.value='';}
 }
 loadIdentifyPhoto=async function loadPreferredCameraPhoto(...args){
   const result=await originalLoadIdentifyPhoto(...args);
   window.CoinPhotoEditor?.updateSingle();
+  if(androidCoinCamera())document.querySelector(`#${args[0]}Capture .capturePreview small`).textContent='Tap to retake with phone camera';
   return result;
 };
 clearIdentifyPhoto=function clearPreferredCameraPhoto(...args){

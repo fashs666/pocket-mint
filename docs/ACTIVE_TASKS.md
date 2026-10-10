@@ -173,3 +173,13 @@ Single-coin recognition, batch logic and catalogue files are unchanged in this r
 - [ ] Verify actual focus and compact layout on Ben’s Samsung (likely Chrome; exact model/browser still unconfirmed). Software request/settings tests do not establish physical sharpness. Use the native Phone camera when browser focus remains ineffective.
 
 No AI calls are added for camera focusing. Single recognition, catalogue and multi-coin code are unchanged.
+
+
+## Android native capture default — v0.14.47
+
+- [x] Default Android design/portrait capture buttons to the native rear-camera input.
+- [x] Open the existing circular crop editor after a returned native photo, with manual crop only and no automatic orientation call.
+- [x] Preserve the captured recognition input; apply the circle crop to the saved collection photo. Cancelling keeps the capture.
+- [x] Retain Pocket Mint’s live circle as an optional guided camera. Native camera UI cannot carry the PWA’s live overlay.
+- [x] Verify routing, capture/crop/cancel, no orientation call and unchanged single recognition input.
+- [ ] Check native-camera return and actual focus on Ben’s Samsung.
