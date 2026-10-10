@@ -1,6 +1,6 @@
 # Pocket Mint — active tasks
 
-Updated 8 October 2026. Unchecked items remain outstanding, not shipped.
+Updated 10 October 2026. Unchecked items remain outstanding, not shipped.
 
 ## Condition reference photographs
 
@@ -125,3 +125,17 @@ Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/ci
 - [ ] Two missed coins remain in IMG_5049 screenshot (one touches the image edge, one has a weak rim); original photo testing still required.
 - [ ] Live automatic rotation accuracy remains unverified while daily vision allowance is exhausted.
 - [ ] Rights-cleared condition photographs remain required.
+
+## Rotation and testing counter — v0.14.42
+
+- [x] Read the 10 October report: nine tests (one correct, two partial, five no-match and one connection error). Keep denomination/design failures separate from rotation changes.
+- [x] Use a large individual coin view for batch orientation, allow fine-angle corrections, and verify upright before applying; keep original on uncertainty/failure.
+- [x] Correct the crop editor's misleading automatic-suggestion message for batch/manual photos.
+- [x] Hide failed batch reference images and show an honest reference-unavailable message.
+- [x] Add Settings testing counter: device-local requests, model calls, reused results, missing usage and token-based estimated neurons; persist through reload and reset on the UTC day.
+- [x] Keep single model inputs, outputs, request bodies and recognition/camera code unchanged; usage is an outer response-header observer.
+- [ ] Account-wide neuron usage/remaining balance requires authenticated provider usage data; local estimates must not be labelled an account balance.
+- [ ] Real-photo rotation accuracy and physical-device checks still require evaluation. Mocked workflow tests do not establish model accuracy.
+- [ ] Diagnose the reported connection error and recognition failures separately; preserve the shared single identifier.
+- [ ] Repair the source/local reference asset for Great Aussie Coin Hunt 3 — Y for Yarra Valley; fallback presentation does not restore the asset.
+- [ ] Obtain the rights-cleared condition photographs already listed above.

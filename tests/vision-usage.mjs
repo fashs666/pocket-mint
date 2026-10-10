@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {instrumentVision} from '../src/vision-usage.js';
+const input={messages:[{role:'user',content:'unchanged'}]},output={response:'unchanged',usage:{prompt_tokens:1000,completion_tokens:100}};
+const env={AI:{run:async(model,body)=>{assert.equal(model,'@cf/meta/llama-4-scout-17b-16e-instruct');assert.equal(body,input);return output;}}};
+const worker=instrumentVision({fetch:async(_request,e)=>{const result=await e.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct',input);assert.equal(result,output);return new Response(JSON.stringify(result),{status:202,headers:{'x-original':'yes'}});}});
+const req=()=>new Request('https://mint.test/api/identify',{method:'POST'});
+let response=await worker.fetch(req(),env),usage=JSON.parse(response.headers.get('x-pocket-mint-usage'));
+assert.equal(response.status,202);assert.equal(response.headers.get('x-original'),'yes');assert.deepEqual(await response.json(),output);
+assert.equal(usage.calls,1);assert.equal(usage.measured,1);assert.equal(usage.unknown,0);assert.equal(usage.neurons,32.2723);
+const failing=instrumentVision({fetch:async(_request,e)=>{try{await e.AI.run('unknown',input);}catch{}return new Response('original error',{status:429});}});
+response=await failing.fetch(req(),{AI:{run:async()=>{throw Error('4006 quota');}}});usage=JSON.parse(response.headers.get('x-pocket-mint-usage'));
+assert.equal(response.status,429);assert.equal(await response.text(),'original error');assert.equal(usage.failed,1);assert.equal(usage.unknown,1);assert.equal(usage.measured,0);
+const missing=instrumentVision({fetch:async(_request,e)=>{await e.AI.run('unknown',input);return new Response('ok');}});
+assert.equal(JSON.parse((await missing.fetch(req(),{AI:{run:async()=>({response:'ok'})}})).headers.get('x-pocket-mint-usage')).unknown,1);
+const staticWorker=instrumentVision({fetch:async()=>new Response('asset')});assert.equal((await staticWorker.fetch(new Request('https://mint.test/'),env)).headers.get('x-pocket-mint-usage'),null);
+console.log('PASS per-request token accounting, pricing conversion, missing/failed usage, untouched model inputs/output/body/status and static routing');

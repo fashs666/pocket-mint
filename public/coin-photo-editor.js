@@ -5,7 +5,7 @@
     scale:size/Math.min(width,height)*zoom,angle:angle*Math.PI/180,
     x:size/2+offsetX*size,y:size/2+offsetY*size
   });
-  async function edit(file){
+  async function edit(file,options={}){
     if(active)return null;
     active=true;let bitmap,originalBitmap,dialog;
     try{
@@ -32,7 +32,7 @@
         function turn(delta){const next=((Number(angle.value)+delta+180)%360+360)%360-180;angle.value=next;draw();}
         dialog.querySelector('.rotateLeft').onclick=()=>turn(-90);dialog.querySelector('.rotateRight').onclick=()=>turn(90);
         dialog.querySelector('.resetPhotoEdit').onclick=()=>{if(bitmap!==originalBitmap)bitmap.close?.();bitmap=originalBitmap;x=y=0;zoom.value=1;angle.value=0;draw();};
-        dialog.querySelector('.photoEditStatus').textContent=suggestion?.uncertain?'Direction unclear · kept its current direction. You can correct it below.':suggestion?'Automatic suggestion ready. Check the outer rim and direction.':'';
+        dialog.querySelector('.photoEditStatus').textContent=options.status||(suggestion?.manual?'Current photo retained. Adjust the crop or direction below.':suggestion?.uncertain?'Direction unclear · kept its current direction. You can correct it below.':suggestion?'Automatic suggestion ready. Check the outer rim and direction.':'');
         canvas.onpointerdown=event=>{drag={clientX:event.clientX,clientY:event.clientY,x,y};canvas.setPointerCapture(event.pointerId);};
         canvas.onpointermove=event=>{if(!drag)return;const rect=canvas.getBoundingClientRect();x=drag.x+(event.clientX-drag.clientX)/rect.width;y=drag.y+(event.clientY-drag.clientY)/rect.height;draw();};
         canvas.onpointerup=canvas.onpointercancel=()=>drag=null;

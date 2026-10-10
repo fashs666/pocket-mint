@@ -8,7 +8,7 @@ let calls=0,answer={matches:[],uncertain:true},status=200,focusRestored=false,st
 const elements={button:{focus(){},onclick:null},'.visionResetTime':{textContent:''}};
 const dialog={open:false,setAttribute(){},querySelector(key){return elements[key];},addEventListener(){},showModal(){this.open=true;},close(){this.open=false;}};
 const window={crypto:webcrypto,fetch:async()=>{calls++;return new Response(JSON.stringify(answer),{status,headers:{'content-type':'application/json'}});},addEventListener(name,fn){listeners[name]=fn;},dispatchEvent(){}};
-const context={window,crypto:webcrypto,Headers,Request,Response,URL,TextEncoder,DOMException,Date,CustomEvent:class{},location:{href:'https://mint.test/',origin:'https://mint.test'},localStorage:{getItem:k=>store.get(k),setItem:(k,v)=>store.set(k,v)},history,document:{activeElement:{focus(){focusRestored=true;}},createElement:()=>dialog,body:{append(){}}}};
+const context={window,crypto:webcrypto,Headers,Request,Response,URL,TextEncoder,DOMException,Date,CustomEvent:class{},location:{href:'https://mint.test/',origin:'https://mint.test'},localStorage:{getItem:k=>store.get(k),setItem:(k,v)=>store.set(k,v)},history,document:{getElementById:()=>null,activeElement:{focus(){focusRestored=true;}},createElement:()=>dialog,body:{append(){}}}};
 vm.createContext(context);vm.runInContext(source,context);
 const batch=body=>window.fetch('/api/identify',{method:'POST',headers:{'x-pocket-mint-batch':'1'},body:JSON.stringify(body)});
 await batch({reverse:'photo-a',denomination:'$1'});await batch({reverse:'photo-a',denomination:'$1'});assert.equal(calls,1,'Same batch photo/clues reuse completed result');
