@@ -1,0 +1,4 @@
+/* Android capture presentation only; the guide stays clear of its controls. */
+.coinCamera.androidGuided .cameraBottom{max-height:48dvh;overflow-y:auto;box-sizing:border-box;touch-action:pan-y;padding-bottom:6px}
+.coinCamera.androidGuided .cameraControl input{min-height:44px}
+.coinCamera.androidGuided .cameraChoose{min-height:44px}

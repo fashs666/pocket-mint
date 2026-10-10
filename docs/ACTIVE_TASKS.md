@@ -140,3 +140,13 @@ Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/ci
 - [ ] Diagnose the reported connection error and recognition failures separately; preserve the shared single identifier.
 - [ ] Repair the source/local reference asset for Great Aussie Coin Hunt 3 — Y for Yarra Valley; fallback presentation does not restore the asset.
 - [ ] Obtain the rights-cleared condition photographs already listed above.
+
+## Android guided-camera focus — v0.14.44
+
+- [x] Request focus at the actual circle centre, mapped through the preview's object-fit cover crop to normalized sensor coordinates.
+- [x] Add tap-to-refocus and an Autofocus control; return from manual focus to continuous autofocus where supported.
+- [x] Try Android advanced image-capture constraints, verify reported settings, and retry exact constraints if rejected/ignored.
+- [x] Fall back to autofocus without metering points when point control fails; suppress autofocus controls when unsupported.
+- [x] Keep the coin circle between the title and capture controls on small and landscape screens.
+- [x] Preserve the existing circle crop/export and single recognition engine; reject stale focus jobs after closing.
+- [ ] Verify actual lens sharpness and minimum focusing distance on Ben's Android hardware. Simulated camera tests cannot establish physical autofocus quality.
