@@ -56,6 +56,7 @@
     const box=document.createElement('div');box.className='batchReference';
     const picture=document.createElement('img');picture.src=coin.reference_image;picture.alt=`Catalogue reference for ${coin.title}`;
     const description=document.createElement('span');description.textContent=`Catalogue reference · ${coin.year} ${coin.title}${coin.reference_image_kind==='series'?' (series image)':coin.reference_image_kind==='product'?' (product image)':coin.reference_image_kind==='obverse'?' (portrait side)':''}`;
+    picture.onerror=()=>{picture.remove();description.textContent=`Reference image unavailable · ${coin.title}. Compare the visible details and choose manually.`;};
     box.append(picture,description);return box;
   }
   function searchCatalogue(query,denomination=''){
@@ -85,6 +86,7 @@
       for(const coin of matches){
         const button=document.createElement('button');button.type='button';button.className='batchSuggestion';
         const thumbnail=document.createElement('img');thumbnail.src=coin.reference_image;thumbnail.alt='';
+        thumbnail.onerror=()=>thumbnail.remove();
         const caption=document.createElement('span');caption.textContent=`${coin.title} · ${coin.denomination_display} · ${coin.year}`;
         button.append(thumbnail,caption);
         button.onclick=()=>{
@@ -131,7 +133,7 @@
     try{const source=effectivePhoto(crop).blob;
       // Batch crops already have an outline: do not re-detect or auto-rotate inside the shared editor.
       window.AutoCoinPhoto?.markManual(source,source);
-      const adjusted=await window.CoinPhotoEditor.edit(source);
+      const adjusted=await window.CoinPhotoEditor.edit(source,{status:rotationStatus(crop)+'. Adjust the crop or direction below.'});
       if(!adjusted||revision!==generation||!activeCrop(crop))return;
       const reverse=await fileDataUrl(adjusted);if(revision!==generation||!activeCrop(crop))return;
       results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,orientationLabel:'Rotation adjusted',message:'Photo adjusted. Identify this coin again before confirming.'});
@@ -227,7 +229,7 @@
           title.textContent=result.status==='manual'?'Selected from catalogue':`Suggested match${suggested.confidence!==null?` · ${suggested.confidence}%`:''}`;
           const issue=result.coinId?coinById(result.coinId):null;
           const pair=document.createElement('div');pair.className='batchPair';const ownBox=document.createElement('div');const caption=document.createElement('span');caption.textContent='Your photo';thumbnail.removeAttribute?.('role');thumbnail.removeAttribute?.('tabindex');thumbnail.onclick=null;thumbnail.onkeydown=null;ownBox.append(thumbnail,caption);pair.append(ownBox,reference(issue||selected?.coin||suggested.coin));cardSummary.insertBefore?cardSummary.insertBefore(pair,summary):cardSummary.append(pair);cardSummary.append(title);
-          if(result.choices.length>1){const alternatives=document.createElement('div');alternatives.className='batchAlternatives';for(const choice of result.choices.slice(0,3)){const button=document.createElement('button');button.type='button';button.className='batchSuggestion';button.disabled=busy;const pic=document.createElement('img');pic.src=choice.coin.reference_image;pic.alt='';const text=document.createElement('span');text.textContent=choice.title;button.append(pic,text);button.onclick=()=>{result.designId=choice.id;result.coinId=null;result.ready=false;result.reviewConfirmed=false;render(crops);};alternatives.append(button);}card.append(alternatives);}
+          if(result.choices.length>1){const alternatives=document.createElement('div');alternatives.className='batchAlternatives';for(const choice of result.choices.slice(0,3)){const button=document.createElement('button');button.type='button';button.className='batchSuggestion';button.disabled=busy;const pic=document.createElement('img');pic.src=choice.coin.reference_image;pic.alt='';pic.onerror=()=>pic.remove();const text=document.createElement('span');text.textContent=choice.title;button.append(pic,text);button.onclick=()=>{result.designId=choice.id;result.coinId=null;result.ready=false;result.reviewConfirmed=false;render(crops);};alternatives.append(button);}card.append(alternatives);}
           const reject=document.createElement('button');reject.type='button';reject.textContent='Not this coin · choose manually';reject.disabled=busy||result.added;reject.onclick=()=>{result.designId=null;result.coinId=null;result.ready=false;result.reviewConfirmed=false;result.manualOpen=true;render(crops);};card.append(reject);
         }
         const designLabel=document.createElement('label');designLabel.textContent='Design';

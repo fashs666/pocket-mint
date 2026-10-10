@@ -6,3 +6,7 @@
 .visionAllowanceDialog .visionResetTime{font-weight:700}
 .visionAllowanceDialog button{width:100%;min-height:48px;border:2px solid #b89a6d;border-radius:22px 26px 23px 25px;background:linear-gradient(#fff7e5,#e9d5af);color:#382d49;font:inherit;font-weight:700;box-shadow:0 4px 0 #a77d5055;cursor:pointer}
 .visionAllowanceDialog button:focus-visible{outline:3px solid #55cfd8;outline-offset:3px}
+.visionUsage{margin:18px 0;padding:16px;border:14px solid transparent;border-image:url('frames/coin-wobble.svg') 9% 15% fill stretch;border-radius:24px;background:#f6e8ca;color:#30273e;overflow-wrap:anywhere}
+.visionUsage p{line-height:1.45;margin:10px 0}.visionUsage .visionNeuronCount{display:inline-block;font-size:2rem;color:#4a3264;font-variant-numeric:tabular-nums}.visionUsage .muted{color:#62566a}.visionUsage a{display:inline-flex;align-items:center;min-height:44px;color:#60408b;font-weight:700}.visionUsageLast{font-weight:700}
+.visionUsagePop{animation:visionUsagePop .35s ease-out}@keyframes visionUsagePop{50%{transform:scale(1.12);color:#168c99}}
+@media(prefers-reduced-motion:reduce){.visionUsagePop{animation:none}}

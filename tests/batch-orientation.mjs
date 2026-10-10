@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import worker,{parseBatchOrientation,parseUpright} from '../src/batch-orientation.js';
+import worker,{parseBatchOrientation,parseUpright,parseDirectOrientation} from '../src/batch-orientation.js';
+for(const angle of [-180,-90,-17,0,12,90,180])assert.equal(parseDirectOrientation(`CLOCKWISE=${angle}; CONFIDENCE=94; CUE=straight ONE DOLLAR lettering`).angle,angle);
+for(const raw of ['unknown','','NaN','190'])assert.equal(parseDirectOrientation(`CLOCKWISE=${raw}; CONFIDENCE=99; CUE=portrait upright`).confident,false);
+assert.equal(parseDirectOrientation('CLOCKWISE=90; CONFIDENCE=89; CUE=sideways lettering').confident,false);
 for(const [choice,angle] of [[1,0],[2,90],[3,180],[4,-90]])assert.deepEqual(parseBatchOrientation(`CHOICE=${choice}; CONFIDENCE=92; CUE=ONE DOLLAR reads at bottom`),{angle,confident:true,reason:'visual_orientation'});
 for(const answer of ['CHOICE=unknown; CONFIDENCE=99; CUE=unknown','CHOICE=9; CONFIDENCE=99; CUE=portrait upright','CHOICE=2; CONFIDENCE=84; CUE=portrait upright','CHOICE=3; CONFIDENCE=999; CUE=portrait upright','CHOICE=2; CONFIDENCE=95; CUE=symmetric design'])assert.equal(parseBatchOrientation(answer).confident,false);
 const request=()=>new Request('https://test/api/batch-orientation',{method:'POST',body:JSON.stringify({image:'data:image/jpeg;base64,AA=='})});

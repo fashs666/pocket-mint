@@ -11,18 +11,9 @@
   }
   async function analyze(file){
     try {
-      const bitmap=await decodeIdentifyPhoto(file);
-      const tile=384,pad=28,canvas=document.createElement('canvas');canvas.width=tile*2;canvas.height=(tile+pad)*2;
-      const context=canvas.getContext('2d');context.fillStyle='#faf5e9';context.fillRect(0,0,canvas.width,canvas.height);
-      const angles=[0,90,180,-90];
-      for(let i=0;i<angles.length;i++){
-        const x=(i%2)*tile,y=Math.floor(i/2)*(tile+pad),angle=angles[i]*Math.PI/180;
-        context.fillStyle='#111827';context.font='bold 22px sans-serif';context.textAlign='center';context.fillText(String(i+1),x+tile/2,y+23);
-        context.save();context.translate(x+tile/2,y+pad+tile/2);context.rotate(angle);
-        const size=tile*.85,scale=Math.min(size/bitmap.width,size/bitmap.height);context.drawImage(bitmap,-bitmap.width*scale/2,-bitmap.height*scale/2,bitmap.width*scale,bitmap.height*scale);context.restore();
-      }
-      bitmap.close?.();const image=canvas.toDataURL('image/jpeg',.88);canvas.width=canvas.height=0;
-      const response=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({image})});
+      // A large single view retains lettering and allows small tilt corrections.
+      const image=await makeAnalysisImage(file);
+      const response=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'direction',image})});
       const direction=await response.json();
       if(!response.ok)return {file,confident:false,reason:direction.reason==='allowance'?'allowance':'unavailable'};
       if(direction.confident!==true||!Number.isFinite(direction.angle)||Math.abs(direction.angle)>180)return {file,confident:false,reason:direction.reason||'uncertain'};
@@ -33,7 +24,7 @@
       const check=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'verify',image:checkImage})});
       const verification=await check.json();
       if(!check.ok)return {file,confident:false,reason:verification.reason==='allowance'?'allowance':'unavailable'};
-      return verification.confident===true?{file:candidate,confident:true}:{file,confident:false,reason:verification.reason||'uncertain'};
+      return verification.confident===true?{file:candidate,confident:true,angle:direction.angle}:{file,confident:false,reason:verification.reason||'uncertain'};
     } catch {return {file,confident:false,reason:'unavailable'};}
   }
   async function rotate(file,angle){
