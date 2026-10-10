@@ -13,7 +13,7 @@ let calls=0,quota=false;
 await page.route('**/api/**',route=>{calls++;return route.fulfill({status:quota?429:200,headers:{'x-pocket-mint-usage':JSON.stringify({day:new Date().toISOString().slice(0,10),calls:quota?1:2,measured:quota?0:2,unknown:quota?1:0,neurons:quota?0:60.5})},json:quota?{diagnostic_code:'VISION-DAILY-LIMIT',reason:'allowance',error:'Daily allowance reached'}:{matches:[],uncertain:true,confident:false,reason:'uncertain'}});});
 const request=(body,batch=false,url='/api/identify')=>page.evaluate(async({body,batch,url})=>{const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json',...(batch?{'x-pocket-mint-batch':'1'}:{})},body:JSON.stringify(body)});return r.status;},{body,batch,url});
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.PocketMintVisionAllowance&&window.BatchIdentification&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.45'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>window.PocketMintVisionAllowance&&window.BatchIdentification&&document.querySelector('#diagnostics')?.textContent.includes('v0.14.46'));
  await page.evaluate(()=>{navigate('findView');showFindTab('identify');identifyState.reverse=new Blob(['keep photo']);});
  await request({reverse:'a'},true);await request({reverse:'a'},true);assert.equal(calls,1);
  await request({reverse:'b'},true);assert.equal(calls,2);
