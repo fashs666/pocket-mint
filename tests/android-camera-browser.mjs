@@ -18,7 +18,7 @@ await page.addInitScript(()=>{
  navigator.mediaDevices.getSupportedConstraints=()=>({pointsOfInterest:true});
 });
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.47'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.48'));
  await page.evaluate(()=>{navigate('findView');showFindTab('identify');window.__defaultNative=null;document.querySelector('#identifyReverseCamera').click=()=>window.__defaultNative='reverse';});
  await page.locator('[data-camera-side="reverse"]').click();assert.equal(await page.evaluate(()=>__defaultNative),'reverse');assert(await page.locator('#coinCamera').isHidden(),'Default capture uses the native phone camera');
  await page.locator('#identifyBrowserCamera').click();
@@ -74,7 +74,10 @@ try{
  await page.waitForSelector('.coinPhotoEditor[open]');assert.equal(await page.locator('.coinPhotoEditor h3').textContent(),'Crop your coin');
  const originalPhoto=await page.evaluate(()=>{window.__recognitionPhoto=identifyState.reverse.file;return identifyState.reverse.specimenFile.name;});assert.equal(originalPhoto,'native.png');
  await page.locator('.applyPhotoEdit').click();await page.evaluate(()=>__nativeCropDone);
- assert(await page.evaluate(()=>identifyState.reverse.file===__recognitionPhoto),'Native crop does not change the protected recognition input');
+ assert(await page.evaluate(()=>identifyState.reverse.file!==__recognitionPhoto),'Applied native crop is now the recognition input');
+ assert.equal(await page.evaluate(()=>identifyState.reverse.sourceFile.name),'native.png');
+ const cropPixels=await page.evaluate(async()=>{const saved=await createImageBitmap(identifyState.reverse.specimenFile),input=await createImageBitmap(identifyState.reverse.file),c=document.createElement('canvas');c.width=c.height=768;const ctx=c.getContext('2d');ctx.drawImage(saved,0,0);const alpha=ctx.getImageData(0,0,1,1).data[3];ctx.clearRect(0,0,768,768);ctx.drawImage(input,0,0);const corner=[...ctx.getImageData(0,0,1,1).data];saved.close();input.close();return {alpha,corner};});
+ assert.equal(cropPixels.alpha,0,'Saved image excludes background outside the circular crop');assert(cropPixels.corner[0]>230&&cropPixels.corner[1]>230,'Recognition receives a neutral background outside the coin');
  assert.equal(await page.evaluate(()=>identifyState.reverse.specimenFile.name),'coin-cropped.png');assert.equal(await page.evaluate(()=>__nativeCropInput.value),'');assert.equal(orientationCalls,0);
  await page.evaluate(()=>{window.__nativeCropDone=readAndroidCameraPhoto(__nativeCropInput={files:[identifyState.reverse.specimenFile],value:'photo'},'obverse');});
  await page.waitForSelector('.coinPhotoEditor[open]');await page.locator('.cancelPhotoEdit').click();await page.evaluate(()=>__nativeCropDone);assert(await page.evaluate(()=>Boolean(identifyState.obverse?.file)),'Cancel keeps the captured portrait photo');

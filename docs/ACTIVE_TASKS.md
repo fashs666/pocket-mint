@@ -183,3 +183,21 @@ No AI calls are added for camera focusing. Single recognition, catalogue and mul
 - [x] Retain Pocket Mint’s live circle as an optional guided camera. Native camera UI cannot carry the PWA’s live overlay.
 - [x] Verify routing, capture/crop/cancel, no orientation call and unchanged single recognition input.
 - [ ] Check native-camera return and actual focus on Ben’s Samsung.
+
+## Coin-only recognition crop — v0.14.48
+
+- [x] Use the user-applied circular crop for both recognition input and saved specimen photo. Feed it through the existing photo loader so quality checks and stale results reset normally.
+- [x] Retain the original capture through repeated edits and in the saved photo's original_data_url.
+- [x] Try local coin detection to centre the initial crop; require the user to check the full rim. Ambiguous detection keeps manual positioning available.
+- [x] Apply the same behavior to the existing Crop / rotate photo control. No automatic orientation request is added to native capture or manual single-photo editing.
+- [x] Test cancellation, stale editor protection, off-centre fitting, transparent specimen export, neutral recognition background and original preservation.
+- [ ] Verify native return/crop and actual focus on Ben’s Samsung.
+
+## Auto-rotation accuracy — still open
+
+- [ ] Improve real-photo orientation accuracy; retain Check rotation and manual corrections until evidence is reliable.
+- [x] Evaluate local OCR on four quarter turns of the supplied worn ANZAC crop: no reliable straight-word evidence. Do not ship an OCR dependency based on this trial.
+- [ ] Compare existing four-view choice with direct-angle inference on supplied photos and score against human-checked upright examples before changing production rotation.
+- [ ] Live photo evaluation is blocked pending explicit approval to send supplied coin photos to the Pocket Mint Workers endpoint. Automatic approval review rejected that upload; no successful test result is claimed.
+
+Single recognition engine, camera capture engine, candidate ranking, catalogue matching, batch detector and production rotation algorithm are unchanged in v0.14.48. Only explicit single-photo crop preparation and its tests change.
