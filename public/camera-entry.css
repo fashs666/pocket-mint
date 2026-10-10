@@ -1,4 +1,8 @@
 /* Android capture presentation only; the guide stays clear of its controls. */
+.coinCamera.androidGuided{height:100vh;height:100dvh;bottom:auto}
+.coinCamera.androidGuided .cameraShade{z-index:1}
+.coinCamera.androidGuided .cameraAlternatives{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.coinCamera.androidGuided .cameraShutter{flex-shrink:0;min-height:72px}
 .coinCamera.androidGuided .cameraBottom{max-height:48dvh;overflow-y:auto;box-sizing:border-box;touch-action:pan-y;padding-bottom:6px}
 .coinCamera.androidGuided .cameraControl input{min-height:44px}
 .coinCamera.androidGuided .cameraChoose{min-height:44px}

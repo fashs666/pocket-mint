@@ -18,8 +18,9 @@ await page.addInitScript(()=>{
  navigator.mediaDevices.getSupportedConstraints=()=>({pointsOfInterest:true});
 });
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.44'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.45'));
  await page.evaluate(()=>{navigate('findView');showFindTab('identify');});await page.evaluate(()=>openCoinCamera('reverse'));
+ await page.waitForFunction(()=>document.querySelector('#coinCameraAutofocus')&&!document.querySelector('#coinCameraAutofocus').hidden);await page.evaluate(()=>coinCameraFocusQueue);
  assert(await page.locator('#coinCameraGuide').isVisible());assert(await page.locator('#coinCameraAutofocus').isVisible());
  assert(await page.evaluate(()=>__focusCalls.some(c=>c.pointsOfInterest&&c.focusMode==='single-shot')));
  for(const size of [{width:320,height:568},{width:390,height:844},{width:844,height:390}]){
@@ -35,5 +36,22 @@ try{
  await page.locator('#coinCameraShutter').click();await page.waitForFunction(()=>document.querySelector('#coinCamera').hidden&&identifyState.reverse?.file);
  assert.match(await page.evaluate(()=>identifyState.reverse.file.name),/^guided-reverse-/);
  const dimensions=await page.evaluate(async()=>{const b=await createImageBitmap(identifyState.reverse.file);const r=[b.width,b.height];b.close();return r;});assert.deepEqual(dimensions,[768,768]);
+ // A Samsung-style missing/throwing capability API cannot remove the live camera.
+ await page.evaluate(()=>{MediaStreamTrack.prototype.getCapabilities=function(){throw Error('Capability API unavailable');};});
+ await page.evaluate(()=>openCoinCamera('reverse'));
+ await page.waitForFunction(()=>document.querySelector('#coinCameraShutter').disabled===false);
+ assert(await page.locator('#coinCameraGuide').isVisible());assert(await page.locator('#coinCameraShutter').isVisible());
+ assert.equal(await page.evaluate(()=>document.querySelector('#coinCamera').classList.contains('fallback')),false);
+ await page.locator('#coinCameraShutter').click();await page.waitForFunction(()=>document.querySelector('#coinCamera').hidden);
+ // Even a driver that never resolves focus constraints must not block opening.
+ await page.evaluate(()=>{MediaStreamTrack.prototype.getCapabilities=()=>({focusMode:['continuous']});MediaStreamTrack.prototype.applyConstraints=()=>new Promise(()=>{});});
+ await page.evaluate(()=>openCoinCamera('reverse'));
+ assert(await page.locator('#coinCameraShutter').isEnabled());assert(await page.locator('#coinCameraGuide').isVisible());
+ await page.evaluate(()=>closeCoinCamera());
+ // A previous permission failure must be cleared on the next successful opening.
+ await page.evaluate(()=>{document.querySelector('#coinCamera').classList.add('fallback');MediaStreamTrack.prototype.getCapabilities=()=>({});MediaStreamTrack.prototype.applyConstraints=async()=>{};});
+ await page.evaluate(()=>openCoinCamera('reverse'));
+ assert(await page.locator('#coinCameraShutter').isVisible());assert(await page.locator('#coinCameraShutter').isEnabled());
+ await page.evaluate(()=>closeCoinCamera());
  console.log('PASS Android guided camera: real simulated stream, centre/tap focus, manual-to-auto, unobstructed circle at three viewports and unchanged 768px guided capture');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

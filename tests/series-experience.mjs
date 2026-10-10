@@ -65,7 +65,7 @@ assert.equal(evaluate('milestoneHistory.get("outback").completed_at'),null);
 assert.equal(evaluate('milestoneHistory.get("outback").seriesCompletionCelebrated'),true);
 const cameraContext={navigator:{userAgent:'Android'},openCoinCamera:async side=>`guided:${side}`,openNativeCoinCamera:side=>`native:${side}`,loadIdentifyPhoto:async()=>{},clearIdentifyPhoto:()=>{}};
 vm.createContext(cameraContext);vm.runInContext(await readFile('public/camera-entry.js','utf8'),cameraContext);
-assert.equal(await vm.runInContext('openCoinCamera("reverse")',cameraContext),'guided:reverse');
+// Android's resilient live-camera lifecycle is covered by android-camera-browser.
 assert.equal(await vm.runInContext('guidedCoinCamera("reverse")',cameraContext),'guided:reverse');
 cameraContext.navigator.userAgent='iPhone';assert.equal(await vm.runInContext('openCoinCamera("reverse")',cameraContext),'guided:reverse');
-console.log('PASS series: exact membership, completion persistence, quantities; Android and iPhone guided camera entry');
+console.log('PASS series: exact membership, completion persistence, quantities; preserved iPhone guided camera entry');
