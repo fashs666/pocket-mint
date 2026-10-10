@@ -215,3 +215,12 @@ Single recognition engine, camera capture engine, candidate ranking, catalogue m
 - [ ] Improve coverage on worn coins, subtle tilts, colour designs and portraits. Quarter-turn success on three designs does not establish general accuracy.
 
 Single recognition engine, prompts, request format, ranking, denomination recognition, catalogue and batch detection remain unchanged. Orientation still runs automatically during crop review with at most two model calls per crop.
+
+## Fold5 main-lens eligibility — v0.14.50
+
+- [x] Fix the alternate rear-camera filter: main wide-angle cameras remain eligible; ultra-wide, telephoto, front and unlabelled cameras are excluded. Prefer a named main/wide camera over a generic rear alternative.
+- [x] Preserve explicit user lens choices, existing autofocus behavior, the live circular guide and coin-only capture.
+- [x] Add regression cases for wide-angle selection, excluded alternatives and leaving the current stream running when no safe alternative exists.
+- [ ] Confirm actual sharpness on Ben's Galaxy Z Fold5 in Chrome. Moving back helped only marginally. This corrects a confirmed selection bug, but does not prove which lens Chrome exposes or guarantee close-focus performance. A lens already advertising autofocus is still retained; focus request acceptance is not a sharpness measurement.
+
+Single recognition and multi-coin rotation are unchanged in this release.
