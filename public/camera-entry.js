@@ -6,6 +6,62 @@ const originalClearIdentifyPhoto=clearIdentifyPhoto;
 const originalCameraControls=typeof setupCoinCameraControls==='function'?setupCoinCameraControls:null;
 const originalCameraFocus=typeof setCoinCameraFocus==='function'?setCoinCameraFocus:null;
 let androidCameraOpening=0;
+function androidLensScore(track){
+  const cap=androidCameraCapabilities(track),modes=cap.focusMode||[];
+  return modes.includes('continuous')?3:modes.includes('single-shot')?2:modes.includes('manual')&&cap.focusDistance?1:0;
+}
+async function preferAndroidFocusLens(stream,deviceId,opening){
+  const track=stream.getVideoTracks()[0],settings=androidCameraSettings(track);
+  if(deviceId||androidLensScore(track)||!settings.deviceId)return stream;
+  // Only switch when another lens is explicitly labelled as a rear/main camera.
+  // Do not guess numeric camera IDs or switch to an unknown/front lens.
+  let devices;try{devices=await navigator.mediaDevices.enumerateDevices();}catch{return stream;}
+  const rear=devices.filter(d=>d.kind==='videoinput'&&d.deviceId!==settings.deviceId&&/back|rear|environment/i.test(d.label)&&!/front|ultra|wide|tele/i.test(d.label)).slice(0,2);
+  if(!rear.length)return stream;
+  stream.getTracks().forEach(t=>t.stop());
+  for(const device of rear){
+    if(opening!==androidCameraOpening||document.getElementById('coinCamera').hidden)return null;
+    let candidate;
+    try{candidate=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:device.deviceId},width:{ideal:1920},height:{ideal:1080}},audio:false});
+      if(androidLensScore(candidate.getVideoTracks()[0]))return candidate;
+    }catch{}candidate?.getTracks().forEach(t=>t.stop());
+  }
+  if(opening!==androidCameraOpening||document.getElementById('coinCamera').hidden)return null;
+  return navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:settings.deviceId},width:{ideal:1920},height:{ideal:1080}},audio:false});
+}
+function readAndroidFocusDetail(){
+  const video=document.getElementById('coinCameraVideo'),guide=document.getElementById('coinCameraGuide');
+  if(!video.videoWidth||!video.videoHeight)return null;
+  const r=video.getBoundingClientRect(),g=guide.getBoundingClientRect(),p=coinCameraSensorPoint(video,g.left+g.width/2,g.top+g.height/2),scale=Math.max(r.width/video.videoWidth,r.height/video.videoHeight),side=g.width/scale*.75;
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+  try{const ctx=canvas.getContext('2d');ctx.drawImage(video,p.x*video.videoWidth-side/2,p.y*video.videoHeight-side/2,side,side,0,0,128,128);return measureCoinDetail(ctx.getImageData(0,0,128,128).data,128).laplacian_variance;}catch{return null;}finally{canvas.width=canvas.height=0;}
+}
+async function scanAndroidCoinFocus(track,current){
+  const cap=androidCameraCapabilities(track),range=cap.focusDistance,start=androidCameraSettings(track),baseline=readAndroidFocusDetail();
+  if(!cap.focusMode?.includes('manual')||!range||!Number.isFinite(range.min)||!Number.isFinite(range.max)||range.max<=range.min||!Number.isFinite(baseline)||baseline<1)return false;
+  const step=range.step||.01,values=[start.focusDistance,...[0,.03,.08,.18,.4,.7,1].map(f=>range.min+(range.max-range.min)*f)].filter(Number.isFinite).map(v=>Math.max(range.min,Math.min(range.max,range.min+Math.round((v-range.min)/step)*step)));
+  let best={distance:start.focusDistance,score:baseline};
+  try{
+    document.getElementById('coinCameraStatus').textContent='Focusing on coin detail… Hold still.';
+    for(const distance of new Set(values)){
+      if(!current())return false;
+      await applyAndroidFocus(track,{focusMode:'manual',focusDistance:distance},current);
+      await new Promise(resolve=>setTimeout(resolve,180));if(!current())return false;
+      const first=readAndroidFocusDetail();await new Promise(resolve=>setTimeout(resolve,80));if(!current())return false;
+      const second=readAndroidFocusDetail(),score=Math.min(first??0,second??0);
+      if(score>best.score)best={distance,score};
+    }
+    if(!current())return false;
+    if(best.score>baseline*1.15&&Number.isFinite(best.distance)){
+      await applyAndroidFocus(track,{focusMode:'manual',focusDistance:best.distance},current);
+      coinCameraDiagnostics.focus_mode='manual';coinCameraDiagnostics.focus_distance=best.distance;coinCameraDiagnostics.detail_focus_scan={before:baseline,after:best.score};
+      document.getElementById('coinCameraStatus').textContent='Coin detail focus adjusted. Check the lettering.';return true;
+    }
+  }catch{if(!current())return false;}
+  const restore=start.focusMode?{focusMode:start.focusMode,...(start.focusMode==='manual'&&Number.isFinite(start.focusDistance)?{focusDistance:start.focusDistance}:{})}:null;
+  if(restore&&current())try{await applyAndroidFocus(track,restore,current);}catch{}
+  return false;
+}
 function cameraOperation(promise,ms=1800){
   let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Camera operation timed out')),ms);})]).finally(()=>clearTimeout(timer));
 }
@@ -79,8 +135,8 @@ async function refocusAndroidCoin(point={x:.5,y:.5},automatic=false,isLatest=()=
   const mode=automatic&&modes.includes('continuous')?'continuous':modes.includes('single-shot')?'single-shot':modes.includes('continuous')?'continuous':null;
   const status=document.getElementById('coinCameraStatus');
   if(!track)return false;
-  if(!mode){if(!automatic)status.textContent='Tap focus unavailable here. Use Phone camera.';return false;}
   const current=()=>coinCameraTrack===track&&isLatest();
+  if(!mode){if(await scanAndroidCoinFocus(track,current))return true;if(current())status.textContent=automatic?'Keep the full rim inside the circle. Move back if lettering is soft.':'Lens focus control unavailable. Try another camera in Options.';return false;}
   if(current()&&!automatic)status.textContent='Requesting focus… Hold still.';
   try{
     let values={focusMode:mode},pointAccepted=false;
@@ -95,6 +151,7 @@ async function refocusAndroidCoin(point={x:.5,y:.5},automatic=false,isLatest=()=
     coinCameraDiagnostics.focus_point_requested=pointAccepted?point:null;
     coinCameraDiagnostics.focus_point_reported=settings.pointsOfInterest||null;
     coinCameraDiagnostics.tap_focus_verified=pointAccepted;
+    if(!automatic&&!pointAccepted&&await scanAndroidCoinFocus(track,current))return true;
     status.textContent=automatic?'Keep the full rim inside the circle.':pointAccepted?'Focus requested. Check the lettering.':'Camera refocus requested; tap position unsupported. Use Phone camera if soft.';
     return true;
   }catch{
@@ -112,12 +169,12 @@ if(originalCameraControls){
     if(!focusRow.hidden){Object.assign(focus,{min:cap.focusDistance.min,max:cap.focusDistance.max,step:cap.focusDistance.step||.01,value:settings.focusDistance??cap.focusDistance.min});}
     const zoomRow=document.getElementById('coinCameraZoomRow'),zoom=document.getElementById('coinCameraZoom');zoomRow.hidden=!cap.zoom;
     if(cap.zoom){Object.assign(zoom,{min:cap.zoom.min,max:cap.zoom.max,step:cap.zoom.step||.1,value:settings.zoom??cap.zoom.min});coinCameraZoomValue=Number(zoom.value);document.getElementById('coinCameraZoomValue').value=`${coinCameraZoomValue.toFixed(1)}×`;zoom.oninput=()=>setCoinCameraZoom(zoom.value);}
-    const autofocus=modes.includes('continuous')||modes.includes('single-shot');
+    const autofocus=modes.includes('continuous')||modes.includes('single-shot')||coinCameraDiagnostics.manual_focus_available;
     let button=document.getElementById('coinCameraAutofocus');
     if(!button)return;
     button.hidden=!autofocus;
     let focusRevision=0;
-    const request=(point,automatic=false)=>{const revision=++focusRevision;coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>revision===focusRevision&&coinCameraTrack===track?cameraOperation(refocusAndroidCoin(point,automatic,()=>revision===focusRevision),2400).catch(()=>{if(revision===focusRevision){focusRevision++;if(coinCameraTrack===track)document.getElementById('coinCameraStatus').textContent='Focus request timed out. Use Phone camera if soft.';}return false;}):false);return coinCameraFocusQueue;};
+    const request=(point,automatic=false)=>{const revision=++focusRevision;coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>revision===focusRevision&&coinCameraTrack===track?cameraOperation(refocusAndroidCoin(point,automatic,()=>revision===focusRevision),6500).catch(()=>{if(revision===focusRevision){focusRevision++;if(coinCameraTrack===track)document.getElementById('coinCameraStatus').textContent='Focus request timed out. Use Phone camera if soft.';}return false;}):false);return coinCameraFocusQueue;};
     button.onclick=()=>request(layoutAndroidCoinGuide(),true);
     focus.oninput=()=>{const revision=++focusRevision,value=focus.value;coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>revision===focusRevision&&coinCameraTrack===track?setCoinCameraFocus(value):undefined);};
     let pointer=null;
@@ -166,6 +223,8 @@ openCoinCamera=async function openPreferredCoinCamera(side,deviceId=null){
   try{
     try{stream=await navigator.mediaDevices.getUserMedia({video:{...(deviceId?{deviceId:{exact:deviceId}}:{facingMode:{ideal:'environment'}}),width:{ideal:1920},height:{ideal:1080}},audio:false});}
     catch(error){if(!['OverconstrainedError','NotFoundError'].includes(error.name))throw error;stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});}
+    stream=await preferAndroidFocusLens(stream,deviceId,opening);
+    if(!stream)return;
     if(camera.hidden||opening!==androidCameraOpening){stream.getTracks().forEach(t=>t.stop());return;}
     coinCameraStream=stream;coinCameraTrack=stream.getVideoTracks()[0];video.srcObject=stream;
     await cameraOperation(new Promise((resolve,reject)=>{
@@ -193,10 +252,10 @@ function setupCameraEntry(){
   optional.onclick=()=>guidedCoinCamera('reverse');
   window.CoinPhotoEditor?.setupSingle();
   if(!androidCoinCamera())return;
-  optional.hidden=false;optional.textContent='Use Pocket Mint live guide';optional.onclick=()=>openCoinCamera('reverse');
-  document.querySelectorAll('[data-camera-side]').forEach(button=>{button.onclick=()=>openNativeCoinCamera(button.dataset.cameraSide);button.querySelector('small').textContent='Phone camera · crop afterward';});
+  optional.hidden=false;optional.textContent='Use phone camera instead';optional.onclick=()=>openNativeCoinCamera('reverse');
+  document.querySelectorAll('[data-camera-side]').forEach(button=>{button.onclick=()=>openCoinCamera(button.dataset.cameraSide);button.querySelector('small').textContent='Live circle guide · coin crop';});
   for(const side of ['obverse','reverse'])document.getElementById(side==='obverse'?'identifyObverseCamera':'identifyReverseCamera').onchange=event=>readAndroidCameraPhoto(event.target,side);
-  document.querySelector('.identifyIntro').textContent='Use your phone camera to focus on the coin, then centre it in Pocket Mint’s circular crop guide. The portrait side is optional.';
+  document.querySelector('.identifyIntro').textContent='Keep the coin inside the live circle. Move back and use zoom if lettering is soft. The portrait side is optional.';
 }
 async function readAndroidCameraPhoto(input,side){
   const file=input.files?.[0];if(!file)return;
@@ -211,7 +270,7 @@ async function readAndroidCameraPhoto(input,side){
 loadIdentifyPhoto=async function loadPreferredCameraPhoto(...args){
   const result=await originalLoadIdentifyPhoto(...args);
   window.CoinPhotoEditor?.updateSingle();
-  if(androidCoinCamera())document.querySelector(`#${args[0]}Capture .capturePreview small`).textContent='Tap to retake with phone camera';
+  if(androidCoinCamera())document.querySelector(`#${args[0]}Capture .capturePreview small`).textContent='Tap to retake with circle guide';
   return result;
 };
 clearIdentifyPhoto=function clearPreferredCameraPhoto(...args){

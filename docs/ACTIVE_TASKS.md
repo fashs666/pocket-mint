@@ -198,6 +198,20 @@ No AI calls are added for camera focusing. Single recognition, catalogue and mul
 - [ ] Improve real-photo orientation accuracy; retain Check rotation and manual corrections until evidence is reliable.
 - [x] Evaluate local OCR on four quarter turns of the supplied worn ANZAC crop: no reliable straight-word evidence. Do not ship an OCR dependency based on this trial.
 - [ ] Compare existing four-view choice with direct-angle inference on supplied photos and score against human-checked upright examples before changing production rotation.
-- [ ] Live photo evaluation is blocked pending explicit approval to send supplied coin photos to the Pocket Mint Workers endpoint. Automatic approval review rejected that upload; no successful test result is claimed.
+- [x] Ben approved supplied-photo uploads to the existing Pocket Mint endpoint on 11 October. The previous upload block is resolved; live results are recorded below.
 
 Single recognition engine, camera capture engine, candidate ranking, catalogue matching, batch detector and production rotation algorithm are unchanged in v0.14.48. Only explicit single-photo crop preparation and its tests change.
+
+## Live circular camera and rotation verification — v0.14.49
+
+- [x] Restore the live circular guide as Android's default. Keep Phone camera as an explicit alternative and retain the existing coin-only export.
+- [x] Prefer a focus-capable rear camera over a fixed-focus default when a clearly labelled alternative is exposed; retain explicit user lens choices.
+- [x] Keep continuous autofocus. When tap-position focus is unavailable but manual lens control exists, scan lens settings against actual detail inside the guide; keep a measured improvement or restore the previous focus mode.
+- [x] Test focus scanning, restoration, cancellation, rear-lens selection, tap/automatic/manual controls and uncluttered portrait/landscape capture.
+- [ ] Confirm physical sharpness on Ben's Samsung. Browser capabilities and pixel tests cannot confirm the device's actual lens performance.
+- [x] Replace batch numeric-angle inference with four rendered quarter-turn choices and a second, shifted comparison. Both must agree before changing the photo. Manual overrides and Check rotation remain.
+- [x] Test actual choice-image pixels, inconsistent verification rejection, shared review/result/recognition pixels and manual persistence.
+- [x] Live evaluation using Ben's photos: six cases across ANZAC, Dockers and Five Kangaroos, each at two input rotations. Three corrections accepted, all three matching the checked quarter-turn direction; three kept unchanged for manual checking. No accepted wrong correction in this small sample. See docs/ROTATION_EVALUATION_01449.md.
+- [ ] Improve coverage on worn coins, subtle tilts, colour designs and portraits. Quarter-turn success on three designs does not establish general accuracy.
+
+Single recognition engine, prompts, request format, ranking, denomination recognition, catalogue and batch detection remain unchanged. Orientation still runs automatically during crop review with at most two model calls per crop.

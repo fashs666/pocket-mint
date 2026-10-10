@@ -18,10 +18,10 @@ await page.addInitScript(()=>{
  navigator.mediaDevices.getSupportedConstraints=()=>({pointsOfInterest:true});
 });
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.48'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.49'));
  await page.evaluate(()=>{navigate('findView');showFindTab('identify');window.__defaultNative=null;document.querySelector('#identifyReverseCamera').click=()=>window.__defaultNative='reverse';});
- await page.locator('[data-camera-side="reverse"]').click();assert.equal(await page.evaluate(()=>__defaultNative),'reverse');assert(await page.locator('#coinCamera').isHidden(),'Default capture uses the native phone camera');
- await page.locator('#identifyBrowserCamera').click();
+ await page.locator('#identifyBrowserCamera').click();assert.equal(await page.evaluate(()=>__defaultNative),'reverse');assert(await page.locator('#coinCamera').isHidden(),'Phone camera remains an explicit option');
+ await page.locator('[data-camera-side="reverse"]').click();
  await page.waitForFunction(()=>__focusCalls.some(c=>c.pointsOfInterest&&c.focusMode==='continuous'));
  await page.waitForFunction(()=>document.querySelector('#coinCameraAutofocus')&&!document.querySelector('#coinCameraAutofocus').hidden);await page.evaluate(()=>coinCameraFocusQueue);
  assert(await page.locator('#coinCameraGuide').isVisible());assert.equal(await page.locator('#coinCameraAutofocus').isVisible(),false,'Advanced controls are hidden on opening');
@@ -54,7 +54,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('#coinCameraShutter').disabled===false);
  assert(await page.locator('#coinCameraGuide').isVisible());assert(await page.locator('#coinCameraShutter').isVisible());
  assert.equal(await page.evaluate(()=>document.querySelector('#coinCamera').classList.contains('fallback')),false);
- await page.mouse.click(guide.x+guide.width/2,guide.y+guide.height/2);await page.evaluate(()=>coinCameraFocusQueue);assert.match(await page.locator('#coinCameraStatus').textContent(),/Tap focus unavailable/);
+ await page.mouse.click(guide.x+guide.width/2,guide.y+guide.height/2);await page.evaluate(()=>coinCameraFocusQueue);assert.match(await page.locator('#coinCameraStatus').textContent(),/Lens focus control unavailable/);
  await page.locator('#coinCameraShutter').click();await page.waitForFunction(()=>document.querySelector('#coinCamera').hidden);
  // Even a driver that never resolves focus constraints must not block opening.
  await page.evaluate(()=>{MediaStreamTrack.prototype.getCapabilities=()=>({focusMode:['continuous']});MediaStreamTrack.prototype.applyConstraints=()=>new Promise(()=>{});});
