@@ -5,16 +5,22 @@ const originalLoadIdentifyPhoto=loadIdentifyPhoto;
 const originalClearIdentifyPhoto=clearIdentifyPhoto;
 const originalCameraControls=typeof setupCoinCameraControls==='function'?setupCoinCameraControls:null;
 const originalCameraFocus=typeof setCoinCameraFocus==='function'?setCoinCameraFocus:null;
+let androidCameraOpening=0;
+function cameraOperation(promise,ms=1800){
+  let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Camera operation timed out')),ms);})]).finally(()=>clearTimeout(timer));
+}
+function androidCameraCapabilities(track){try{return track?.getCapabilities?.()||{};}catch{return {};}}
 function layoutAndroidCoinGuide(){
   const video=document.getElementById('coinCameraVideo'),guide=document.getElementById('coinCameraGuide'),camera=document.getElementById('coinCamera');
   const shade=document.querySelector('#coinCamera .cameraShade'),top=document.querySelector('#coinCamera .cameraTop'),bottom=document.querySelector('#coinCamera .cameraBottom');
-  if(!shade||!top||!bottom)return {x:.5,y:.5};
+  if(!shade||!top||!bottom||!video||!guide)return {x:.5,y:.5};
   const r=video.getBoundingClientRect(),start=Math.max(r.top+12,top.getBoundingClientRect().bottom+12),end=Math.min(r.bottom-12,bottom.getBoundingClientRect().top-12);
   shade.style.top=`${start-r.top}px`;shade.style.bottom=`${r.bottom-end}px`;
   camera.style.setProperty('--coin-guide-size',`${Math.max(80,Math.min(r.width*.76,end-start,380))}px`);
   const g=guide.getBoundingClientRect();return coinCameraSensorPoint(video,g.left+g.width/2,g.top+g.height/2);
 }
 function coinCameraSensorPoint(video,clientX,clientY){
+  if(!video.videoWidth||!video.videoHeight)return {x:.5,y:.5};
   const r=video.getBoundingClientRect(),scale=Math.max(r.width/video.videoWidth,r.height/video.videoHeight);
   const width=video.videoWidth*scale,height=video.videoHeight*scale;
   return {x:Math.max(0,Math.min(1,(clientX-r.left+(width-r.width)/2)/width)),y:Math.max(0,Math.min(1,(clientY-r.top+(height-r.height)/2)/height))};
@@ -25,7 +31,7 @@ async function applyAndroidFocus(track,values){
   let error;
   for(const constraint of constraints){
     try{
-      await track.applyConstraints(constraint);const settings=track.getSettings?.()||{};
+      await cameraOperation(track.applyConstraints(constraint));const settings=track.getSettings?.()||{};
       if(settings.focusMode&&settings.focusMode!==values.focusMode)throw Error('Focus mode was not applied');
       if(values.focusDistance!==undefined&&(!Number.isFinite(settings.focusDistance)||Math.abs(settings.focusDistance-values.focusDistance)>(track.getCapabilities().focusDistance.step||.01)*1.5))throw Error('Focus distance was not applied');
       return settings;
@@ -34,7 +40,7 @@ async function applyAndroidFocus(track,values){
   throw error;
 }
 async function refocusAndroidCoin(point={x:.5,y:.5}){
-  const track=coinCameraTrack,cap=track?.getCapabilities?.()||{},modes=cap.focusMode||[];
+  const track=coinCameraTrack,cap=androidCameraCapabilities(track),modes=cap.focusMode||[];
   const mode=modes.includes('single-shot')?'single-shot':modes.includes('continuous')?'continuous':null;
   if(!track||!mode)return false;
   const current=()=>coinCameraTrack===track;
@@ -44,8 +50,8 @@ async function refocusAndroidCoin(point={x:.5,y:.5}){
     let values={focusMode:mode},pointAccepted=false;
     if(navigator.mediaDevices?.getSupportedConstraints?.().pointsOfInterest){
       try{await applyAndroidFocus(track,{...values,pointsOfInterest:[point]});pointAccepted=true;}
-      catch{await applyAndroidFocus(track,values);}
-    }else await applyAndroidFocus(track,values);
+      catch{try{await applyAndroidFocus(track,values);}catch(error){if(mode!=='single-shot'||!modes.includes('continuous'))throw error;await applyAndroidFocus(track,{focusMode:'continuous'});}}
+    }else {try{await applyAndroidFocus(track,values);}catch(error){if(mode!=='single-shot'||!modes.includes('continuous'))throw error;await applyAndroidFocus(track,{focusMode:'continuous'});}}
     if(!current())return false;
     await new Promise(resolve=>setTimeout(resolve,450));
     if(!current())return false;
@@ -64,13 +70,22 @@ async function refocusAndroidCoin(point={x:.5,y:.5}){
 }
 if(originalCameraControls){
   setupCoinCameraControls=async function setupAndroidCoinControls(){
-    await originalCameraControls();if(!androidCoinCamera()||!coinCameraTrack)return;
-    const track=coinCameraTrack,video=document.getElementById('coinCameraVideo'),modes=track.getCapabilities?.().focusMode||[];
+    if(!androidCoinCamera())return originalCameraControls();
+    const openingStream=coinCameraStream;
+    // Optional hardware controls must never block the live view or shutter.
+    try{await cameraOperation(originalCameraControls());}catch{
+      if(coinCameraStream!==openingStream)return;
+      document.getElementById('coinCameraFocusRow').hidden=true;
+      document.getElementById('coinCameraZoomRow').hidden=true;
+      coinCameraDiagnostics={focus_modes:[],focus_mode:'unreported',manual_focus_available:false,focus_error:'controls_unavailable'};
+    }
+    if(!coinCameraTrack||coinCameraStream!==openingStream)return;
+    const track=coinCameraTrack,video=document.getElementById('coinCameraVideo'),modes=androidCameraCapabilities(track).focusMode||[];
     const autofocus=modes.includes('continuous')||modes.includes('single-shot');
     let button=document.getElementById('coinCameraAutofocus');
     if(!button){button=document.createElement('button');button.id='coinCameraAutofocus';button.type='button';button.className='cameraChoose';button.textContent='Autofocus';button.style.minHeight='44px';document.querySelector('.cameraAlternatives').prepend(button);}
     button.hidden=!autofocus;
-    const request=point=>{coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>coinCameraTrack===track?refocusAndroidCoin(point):false);return coinCameraFocusQueue;};
+    const request=point=>{coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>coinCameraTrack===track?cameraOperation(refocusAndroidCoin(point),2400).catch(()=>false):false);return coinCameraFocusQueue;};
     button.onclick=()=>request(layoutAndroidCoinGuide());
     const focus=document.getElementById('coinCameraFocus');let focusRevision=0;
     focus.oninput=()=>{const revision=++focusRevision,value=focus.value;coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>revision===focusRevision&&coinCameraTrack===track?setCoinCameraFocus(value):undefined);};
@@ -81,13 +96,13 @@ if(originalCameraControls){
       const start=pointer;pointer=null;
       if(autofocus&&start?.id===event.pointerId&&Math.hypot(start.x-event.clientX,start.y-event.clientY)<12)request(coinCameraSensorPoint(video,event.clientX,event.clientY));
     };
-    await request(layoutAndroidCoinGuide());
+    request(layoutAndroidCoinGuide());
   };
 }
 if(originalCameraFocus){
   setCoinCameraFocus=async function setAndroidManualFocus(value){
     if(!androidCoinCamera())return originalCameraFocus(value);
-    const track=coinCameraTrack,distance=track?.getCapabilities?.().focusDistance;if(!distance)return;
+    const track=coinCameraTrack,distance=androidCameraCapabilities(track).focusDistance;if(!distance)return;
     const next=Math.max(distance.min,Math.min(distance.max,Number(value)));if(!Number.isFinite(next))return;
     try{
       const settings=await applyAndroidFocus(track,{focusMode:'manual',focusDistance:next});if(track!==coinCameraTrack)return;
@@ -98,13 +113,38 @@ if(originalCameraFocus){
 }
 function androidCoinCamera(){return /Android/i.test(navigator.userAgent);}
 openCoinCamera=async function openPreferredCoinCamera(side){
-  if(androidCoinCamera()&&typeof document!=='undefined')document.getElementById('coinCamera')?.classList.add('androidGuided');
-  const result=await guidedCoinCamera(side);
-  if(androidCoinCamera()&&typeof coinCameraTrack!=='undefined'&&coinCameraTrack){
-    const autofocus=coinCameraDiagnostics.focus_modes.some(mode=>['continuous','single-shot'].includes(mode));
-    document.getElementById('coinCameraStatus').textContent=coinCameraDiagnostics.focus_error||!autofocus?'The browser controls focus on this camera. Check the lettering; move farther away and use Zoom, or use the phone camera if it stays soft.':'Keep the rim inside the circle. Tap the coin to refocus, or use Focus and Zoom below.';
+  if(!androidCoinCamera())return guidedCoinCamera(side);
+  const opening=++androidCameraOpening;
+  closeCoinCamera();coinCameraSide=side;
+  const camera=document.getElementById('coinCamera'),video=document.getElementById('coinCameraVideo'),status=document.getElementById('coinCameraStatus');
+  camera.classList.remove('fallback','ready');camera.classList.add('androidGuided');camera.hidden=false;
+  document.body.classList.add('cameraOpen');document.getElementById('coinCameraTitle').textContent=side==='obverse'?'Portrait side':'Design side';
+  document.getElementById('coinCameraFocusRow').hidden=true;document.getElementById('coinCameraZoomRow').hidden=true;
+  document.getElementById('coinCameraShutter').disabled=true;status.textContent='Opening camera…';
+  coinCameraFocusQueue=Promise.resolve();layoutAndroidCoinGuide();
+  let stream;
+  try{
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});}
+    catch(error){if(!['OverconstrainedError','NotFoundError'].includes(error.name))throw error;stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});}
+    if(camera.hidden||opening!==androidCameraOpening){stream.getTracks().forEach(t=>t.stop());return;}
+    coinCameraStream=stream;coinCameraTrack=stream.getVideoTracks()[0];video.srcObject=stream;
+    await cameraOperation(new Promise((resolve,reject)=>{
+      if(video.readyState>=1&&video.videoWidth){resolve();return;}
+      video.onloadedmetadata=resolve;video.onerror=reject;
+    }),8000);
+    if(camera.hidden||coinCameraStream!==stream)return;
+    await cameraOperation(video.play(),4000);
+    camera.classList.add('ready');document.getElementById('coinCameraShutter').disabled=false;
+    status.textContent='Keep the full rim in the circle. Check the lettering before taking the photo.';
+    layoutAndroidCoinGuide();
+    // The preview is usable before capability discovery or autofocus completes.
+    setupCoinCameraControls().then(()=>{if(coinCameraStream===stream)layoutAndroidCoinGuide();}).catch(()=>{});
+  }catch(error){
+    if(camera.hidden||stream&&coinCameraStream!==stream)return;
+    stream?.getTracks().forEach(t=>t.stop());coinCameraStream=null;coinCameraTrack=null;video.srcObject=null;
+    camera.classList.add('fallback');
+    status.textContent=error.name==='NotAllowedError'?'Allow camera access in your browser settings, or use the phone camera below.':'The live camera could not open. Use the phone camera below.';
   }
-  return result;
 };
 if(typeof window!=='undefined')window.addEventListener('resize',()=>{if(androidCoinCamera()&&typeof coinCameraTrack!=='undefined'&&coinCameraTrack)layoutAndroidCoinGuide();});
 function setupCameraEntry(){

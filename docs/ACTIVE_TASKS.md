@@ -150,3 +150,14 @@ Catalogue sources: https://www.ramint.gov.au/collect/national-coin-collection/ci
 - [x] Keep the coin circle between the title and capture controls on small and landscape screens.
 - [x] Preserve the existing circle crop/export and single recognition engine; reject stale focus jobs after closing.
 - [ ] Verify actual lens sharpness and minimum focusing distance on Ben's Android hardware. Simulated camera tests cannot establish physical autofocus quality.
+
+
+## Android guided camera — v0.14.45
+
+- [x] Make the live preview and shutter usable before optional focus controls finish.
+- [x] Isolate capability exceptions and stalled focus requests from camera opening.
+- [x] Clear stale fallback state on retry; use the visible Android viewport for the guide and controls.
+- [x] Test throwing capability APIs, stalled focus controls, reopening, tap/manual focus, portrait/landscape and the existing 768px crop.
+- [ ] Confirm the guide, controls and actual lens focus on Ben’s Samsung Galaxy. Browser simulation cannot validate physical autofocus or device-specific rendering.
+
+Single-coin recognition, batch logic and catalogue files are unchanged in this release.
