@@ -5,6 +5,21 @@
     scale:size/Math.min(width,height)*zoom,angle:angle*Math.PI/180,
     x:size/2+offsetX*size,y:size/2+offsetY*size
   });
+  function fitRegion(region,width,height){
+    const diameter=Math.max(region.width,region.height)*1.04,scale=736/diameter;
+    return {zoom:scale*Math.min(width,height)/768,x:(width/2-region.centreX)*scale/768,y:(height/2-region.centreY)*scale/768};
+  }
+  async function locateCoin(bitmap){
+    if(!window.BatchCoins||!window.AutoCoinPhoto)return null;
+    const probe=document.createElement('canvas');probe.width=probe.height=480;
+    try{
+      const ctx=probe.getContext('2d'),scale=480/(Math.max(bitmap.width,bitmap.height)*2.8),left=(480-bitmap.width*scale)/2,top=(480-bitmap.height*scale)/2;
+      ctx.fillStyle='#f3f0e9';ctx.fillRect(0,0,480,480);ctx.drawImage(bitmap,left,top,bitmap.width*scale,bitmap.height*scale);
+      const regions=(await window.BatchCoins.detectCoins(probe)).map(r=>({...r,x:(r.x-left)/scale,y:(r.y-top)/scale,width:r.width/scale,height:r.height/scale,centreX:(r.centreX-left)/scale,centreY:(r.centreY-top)/scale}));
+      const region=window.AutoCoinPhoto.chooseCrop(regions,bitmap.width,bitmap.height);
+      return region?fitRegion(region,bitmap.width,bitmap.height):null;
+    }catch{return null;}finally{probe.width=probe.height=0;}
+  }
   async function edit(file,options={}){
     if(active)return null;
     active=true;let bitmap,originalBitmap,dialog;
@@ -12,6 +27,7 @@
       originalBitmap=await decodeIdentifyPhoto(file);bitmap=originalBitmap;
       const suggestion=options.suggest===false?null:await window.AutoCoinPhoto?.suggest(file);
       if(suggestion&&suggestion.file!==file)bitmap=await decodeIdentifyPhoto(suggestion.file);
+      const fit=options.fitCoin?await locateCoin(bitmap):null;
       return await new Promise(resolve=>{
         dialog=document.createElement('dialog');dialog.className='coinPhotoEditor';
         dialog.innerHTML='<form method="dialog"><h3>Adjust coin photo</h3><p>Check the automatic suggestion. Drag to centre the coin, zoom to its outer rim, or correct its direction.</p><canvas width="768" height="768" aria-label="Coin crop preview"></canvas><label>Crop zoom <input class="photoZoom" type="range" min="0.25" max="8" step="0.01" value="1"></label><label>Rotation <input class="photoAngle" type="range" min="-180" max="180" step="1" value="0"><output>0°</output></label><div class="photoEditorActions"><button type="button" class="rotateLeft">↶ 90°</button><button type="button" class="rotateRight">↷ 90°</button><button type="button" class="resetPhotoEdit">Start from original</button></div><p class="photoEditStatus" role="status"></p><div class="photoEditorActions"><button type="button" class="cancelPhotoEdit">Cancel</button><button type="button" class="applyPhotoEdit">Use cropped photo</button></div></form>';
@@ -19,7 +35,9 @@
         if(options.title)dialog.querySelector('h3').textContent=options.title;
         if(options.description)dialog.querySelector('p').textContent=options.description;
         const canvas=dialog.querySelector('canvas'),ctx=canvas.getContext('2d'),zoom=dialog.querySelector('.photoZoom'),angle=dialog.querySelector('.photoAngle');
-        let x=0,y=0,drag=null,done=false;
+        zoom.max=32;
+        let x=fit?.x||0,y=fit?.y||0,drag=null,done=false;
+        if(fit)zoom.value=Math.max(.25,Math.min(32,fit.zoom));
         function draw(target=ctx,guide=true){
           const t=transform(bitmap.width,bitmap.height,Number(zoom.value),Number(angle.value),x,y);
           target.clearRect(0,0,768,768);target.save();target.beginPath();target.arc(384,384,368,0,Math.PI*2);target.clip();
@@ -34,7 +52,7 @@
         function turn(delta){const next=((Number(angle.value)+delta+180)%360+360)%360-180;angle.value=next;draw();}
         dialog.querySelector('.rotateLeft').onclick=()=>turn(-90);dialog.querySelector('.rotateRight').onclick=()=>turn(90);
         dialog.querySelector('.resetPhotoEdit').onclick=()=>{if(bitmap!==originalBitmap)bitmap.close?.();bitmap=originalBitmap;x=y=0;zoom.value=1;angle.value=0;draw();};
-        dialog.querySelector('.photoEditStatus').textContent=options.status||(suggestion?.manual?'Current photo retained. Adjust the crop or direction below.':suggestion?.uncertain?'Direction unclear · kept its current direction. You can correct it below.':suggestion?'Automatic suggestion ready. Check the outer rim and direction.':'');
+        dialog.querySelector('.photoEditStatus').textContent=(fit?'Coin centred automatically. Check the full rim. ':options.fitCoin?'Centre the coin and zoom to its full rim. ':'')+(options.status||(suggestion?.manual?'Current photo retained. Adjust the crop or direction below.':suggestion?.uncertain?'Direction unclear · kept its current direction. You can correct it below.':suggestion?'Automatic suggestion ready. Check the outer rim and direction.':''));
         canvas.onpointerdown=event=>{drag={clientX:event.clientX,clientY:event.clientY,x,y};canvas.setPointerCapture(event.pointerId);};
         canvas.onpointermove=event=>{if(!drag)return;const rect=canvas.getBoundingClientRect();x=drag.x+(event.clientX-drag.clientX)/rect.width;y=drag.y+(event.clientY-drag.clientY)/rect.height;draw();};
         canvas.onpointerup=canvas.onpointercancel=()=>drag=null;
@@ -50,19 +68,25 @@
     }finally{bitmap?.close?.();if(originalBitmap!==bitmap)originalBitmap?.close?.();dialog?.remove();active=false;}
   }
   function updateSingle(){for(const side of ['obverse','reverse']){const button=document.getElementById(`editCoinPhoto-${side}`);if(button)button.hidden=!identifyState[side]?.file;}}
+  async function applySingle(side,adjusted,original){
+    if(!adjusted||identifyState[side]!==original)return false;
+    const source=original.sourceFile||original.specimenFile||original.file;
+    window.AutoCoinPhoto?.markManual(adjusted,source);
+    await loadIdentifyPhoto(side,adjusted,original.quality?.camera);
+    identifyState[side].sourceFile=source;
+    setAnalyseStatus('Cropped coin ready to identify. Original photo kept.');
+    return true;
+  }
   function setupSingle(){
     for(const side of ['obverse','reverse']){
       const card=document.getElementById(`${side}Capture`);if(!card||document.getElementById(`editCoinPhoto-${side}`))continue;
       const button=document.createElement('button');button.id=`editCoinPhoto-${side}`;button.type='button';button.className='editCoinPhoto';button.textContent='Crop / rotate photo';button.hidden=true;
-      button.onclick=async()=>{const original=identifyState[side];if(!original)return;button.disabled=true;button.textContent='Preparing automatic suggestion…';
-        try{const adjusted=await edit(original.specimenFile||original.file);if(adjusted&&identifyState[side]===original){
-          original.specimenFile=adjusted;URL.revokeObjectURL(original.url);original.url=URL.createObjectURL(adjusted);document.querySelector(`#${side}Capture .capturePreview`).style.backgroundImage=`url("${original.url}")`;
-          setAnalyseStatus('Saved photo adjusted. Identification continues to use your captured photo.');
-        }}
-        catch(error){setAnalyseStatus(`Could not edit photo: ${error.message}`,true);}finally{button.disabled=false;button.textContent='Crop / rotate saved photo';}
+      button.onclick=async()=>{const original=identifyState[side];if(!original)return;button.disabled=true;button.textContent='Preparing crop…';
+        try{const adjusted=await edit(original.specimenFile||original.file,{suggest:false,fitCoin:!original.sourceFile,status:'Applying uses this coin crop for identification and your saved photo. Original photo kept.'});await applySingle(side,adjusted,original);}
+        catch(error){setAnalyseStatus(`Could not edit photo: ${error.message}`,true);}finally{button.disabled=false;button.textContent='Crop / rotate photo';}
       };
       card.append(button);
     }updateSingle();
   }
-  window.CoinPhotoEditor={edit,setupSingle,updateSingle,transform};
+  window.CoinPhotoEditor={edit,setupSingle,updateSingle,transform,fitRegion,applySingle};
 })();

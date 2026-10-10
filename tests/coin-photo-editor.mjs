@@ -13,6 +13,11 @@ vm.createContext(context);vm.runInContext(await readFile('public/coin-photo-edit
 const api=context.window.CoinPhotoEditor;
 const t=api.transform(1600,1200,2,90,.1,-.2);
 assert.equal(t.scale,1.28);assert.equal(t.angle,Math.PI/2);assert.equal(t.x,460.8);assert.equal(t.y,230.39999999999998);
+const fit=api.fitRegion({width:400,height:400,centreX:350,centreY:700},1600,1200);
+const fitted=api.transform(1600,1200,fit.zoom,0,fit.x,fit.y);
+assert.ok(Math.abs(fitted.x+(350-800)*fitted.scale-384)<.001,'Off-centre coin moves to crop centre');
+assert.ok(Math.abs(fitted.y+(700-600)*fitted.scale-384)<.001);
+assert.ok(200*fitted.scale<368,'Full rim retained with small safety margin');
 const editing=api.edit(new Blob());await new Promise(resolve=>setImmediate(resolve));
 assert.equal(await api.edit(new Blob()),null,'Only one editor can be opened');
 element('.rotateRight').onclick();assert.equal(element('.photoAngle').value,90);
@@ -24,3 +29,10 @@ const cancelled=api.edit(new Blob());await new Promise(resolve=>setImmediate(res
 assert.ok(removed>=2);console.log('PASS photo editor: rotation, pan, transparent mask, guide-free export, cancel and resource cleanup');
 context.window.AutoCoinPhoto={suggest(){throw Error('Manual crop must not request orientation');}};
 const manual=api.edit(new Blob(),{suggest:false});await new Promise(resolve=>setImmediate(resolve));element('.cancelPhotoEdit').onclick();assert.equal(await manual,null);
+const source=new File(['original'],'source.jpg'),adjusted=new File(['crop'],'crop.png');
+const original={file:source,specimenFile:source,quality:{camera:{device:'rear'}}};context.identifyState={reverse:original};let loaded=0,marked=0;
+context.window.AutoCoinPhoto.markManual=(file,raw)=>{assert.equal(file,adjusted);assert.equal(raw,source);marked++;};
+context.loadIdentifyPhoto=async(side,file,diagnostics)=>{loaded++;assert.equal(file,adjusted);assert.equal(diagnostics.device,'rear');context.identifyState[side]={file,specimenFile:file};};context.setAnalyseStatus=()=>{};
+assert.equal(await api.applySingle('reverse',null,original),false);assert.equal(loaded,0,'Cancel leaves photo and analysis intact');
+assert.equal(await api.applySingle('reverse',adjusted,{}),false);assert.equal(loaded,0,'Stale editor cannot replace a retaken photo');
+assert.equal(await api.applySingle('reverse',adjusted,original),true);assert.equal(loaded,1);assert.equal(marked,1);assert.equal(context.identifyState.reverse.sourceFile,source);

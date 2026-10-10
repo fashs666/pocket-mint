@@ -203,12 +203,8 @@ async function readAndroidCameraPhoto(input,side){
   let loaded=false;
   try{
     await loadIdentifyPhoto(side,file);loaded=true;const original=identifyState[side];
-    const adjusted=await window.CoinPhotoEditor?.edit(file,{suggest:false,title:'Crop your coin',description:'Drag to centre the coin. Zoom until the full rim fits inside the circle.',status:'Your captured photo is kept. This crop adjusts the saved collection photo.'});
-    if(adjusted&&identifyState[side]===original){
-      original.specimenFile=adjusted;URL.revokeObjectURL(original.url);original.url=URL.createObjectURL(adjusted);
-      document.querySelector(`#${side}Capture .capturePreview`).style.backgroundImage=`url("${original.url}")`;
-      setAnalyseStatus('Coin photo cropped. Ready to identify.');
-    }
+    const adjusted=await window.CoinPhotoEditor?.edit(file,{suggest:false,fitCoin:true,title:'Crop your coin',description:'Drag to centre the coin. Zoom until the full rim fits inside the circle.',status:'Applying uses only this crop for identification and your saved photo. Original photo kept.'});
+    await window.CoinPhotoEditor?.applySingle(side,adjusted,original);
   }catch{setAnalyseStatus(loaded?'Could not prepare the crop. Your photo is kept; use Crop / rotate photo to try again.':'That photo could not be loaded. Please take it again.',true);}
   finally{input.value='';}
 }
