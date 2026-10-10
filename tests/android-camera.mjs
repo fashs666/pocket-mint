@@ -40,4 +40,15 @@ context.navigator.mediaDevices.getUserMedia=async options=>{selected=options.vid
 vm.runInContext('androidCameraOpening=7',context);el('coinCamera').hidden=false;
 assert.equal(await vm.runInContext('preferAndroidFocusLens(oldStream,null,7)',context),context.newStream);assert.equal(selected,'main');assert.equal(stopped,1);
 assert.equal(await vm.runInContext('preferAndroidFocusLens(oldStream,"wide",7)',context),context.oldStream,'Explicit user lens is retained');
+context.navigator.mediaDevices.enumerateDevices=async()=>[
+ {kind:'videoinput',deviceId:'generic',label:'Back camera 2'},
+ {kind:'videoinput',deviceId:'ultra',label:'Rear Ultra Wide Camera'},
+ {kind:'videoinput',deviceId:'tele',label:'Rear Telephoto Camera'},
+ {kind:'videoinput',deviceId:'front-wide',label:'Front Wide Camera'},
+ {kind:'videoinput',deviceId:'main-wide',label:'Rear Wide-angle Camera'}
+];
+assert.equal(await vm.runInContext('preferAndroidFocusLens(oldStream,null,7)',context),context.newStream);assert.equal(selected,'main-wide','Main wide-angle camera remains eligible and precedes generic rear lenses');
+context.navigator.mediaDevices.enumerateDevices=async()=>[{kind:'videoinput',deviceId:'ultra',label:'Back ultra-wide camera'},{kind:'videoinput',deviceId:'unknown',label:'Camera 3'}];
+const stopsBefore=stopped;selected=null;
+assert.equal(await vm.runInContext('preferAndroidFocusLens(oldStream,null,7)',context),context.oldStream);assert.equal(selected,null);assert.equal(stopped,stopsBefore,'Unsupported/unknown alternatives leave the current stream running');
 console.log('PASS detail-based focus scan, no-improvement restoration, stale scan cancellation and focusable rear-lens preference');

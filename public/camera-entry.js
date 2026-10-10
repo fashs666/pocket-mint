@@ -16,7 +16,10 @@ async function preferAndroidFocusLens(stream,deviceId,opening){
   // Only switch when another lens is explicitly labelled as a rear/main camera.
   // Do not guess numeric camera IDs or switch to an unknown/front lens.
   let devices;try{devices=await navigator.mediaDevices.enumerateDevices();}catch{return stream;}
-  const rear=devices.filter(d=>d.kind==='videoinput'&&d.deviceId!==settings.deviceId&&/back|rear|environment/i.test(d.label)&&!/front|ultra|wide|tele/i.test(d.label)).slice(0,2);
+  // A main wide-angle camera can autofocus; only ultra-wide/telephoto/front
+  // labels are excluded. Prefer an explicitly named main/wide lens.
+  const rear=devices.filter(d=>d.kind==='videoinput'&&d.deviceId!==settings.deviceId&&/back|rear|environment/i.test(d.label)&&!/front|ultra|tele/i.test(d.label))
+    .sort((a,b)=>Number(/main|wide/i.test(b.label))-Number(/main|wide/i.test(a.label))).slice(0,2);
   if(!rear.length)return stream;
   stream.getTracks().forEach(t=>t.stop());
   for(const device of rear){

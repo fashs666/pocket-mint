@@ -18,7 +18,7 @@ await page.addInitScript(()=>{
  navigator.mediaDevices.getSupportedConstraints=()=>({pointsOfInterest:true});
 });
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.49'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.50'));
  await page.evaluate(()=>{navigate('findView');showFindTab('identify');window.__defaultNative=null;document.querySelector('#identifyReverseCamera').click=()=>window.__defaultNative='reverse';});
  await page.locator('#identifyBrowserCamera').click();assert.equal(await page.evaluate(()=>__defaultNative),'reverse');assert(await page.locator('#coinCamera').isHidden(),'Phone camera remains an explicit option');
  await page.locator('[data-camera-side="reverse"]').click();
