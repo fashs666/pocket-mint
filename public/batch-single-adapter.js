@@ -7,12 +7,7 @@
  }
  async function identify({reverse,obverse=null,denomination='',signal}){
   const design=await photo(reverse);
-  async function request(portrait){
-   const response=await fetch('/api/identify',{method:'POST',signal,headers:{'content-type':'application/json','x-pocket-mint-batch':'1'},body:JSON.stringify({mode:'circulating',single_coin:true,denomination,reverse:design,obverse:portrait})});
-   const data=await response.json();
-   if(!response.ok)throw Object.assign(new Error(data.error||'Identification unavailable'),{quota:response.status===429,analysisError:{status:response.status,diagnostic_code:data.diagnostic_code||null,request_id:data.request_id||null,message:data.error||'Identification unavailable'}});
-   return data;
-  }
+  const request=obverse=>requestSingleCoinIdentification({reverse:design,obverse,denomination,signal,batch:true});
   let data=await request(null);
   if(obverse&&(data.uncertain||data.needs_year))data=await request(await photo(obverse));
   return data;

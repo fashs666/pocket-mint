@@ -1,4 +1,4 @@
-const IDENTIFY_VERSION = "0.14.16";
+const IDENTIFY_VERSION = "0.14.51";
 const identifyState = {obverse:null, reverse:null, results:[], resultSource:"clue", lastObserved:null, visualAttempted:false, usedHelpStep:false, fallbackReason:"", testLogSaved:false, analysisCertain:null, uncertain:false, analysisError:null};
 let coinCameraStream=null,coinCameraSide="reverse",coinCameraTrack=null,coinCameraZoomValue=1,coinCameraPinchStart=0,coinCameraPinchZoom=1;
 let coinCameraDiagnostics=null,coinCameraFocusQueue=Promise.resolve();
@@ -179,6 +179,17 @@ function setAnalyseStatus(message,isError=false) {
   status.textContent=message; status.classList.toggle("error",isError);
 }
 
+// Both single photos and batch crops use this exact request contract.
+async function requestSingleCoinIdentification({reverse,obverse=null,denomination="",signal,batch=false}) {
+  const response=await fetch("/api/identify",{method:"POST",signal,headers:{"content-type":"application/json",...(batch?{"x-pocket-mint-batch":"1"}:{})},body:JSON.stringify({mode:"circulating",single_coin:true,denomination,obverse,reverse})});
+  const result=await response.json();
+  if(!response.ok){
+    const analysisError={status:response.status,diagnostic_code:result.diagnostic_code||null,request_id:result.request_id||null,message:result.error||"Visual analysis is unavailable"};
+    throw Object.assign(new Error(analysisError.message),{quota:response.status===429,analysisError});
+  }
+  return result;
+}
+
 async function analysePhotos(denomination="") {
   if (!identifyState.reverse) return;
   resetTestFeedback();
@@ -188,12 +199,7 @@ async function analysePhotos(denomination="") {
   button.disabled=true; button.textContent="Looking at your coin…"; setAnalyseStatus("Checking the design side first…");
   try {
     const reverse=await makeAnalysisImage(identifyState.reverse.file);
-    const requestAnalysis=async obverse=>{
-      const response=await fetch("/api/identify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"circulating",single_coin:true,denomination,obverse,reverse})});
-      const result=await response.json();
-      if(!response.ok){identifyState.analysisError={status:response.status,diagnostic_code:result.diagnostic_code||null,request_id:result.request_id||null,message:result.error||"Visual analysis is unavailable"};throw new Error(identifyState.analysisError.message);}
-      return result;
-    };
+    const requestAnalysis=obverse=>requestSingleCoinIdentification({reverse,obverse,denomination});
     let data=await requestAnalysis(null);
     if(identifyState.obverse&&(data.uncertain||data.needs_year)){
       setAnalyseStatus(data.needs_year?"Design recognised — checking the portrait side for the year…":"The design is uncertain — checking the portrait side for another clue…");
@@ -218,7 +224,7 @@ async function analysePhotos(denomination="") {
       setIdentifyStep(2);
     }
   } catch(error) {
-    identifyState.analysisError??={message:error.message};
+    identifyState.analysisError??=error.analysisError||{message:error.message};
     identifyState.usedHelpStep=true;
     identifyState.fallbackReason=`Visual analysis unavailable: ${error.message}`;
     const notice=document.getElementById("identifyFallbackNotice");
