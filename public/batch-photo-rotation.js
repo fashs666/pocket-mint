@@ -1,8 +1,10 @@
 /* Orientation only for already isolated batch crops. No detection or grading. */
 (() => {
-  const suggestions=new WeakMap();
+  let suggestions=new WeakMap(),referenceSignature='';
   async function suggest(file){
-    if(window.PocketMintVisionAllowance?.blocked())return {file,confident:false,reason:'allowance'};
+    const tests=typeof identificationTests==='undefined'?[]:identificationTests;
+    const signature=tests.filter(t=>t.flow==='batch_rotation').map(t=>t.id).join('|');
+    if(signature!==referenceSignature){suggestions=new WeakMap();referenceSignature=signature;}
     if(suggestions.has(file))return suggestions.get(file);
     const pending=analyze(file);suggestions.set(file,pending);
     const result=await pending;
@@ -11,6 +13,13 @@
   }
   async function analyze(file){
     try {
+      // Saved upright examples can resolve any angle, including small tilts,
+      // without another model request. Only very strong, unambiguous matches
+      // qualify; different framing/lighting falls back to the existing check.
+      let memory=null;
+      try{memory=await window.BatchRotationMemory?.match(file,typeof identificationTests==='undefined'?[]:identificationTests);}catch{/* Reference decode failure must not disable the existing fallback. */}
+      if(memory)return {file:Math.abs(memory.angle)<1?file:await rotate(file,memory.angle),confident:true,angle:memory.angle,reason:memory.reason};
+      if(window.PocketMintVisionAllowance?.blocked())return {file,confident:false,reason:'allowance'};
       // Choosing an actual rendered view avoids unreliable numeric-angle inference.
       const image=await choices(file);
       const response=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'choice',image})});
