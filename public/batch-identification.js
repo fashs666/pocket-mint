@@ -35,6 +35,9 @@
     await Promise.all([...orientationJobs.values()].map(job=>job.promise));
     return revision===generation;
   }
+  function clearIdentification(previous){
+    return {...previous,choices:[],ready:false,coinId:null,designId:null,predictedCoinId:null,predictedChoices:[],observed:null,analysisError:null,reviewConfirmed:false,testSaved:false,testId:null,quota:false};
+  }
   async function rotateCrop(crop,angle){
     if(busy||!activeCrop(crop)||results.get(crop.id)?.added)return;
     const revision=generation;busy=true;
@@ -44,7 +47,7 @@
     try{
       const blob=await window.BatchPhotoRotation.rotate(effectivePhoto(crop).blob,angle),reverse=await fileDataUrl(blob);
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==manual)return;
-      results.set(crop.id,{...manual,status:'manual',choices:[],ready:false,coinId:null,designId:null,reverse,reverseBlob:blob,message:'Rotation adjusted. Identify this coin again before confirming.'});
+      results.set(crop.id,{...clearIdentification(manual),status:'manual',reverse,reverseBlob:blob,message:'Rotation adjusted. Identify this coin again before confirming.'});
     }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=error.message;}
     finally{if(revision===generation){busy=false;window.BatchReview?.redraw();pumpOrientation();runQueue();}}
   }
@@ -117,7 +120,7 @@
     if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
     const reverse=adjustment.file!==effectivePhoto(crop).blob?await fileDataUrl(adjustment.file):undefined;
     if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
-    results.set(crop.id,{...previous,status:'manual',choices:previous.choices||[],geometry:geometryOf(crop),ready:false,
+    results.set(crop.id,{...(reverse?clearIdentification(previous):previous),status:'manual',choices:reverse?[]:previous.choices||[],geometry:geometryOf(crop),ready:false,
       orientationOnly:previous.orientationOnly??!previous.status,orientationAttempted:true,orientationLabel:adjustment.confident?(reverse?'Auto rotation · corrected':'Auto rotation · already upright'):adjustment.reason==='unavailable'?'Check rotation · service unavailable':adjustment.reason==='allowance'?'Check rotation · allowance reached':'Check rotation · automatic check uncertain',...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
       message:adjustment.confident?'Orientation checked. Use Crop / rotate if it needs correcting.':'Orientation unclear. Use Crop / rotate to choose it yourself.'});
     window.BatchReview?.redraw();
@@ -328,7 +331,7 @@
     const observedYear=String(data.observed?.year||'');
     const matching=variants.filter(coin=>String(coin.year)===observedYear);
     const coinId=chosen&&(variants.length===1?chosen.coin.id:matching.length===1&&!data.needs_year?matching[0].id:null);
-    return {status:!definite?'design_uncertain':coinId?'confident':'year_uncertain',choices,designId:chosen?.id||null,coinId,ready:false,added:false,
+    return {message:data.reason||'',status:!definite?'design_uncertain':coinId?'confident':'year_uncertain',choices,designId:chosen?.id||null,coinId,ready:false,added:false,
       predictedCoinId:choices[0].coin.id,predictedChoices:(data.matches||[]).map((item,index)=>({rank:index+1,coin_id:item.id,confidence:Math.round(Number(item.confidence||0)*100)})),observed:data.observed||null};
   }
   async function identifyOne(crop,fromAll=false){
@@ -340,7 +343,7 @@
     if(orientationRevision!==generation||!activeCrop(crop)){if(orientationRevision===generation&&!fromAll){busy=false;render(crops);}return;}
     const previous=results.get(crop.id)||{};
     const revision=generation,geometry=`${crop.x}:${crop.y}:${crop.width}:${crop.height}`;
-    inFlight.add(crop.id);const pending={...previous,status:'loading',ready:false,geometry};results.set(crop.id,pending);render(crops);
+    inFlight.add(crop.id);const pending={...clearIdentification(previous),status:'loading',geometry};results.set(crop.id,pending);render(crops);
     try{
       const first=previous.reverseBlob||previous.reverse||crop.crop;const swap=Boolean(previous.firstSideIsPortrait&&previous.obverse);
       const data=await window.BatchSingleAdapter.identify({reverse:swap?previous.obverse:first,obverse:swap?first:previous.obverse||null,denomination:previous.denomination||'',signal:queueAbort&&typeof AbortSignal.any==='function'?AbortSignal.any([queueAbort.signal,AbortSignal.timeout(45000)]):AbortSignal.timeout(45000)});
@@ -348,7 +351,7 @@
       results.set(crop.id,{...previous,...classify(data),orientationOnly:false,geometry,testSaved:false,reviewConfirmed:false});
     }catch(error){
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==pending)return;
-      results.set(crop.id,{...previous,orientationOnly:false,status:'error',ready:false,message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,analysisError:error.analysisError||{message:error.message},quota:Boolean(error.quota),geometry});
+      results.set(crop.id,{...clearIdentification(previous),orientationOnly:false,status:'error',message:error.quota?'Vision allowance reached. Try again after it resets.':`Could not identify this coin: ${error.message}`,analysisError:error.analysisError||{message:error.message},quota:Boolean(error.quota),geometry});
     }
     finally{if(revision===generation){inFlight.delete(crop.id);if(!fromAll){busy=false;pumpOrientation();}window.BatchReview?.redraw();render(crops);}}
     render(crops);

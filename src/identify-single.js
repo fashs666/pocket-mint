@@ -84,7 +84,7 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
   const raw=answerText(await runVision(env,body.reverse,'One Australian coin, design side. Describe ONLY visible distinctive lettering and central artwork before seeing any catalogue names. Read FACE VALUE if visible; do not use size alone. For DENOM choose exactly one value from 5c, 10c, 20c, 50c, $1, $2, unknown. Never return alternatives. CONFIDENCE describes the face-value reading only. Transcribe lettering even if the value is unreadable. Reply with four semicolon-separated fields: DENOM=value; CONFIDENCE=0-100; WORDS=distinctive readable words or unknown; MOTIF=visible objects and arrangement or unknown.',180));
   const normalized=normalizeSingleObservation(raw),detected=readSingleDenomination(raw),clues={words:normalized.words,motif:normalized.motif};
   const supplied=Object.hasOwn(DENOMINATIONS,body.denomination)?body.denomination:'';
-  const denomination=supplied||detected.denomination;
+  const denomination=supplied||(!detected.face_value_read&&detected.confidence<75?'unknown':detected.denomination);
   const denominationUncertain=denomination==='unknown'||!supplied&&detected.confidence<75;
   const observed={denomination,denomination_confidence:detected.confidence,denomination_reading:normalized.denomination_reading.slice(0,80),denomination_uncertain:denominationUncertain,words:clues.words,motif:clues.motif,year:null,year_confidence:0};
   const stop=reason=>json({matches:[],uncertain:true,needs_year:false,observed,reason});
@@ -92,7 +92,7 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
   if(supplied&&detected.denomination!=='unknown'&&detected.confidence>=85&&detected.denomination!==supplied){observed.denomination=detected.denomination;return stop(`The photo appears to show ${detected.denomination}, but ${supplied} was selected. Check the face value.`);}
   const response=await env.ASSETS.fetch(new URL('/catalogue-v2.json',request.url));
   if(!response.ok)throw new Error('Circulating catalogue unavailable');
-  const catalogue=await response.json(),designs=catalogue.designs.filter(design=>denomination==='unknown'||design.denomination===DENOMINATIONS[denomination]);
+  const catalogue=await response.json(),designs=catalogue.designs.filter(design=>(!supplied&&denominationUncertain)||design.denomination===DENOMINATIONS[denomination]);
   const candidates=singleCoinCandidates(designs,clues);
   observed.retrieved_designs=candidates.slice(0,5).map(design=>design.title);
   observed.retrieved_design_count=candidates.length;
@@ -162,10 +162,12 @@ export async function identifySingleCoin({request,env,body,runVision,answerText,
   observed.reference_designs=reference.compared_designs||[];
   const verifiedArtwork=reference.status==='checked'&&reference.title===chosen?.title&&reference.confidence>=90;
   // The nomination saying "H" is not evidence that the photograph showed H.
-  // Alphabet issues need a letter independently read from the image, or an
+  // Alphabet issues need a letter or distinctive subject engraved on the coin, or an
   // actual matching-reference comparison; a tree alone is not Hills Hoist.
   const alphabetLetter=chosen?.title.match(/Coin Hunt \d+ — ([A-Z]) for /)?.[1];
-  if(alphabetLetter&&!verifiedArtwork&&!new RegExp(`\\b(?:letter\\s+)?${alphabetLetter}\\b`,'i').test(clues.words))matchConfidence=0;
+  const alphabetSubject=chosen?.title.match(/Coin Hunt \d+ — [A-Z] for (.+)/)?.[1];
+  const engravedSubject=alphabetSubject?.toLowerCase().split(/[^a-z]+/).filter(word=>word.length>=4).some(word=>new RegExp(`\\b${word}\\b`,'i').test(clues.words));
+  if(alphabetLetter&&!verifiedArtwork&&!engravedSubject&&!new RegExp(`\\b(?:letter\\s+)?${alphabetLetter}\\b`,'i').test(clues.words))matchConfidence=0;
   if(chosen&&roos(chosen.title)){
     const countConflict=Boolean(count&&count!==(chosen.title==='Five Kangaroos'?5:6));
     // Counting overlapping animals is unreliable. A strong direct comparison

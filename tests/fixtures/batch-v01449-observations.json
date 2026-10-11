@@ -1,0 +1,242 @@
+{
+  "source": "Ben iPhone report exported 2026-10-11; observations only, no images or subsequent model replies",
+  "cases": [
+    {
+      "id": "039c09e6-b918-44af-85af-196f039dad2e",
+      "expected_coin_id": "AU1-2025-AUSSIE_BIG_THINGS_2-TILL-1",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-AUSSIE-BIG-THINGS-2-TILL-DESIGN-1-BIG-THINGS-BIG-THINGS-2025",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "unknown",
+        "motif": "fish, possibly other objects, and arrangement or unknown",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "unknown",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "3cb2fc7a-c333-4eab-b5b2-70ec17801d0c",
+      "expected_coin_id": "AU1-2023-AUSSIE_BIG_THINGS-KOALA",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-AUSSIE-BIG-THINGS-GIANT-KOALA-BIG-THINGS-BIG-THINGS-2023",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "unknown",
+        "motif": "standing figure with building or structure",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "unknown",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "cb4fa180-230e-4d0d-9bca-656aedbae5dd",
+      "expected_coin_id": "AU1-2023-AUSSIE_BIG_THINGS-CROC",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-AUSSIE-BIG-THINGS-THE-BIG-JUMPING-CROC-BIG-THINGS-BIG-THINGS-2023",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "ELIZABETH II COMMONWEALTH OF AUSTRALIA 1967",
+        "motif": "figure with outstretched arm, possibly holding something, and another object or figure",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "unknown",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "09d6cbdf-e005-482f-81c0-81be2ce8d535",
+      "expected_coin_id": "AU1-2022-AUSTRALIAN_DINOSAURS-ELAPHROSAURINE",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-AUSTRALIAN-DINOSAURS-ELAPHROSAURINE-DINOSAURS-DINOSAURS-2022",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "unknown",
+        "motif": "bird-like figure with outstretched wings, possibly in flight or in a dynamic pose, surrounded by indistinct lettering.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "unknown",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "7c75465e-1b73-42c9-a0a7-ef597eda695e",
+      "expected_coin_id": "AU1-2023-AUSSIE_BIG_THINGS-SWOOP",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-AUSSIE-BIG-THINGS-THE-BIG-SWOOP-BIG-THINGS-BIG-THINGS-2023",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "unknown",
+        "motif": "kangaroo, branch",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "unknown",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "e07aca83-b2d8-4e39-8242-f0c88f5996fb",
+      "expected_coin_id": null,
+      "expected_denomination": "$1",
+      "expected_design_id": null,
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "AUSTRALIA",
+        "motif": "animal, possibly a platypus or echidna, with textured body.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [
+          "Platypus"
+        ],
+        "retrieved_design_count": 1,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "Platypus",
+        "design_confidence": 90,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "4bbfaeb7-9d04-4710-88d9-3558cefb005e",
+      "expected_coin_id": "AU1-2022-GACH3-Q",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-GREAT-AUSSIE-COIN-HUNT-3-Q-FOR-QUOLL-GACH-GACH-2022",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "QUOLL",
+        "motif": "quoll and leaves",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "quoll",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "6aa9d63a-b7bd-43eb-8bc0-7c97f6784c08",
+      "expected_coin_id": "AU1-2023-MATILDAS-KEEPER",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-MATILDAS-KEEPER-MATILDAS-MATILDAS-2023",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "unknown",
+        "motif": "human figure in mid-air, possibly playing volleyball or similar sport, with lines suggesting a net and possibly a ball.",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "unknown",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "2d292ed2-fd70-466a-ab5e-2be9d8c0c427",
+      "expected_coin_id": "AU1-2024-AFLW-PREMIERSHIP",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-AFLW-2024-PREMIERSHIP-SEASON-AFL-AFL-2024",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "unknown",
+        "motif": "geometric shapes and lines or unknown",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design",
+        "kangaroo_count": null,
+        "design_reading": "unknown",
+        "design_confidence": 0,
+        "reference_status": "unavailable",
+        "reference_designs": []
+      }
+    },
+    {
+      "id": "280e924d-3621-414d-a1d1-c8eafebede22",
+      "expected_coin_id": "AU1-2009-AGE-PENSION",
+      "expected_denomination": "$1",
+      "expected_design_id": "D100-100-YEARS-OF-THE-AGE-PENSION",
+      "observed": {
+        "denomination": "20c",
+        "denomination_confidence": 0,
+        "denomination_reading": "20c",
+        "denomination_uncertain": true,
+        "words": "unknown",
+        "motif": "unknown",
+        "year": null,
+        "year_confidence": 0,
+        "retrieved_designs": [],
+        "retrieved_design_count": 0,
+        "matching_engine": "circulating-design"
+      }
+    }
+  ]
+}

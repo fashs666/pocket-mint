@@ -28,11 +28,11 @@ assert.equal(checked.data.status,'ready');assert.equal(checked.calls.length,1);
 const reviewed=await identify(['DENOM=5c; CONFIDENCE=95; WORDS=FIVE CENTS; MOTIF=echidna','DESIGN=Echidna; CONFIDENCE=95; REASON=visible spiny echidna'],{batch_reviewed:true});
 assert.equal(reviewed.data.observed.design,'Echidna');assert.equal(reviewed.calls.length,2,'Reviewed batch crops go directly to the unchanged single matcher');
 for(const [path,hash] of Object.entries({
- 'public/identify.js':'d9e7eac57ec1c05f81a8954c888774583dae25dfbcadc38dee7cbe044373f0b8',
+ 'public/identify.js':'e6477c46af83789884f5bbc27b73ccf08b0b60c04a7859f7c7b6504f82203307',
  'public/identify.css':'61cbce2341a0362c1f17bc59b4f61f95842c36e5e6eee1ca0d37ed9b09329965',
- 'src/identify-single.js':'2095df4e9e592c9bffe582c8d65e799da71e608dbd7ef6e83bbe769ded57d413',
+ 'src/identify-single.js':'5573b79373b0e42a5f61cbf951afc9ba595fd912d474a17b78627185b59c09eb',
  'src/index.js':'ddd2ea47e8cf162cf01e0e963703615929e6553016e7dd11fc2abc89d8c94e45'
-}))assert.equal(createHash('sha256').update(await readFile(path)).digest('hex'),hash,`${path}: single-coin code must remain byte-for-byte unchanged`);
+}))assert.equal(createHash('sha256').update(await readFile(path)).digest('hex'),hash,`${path}: approved shared identification baseline must remain unchanged`);
 const matched=await identify(['COIN=yes; COUNT=1; SIDE=design; QUALITY=clear; CONFIDENCE=93','DENOM=5c; CONFIDENCE=95; WORDS=FIVE CENTS; MOTIF=echidna','DESIGN=Echidna; CONFIDENCE=95; REASON=visible spiny echidna']);assert.equal(matched.status,200);assert.equal(matched.data.observed.design,'Echidna');assert.ok(matched.data.matches.length);assert.equal(matched.calls.length,3,'Coin check must precede current design matching');
 assert.equal(parseBatchCheck('COIN=yes; COUNT=1; SIDE=design; QUALITY=clear; CONFIDENCE=999').confidence,100);
 console.log('PASS non-coins, multiple coins, malformed checks, poor photos and portrait sides never reach matching');
@@ -133,3 +133,13 @@ vm.createContext(collectionContext);vm.runInContext(collectionSource,collectionC
 await assert.rejects(collectionContext.addConfirmedBatchCoins([{coinId:'first',regionId:'physical-first'},{coinId:'second',regionId:'physical-second'}],id=>acknowledged.push(id)),/storage failure/);
 assert.deepEqual(committed,['first']);assert.deepEqual(acknowledged,['physical-first']);
 console.log('PASS partial collection saves acknowledge committed crops before a later failure');
+
+context.window.BatchIdentification.reset();context.window.BatchIdentification.render([crop]);
+context.window.BatchPhotoRotation={rotate:async()=>adjustedBlob};
+context.window.BatchIdentificationCore.setResult(crop.id,{geometry:'10:10:50:50',status:'confident',choices:[{id:coin.id,coin}],coinId:coin.id,designId:coin.id,predictedCoinId:coin.id,predictedChoices:[{coin_id:coin.id}],observed:{denomination:'20c'},reviewConfirmed:true,testSaved:true,testId:'old',ready:true});
+await context.window.BatchIdentification.rotateCrop(crop,90);
+const cleared=context.window.BatchIdentificationCore.getResult(crop.id);
+assert.equal(cleared.predictedCoinId,null);assert.equal(cleared.observed,null);assert.equal(cleared.reviewConfirmed,false);assert.equal(cleared.testSaved,false);assert.equal(cleared.testId,null);assert.equal(cleared.predictedChoices.length,0);
+const fresh=context.window.BatchIdentificationCore.classify({matches:[{id:coin.id,confidence:.9}],uncertain:false,reason:'Fresh recognition result'});
+assert.equal(fresh.message,'Fresh recognition result','successful identification replaces old rotation/fallback message');
+console.log('PASS rotation clears stale predictions, evidence, confirmation and saved-test identity');

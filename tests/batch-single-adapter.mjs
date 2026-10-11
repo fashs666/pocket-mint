@@ -7,7 +7,7 @@ const context={window:{},identifyState:untouched,makeAnalysisImage:async blob=>{
  if(url.startsWith('data:'))return {blob:async()=>({source:url})};
  requests.push(JSON.parse(options.body));const item=responses.shift();return {ok:item.ok!==false,status:item.status||200,json:async()=>item};
 }};
-vm.createContext(context);vm.runInContext(await readFile('public/batch-single-adapter.js','utf8'),context);
+vm.createContext(context);const singleSource=await readFile('public/identify.js','utf8');vm.runInContext(singleSource.slice(singleSource.indexOf('async function requestSingleCoinIdentification'),singleSource.indexOf('async function analysePhotos')),context);vm.runInContext(await readFile('public/batch-single-adapter.js','utf8'),context);
 responses=[{matches:[{id:'a'}],uncertain:false,needs_year:false}];
 await context.window.BatchSingleAdapter.identify({reverse:{design:true},obverse:'data:image/png;base64,portrait'});
 assert.equal(requests.length,1);assert.equal(prepared.length,1,'Portrait is not analysed for an already certain design/year');
@@ -19,3 +19,11 @@ assert.equal(prepared.at(-1).source,'data:image/png;base64,portrait');assert.equ
 responses=[{ok:false,status:429,error:'Vision allowance reached',diagnostic_code:'LIMIT'}];
 await assert.rejects(context.window.BatchSingleAdapter.identify({reverse:{}}),error=>error.quota&&error.analysisError.status===429);
 console.log('PASS exact single request shape, shared photo preparation, conditional portrait retry, explicit errors and untouched single session');
+
+responses=[{matches:[],uncertain:true}];
+await context.requestSingleCoinIdentification({reverse:photo,denomination:'$1'});
+const directBody=requests.at(-1);
+responses=[{matches:[],uncertain:true}];
+await context.window.BatchSingleAdapter.identify({reverse:{},denomination:'$1'});
+assert.deepEqual(requests.at(-1),directBody,'single and batch must send the identical prepared-image request body');
+console.log('PASS single and batch use one request implementation with identical bodies');

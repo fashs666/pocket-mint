@@ -177,3 +177,20 @@ for(const fixture of latestCases){
 const loadPhoto=source.slice(source.indexOf('async function loadIdentifyPhoto'),source.indexOf('function renderPhotoQuality'));
 assert.ok(loadPhoto.includes('prepareIdentifyPhoto(file)'));assert.ok(!loadPhoto.includes('createCircularSpecimen(file)'));
 console.log('PASS single: six denominations, Roos uncertainty, semantic candidates, image verification, year safety, renderer and intact photo preparation');
+
+// Replay recorded first observations, not invented successful recognition.
+const batchReport=JSON.parse(await readFile('tests/fixtures/batch-v01449-observations.json','utf8'));
+for(const fixture of batchReport.cases){
+  const o=fixture.observed;
+  const {data}=await identify([`DENOM=${o.denomination_reading}; CONFIDENCE=${o.denomination_confidence}; WORDS=${o.words}; MOTIF=${o.motif}`,'DESIGN=unknown; CONFIDENCE=0']);
+  assert.equal(data.observed.denomination,'unknown','zero-confidence 20c must not become an accepted denomination');
+  assert.equal(data.uncertain,true);
+  if(o.words==='QUOLL')assert.ok(data.matches.some(m=>m.id===fixture.expected_coin_id),'QUOLL remains available despite erroneous 20c reading');
+}
+const engravedQuoll=await identify(['DENOM=$1; CONFIDENCE=100; WORDS=QUOLL; MOTIF=quoll and foliage','DESIGN=Great Aussie Coin Hunt 3 — Q for Quoll; CONFIDENCE=95']);
+assert.equal(engravedQuoll.data.matches[0]?.id,'AU1-2022-GACH3-Q');assert.equal(engravedQuoll.data.uncertain,false);
+const suppliedQuoll=await identify(['DENOM=20c; CONFIDENCE=0; WORDS=QUOLL; MOTIF=quoll and foliage','DESIGN=Great Aussie Coin Hunt 3 — Q for Quoll; CONFIDENCE=95'],{denomination:'$1'});
+assert.equal(suppliedQuoll.data.matches[0]?.id,'AU1-2022-GACH3-Q');assert.equal(suppliedQuoll.data.uncertain,false);
+const unknownQuoll=await identify(['DENOM=20c; CONFIDENCE=0; WORDS=QUOLL; MOTIF=quoll and foliage','DESIGN=Great Aussie Coin Hunt 3 — Q for Quoll; CONFIDENCE=95']);
+assert.equal(unknownQuoll.data.matches[0]?.id,'AU1-2022-GACH3-Q');assert.equal(unknownQuoll.data.uncertain,true,'design evidence does not invent a readable denomination');
+console.log('PASS iPhone report: ten zero-confidence 20c readings stay unknown, cross-value Quoll retrieval, engraved subject and manual denomination');
