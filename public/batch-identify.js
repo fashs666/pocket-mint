@@ -6,6 +6,8 @@
   const $=id=>document.getElementById(id);
   const text=(node,value)=>{if(node.textContent!==value)node.textContent=value;};
   const outlineNodes=new Map(),cropNodes=new Map();let renderedSource=null,reviewStep='outlines';
+  let savedRotationSignature='';
+  const rotationSignature=()=>JSON.stringify(state.crops.map(c=>[c.id,window.BatchIdentification?.effectivePhoto(c).url]));
   function releaseCrops(){state.crops.forEach(c=>URL.revokeObjectURL(c.cropUrl));state.crops=[];}
   function resetPhoto(){window.BatchIdentification?.reset();state.job++;state.cropJob++;releaseCrops();if(state.sourceUrl)URL.revokeObjectURL(state.sourceUrl);state.sourceUrl=null;state.source=null;state.regions=[];state.selected=null;state.adding=false;state.nextNumber=1;state.checking=false;outlineNodes.clear();cropNodes.clear();grid.replaceChildren();overlay.replaceChildren();renderedSource=null;$('batchCheckFeedback').hidden=true;showReviewStep('outlines');image.removeAttribute('src');$('batchCapturedPreview').removeAttribute('src');$('batchCapturedPreview').hidden=true;$('batchToReview').hidden=true;}
   function stage(next,push=true){
@@ -84,6 +86,8 @@
     }
     $('batchNextToCoins').disabled=!state.crops.length||state.checking;
     const rotationLabels=state.crops.map(c=>window.BatchIdentification?.rotationStatus(c)||'Check rotation');
+    const rotationSave=$('batchSaveRotationTest');
+    if(rotationSave){rotationSave.disabled=!state.crops.length||state.checking||window.BatchIdentification?.isBusy?.()||window.BatchIdentification?.isIdentifying?.()||window.BatchIdentification?.orientationPending?.()||savedRotationSignature===rotationSignature();}
     text($('batchRotationSummary'),`Automatic rotation: ${rotationLabels.filter(s=>s.includes('corrected')).length} corrected · ${rotationLabels.filter(s=>s.includes('already upright')).length} already upright · ${rotationLabels.filter(s=>s.startsWith('Check rotation')).length} need your check · ${rotationLabels.filter(s=>s.startsWith('Checking')).length} checking · ${rotationLabels.filter(s=>s==='Rotation adjusted').length} manually adjusted`);
   }
   const geometry=c=>`${c.x}:${c.y}:${c.width}:${c.height}`;
@@ -109,6 +113,20 @@
     const button=$('batchStartIdentification'),job=state.job;button.disabled=true;button.textContent='Finishing rotation checks…';
     try{if(!await window.BatchReview.approveAll())return;await window.BatchIdentification.prepareOrientation();if(job!==state.job)return;showReviewStep('identify');window.BatchIdentification.startQueue();}
     finally{button.disabled=false;button.textContent='Crops & rotation checked · identify coins';}
+  };
+  $('batchSaveRotationTest').onclick=async()=>{
+    const button=$('batchSaveRotationTest'),feedback=$('batchRotationTestStatus');
+    if(button.disabled)return;
+    const job=state.job,signature=rotationSignature();state.checking=true;render();feedback.textContent='Saving all coin images and rotation corrections…';
+    try{
+      const items=state.crops.map(crop=>({crop:{...crop},evidence:{...window.BatchIdentification.rotationEvidence(crop)},corrected:window.BatchIdentification.effectivePhoto(crop).blob}));
+      const report=await window.BatchRotationReport.build({items,sourceImage:state.source.toDataURL('image/jpeg',.9),sourceWidth:state.source.width,sourceHeight:state.source.height,appVersion:APP_VERSION,catalogueVersion:catMeta.catalogue_version||''});
+      if(job!==state.job)return;
+      await put('identificationTests',report);identificationTests.unshift(report);
+      if(job!==state.job)return;
+      savedRotationSignature=signature;renderAll();feedback.textContent=`Rotation test saved for all ${items.length} coins. Export it with your test reports in Settings. No coins were added to My Mint.`;
+    }catch(error){if(job===state.job)feedback.textContent=`Could not save rotation test: ${error.message}. Your corrections are kept; try again.`;}
+    finally{if(job===state.job){state.checking=false;render();}}
   };
 
   async function removeRegion(id){state.regions=state.regions.filter(r=>r.id!==id);state.selected=null;await refreshCrops();}
