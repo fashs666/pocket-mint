@@ -25,6 +25,10 @@ element('canvas').onpointerdown({clientX:0,clientY:0,pointerId:1});element('canv
 assert.ok(calls.some(c=>Array.isArray(c)&&c[0]==='translate'&&Math.abs(c[1]-460.8)<.001));
 calls.length=0;await element('.applyPhotoEdit').onclick();const file=await editing;
 assert.equal(file.type,'image/png');assert.ok(calls.includes('mask'));assert.ok(!calls.includes('guide'),'Export excludes yellow preview guide');assert.equal(closed,1);
+assert.equal(api.adjustmentFor(file).clockwiseDegrees,90);
+assert.ok(Math.abs(api.adjustmentFor(file).offsetX-.1)<.001);
+assert.equal(api.adjustmentFor(new Blob()),null,'Untracked files have no invented correction');
+assert.ok(Object.isFrozen(api.adjustmentFor(file)));
 const cancelled=api.edit(new Blob());await new Promise(resolve=>setImmediate(resolve));element('.cancelPhotoEdit').onclick();assert.equal(await cancelled,null);assert.equal(closed,2);
 assert.ok(removed>=2);console.log('PASS photo editor: rotation, pan, transparent mask, guide-free export, cancel and resource cleanup');
 context.window.AutoCoinPhoto={suggest(){throw Error('Manual crop must not request orientation');}};
@@ -36,3 +40,7 @@ context.loadIdentifyPhoto=async(side,file,diagnostics)=>{loaded++;assert.equal(f
 assert.equal(await api.applySingle('reverse',null,original),false);assert.equal(loaded,0,'Cancel leaves photo and analysis intact');
 assert.equal(await api.applySingle('reverse',adjusted,{}),false);assert.equal(loaded,0,'Stale editor cannot replace a retaken photo');
 assert.equal(await api.applySingle('reverse',adjusted,original),true);assert.equal(loaded,1);assert.equal(marked,1);assert.equal(context.identifyState.reverse.sourceFile,source);
+context.window.AutoCoinPhoto=undefined;
+const fine=api.edit(new Blob(),{suggest:false});await new Promise(resolve=>setImmediate(resolve));
+element('.photoAngle').value=-13;element('.photoAngle').oninput();
+await element('.applyPhotoEdit').onclick();assert.equal(api.adjustmentFor(await fine).clockwiseDegrees,-13,'Fine corrections retain their exact angle');
