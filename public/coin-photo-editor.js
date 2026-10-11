@@ -1,6 +1,7 @@
 /* Explicit photo adjustments only. Catalogue artwork and matching code are untouched. */
 (() => {
   let active=false;
+  const adjustments=new WeakMap();
   const transform=(width,height,zoom,angle,offsetX,offsetY,size=768)=>({
     scale:size/Math.min(width,height)*zoom,angle:angle*Math.PI/180,
     x:size/2+offsetX*size,y:size/2+offsetY*size
@@ -60,7 +61,9 @@
           const button=dialog.querySelector('.applyPhotoEdit');button.disabled=true;
           try{const output=document.createElement('canvas');output.width=output.height=768;draw(output.getContext('2d'),false);
             const blob=await canvasBlob(output,'image/png');output.width=output.height=0;
-            const adjusted=new File([blob],'coin-cropped.png',{type:'image/png',lastModified:Date.now()});window.AutoCoinPhoto?.markManual(adjusted,file);finish(adjusted);
+            const adjusted=new File([blob],'coin-cropped.png',{type:'image/png',lastModified:Date.now()});
+            adjustments.set(adjusted,Object.freeze({clockwiseDegrees:bitmap===originalBitmap?Number(angle.value):null,zoom:Number(zoom.value),offsetX:x,offsetY:y}));
+            window.AutoCoinPhoto?.markManual(adjusted,file);finish(adjusted);
           }catch(error){dialog.querySelector('.photoEditStatus').textContent=`Could not prepare photo: ${error.message}`;button.disabled=false;}
         };
         dialog.showModal();draw();
@@ -88,5 +91,5 @@
       card.append(button);
     }updateSingle();
   }
-  window.CoinPhotoEditor={edit,setupSingle,updateSingle,transform,fitRegion,applySingle};
+  window.CoinPhotoEditor={edit,setupSingle,updateSingle,transform,fitRegion,applySingle,adjustmentFor:file=>adjustments.get(file)||null};
 })();

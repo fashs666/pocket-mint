@@ -37,3 +37,22 @@ await button.onclick();assert.equal(writes.length,1,'repeat press does not dupli
 context.savedRotationSignature='';context.render();context.put=async()=>{throw Error('storage full');};
 await button.onclick();assert.equal(context.identificationTests.length,1);assert.equal(button.disabled,false);assert.equal(context.state.checking,false);assert.match(feedback.textContent,/try again/);
 console.log('PASS real batch save handler: one atomic all-coin record, duplicate prevention and retry after storage failure');
+
+// Run the real editor integration: repeated fine corrections accumulate, unknown
+// older-editor results stay unknown, and cancel cannot change the evidence.
+const batch=await readFile('public/batch-identification.js','utf8');
+const records=new Map([[crop.id,{rotationEvidence:{attempted:true,angle:90,manualDegrees:90}}]]);
+const editContext={window:{CoinPhotoEditor:{edit:async(_file,options)=>{assert.equal(options.suggest,false);return upright;},adjustmentFor:()=>({clockwiseDegrees:-13,zoom:1,offsetX:0,offsetY:0})}},
+  busy:false,generation:1,results:records,crops:[crop],activeCrop:()=>true,render(){},effectivePhoto:()=>({blob:original}),rotationStatus:()=>'',
+  fileDataUrl:async()=> 'data:image/png;base64,crop',rotationEvidence:c=>records.get(c.id).rotationEvidence,geometryOf:()=>({}),pumpOrientation(){},runQueue(){},Number};
+vm.createContext(editContext);vm.runInContext(batch.slice(batch.indexOf('  async function editCrop('),batch.indexOf('  function photoControl(')),editContext);
+await editContext.editCrop(crop);assert.equal(records.get(crop.id).rotationEvidence.manualDegrees,77);
+await editContext.editCrop(crop);assert.equal(records.get(crop.id).rotationEvidence.manualDegrees,64);
+assert.equal(records.get(crop.id).rotationEvidence.cropAdjustments.length,2);
+editContext.window.CoinPhotoEditor.edit=async()=>null;await editContext.editCrop(crop);assert.equal(records.get(crop.id).rotationEvidence.manualDegrees,64);
+editContext.window.CoinPhotoEditor.edit=async()=>upright;delete editContext.window.CoinPhotoEditor.adjustmentFor;
+await editContext.editCrop(crop);assert.equal(records.get(crop.id).rotationEvidence.manualDegrees,null);
+const fineReport=await context.window.BatchRotationReport.build({items:[{crop,evidence:{attempted:true,angle:90,manualDegrees:-13,cropAdjustments:[{clockwiseDegrees:-13}]},corrected:upright}]});
+assert.equal(fineReport.coins[0].expected_clockwise_degrees,77);assert.equal(fineReport.coins[0].automatic_correct,false);
+assert.equal(fineReport.coins[0].crop_adjustments[0].clockwiseDegrees,-13);
+console.log('PASS fine-angle editor evidence: accumulation, crop metadata export, cancellation and unknown-angle fallback');

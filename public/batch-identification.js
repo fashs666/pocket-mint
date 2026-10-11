@@ -140,10 +140,12 @@
     try{const source=effectivePhoto(crop).blob;
       // Batch crops already have an outline: do not re-detect or auto-rotate inside the shared editor.
       window.AutoCoinPhoto?.markManual(source,source);
-      const adjusted=await window.CoinPhotoEditor.edit(source,{status:rotationStatus(crop)+'. Adjust the crop or direction below.'});
+      const adjusted=await window.CoinPhotoEditor.edit(source,{suggest:false,status:rotationStatus(crop)+'. Adjust the crop or direction below.'});
       if(!adjusted||revision!==generation||!activeCrop(crop))return;
       const reverse=await fileDataUrl(adjusted);if(revision!==generation||!activeCrop(crop))return;
-      results.set(crop.id,{rotationEvidence:{...rotationEvidence(crop),manualDegrees:null,cropEdited:true},status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,orientationLabel:'Rotation adjusted',message:'Photo adjusted. Identify this coin again before confirming.'});
+      const evidence=rotationEvidence(crop),adjustment=window.CoinPhotoEditor.adjustmentFor?.(adjusted);
+      const manualDegrees=Number.isFinite(evidence.manualDegrees)&&Number.isFinite(adjustment?.clockwiseDegrees)?evidence.manualDegrees+adjustment.clockwiseDegrees:null;
+      results.set(crop.id,{rotationEvidence:{...evidence,manualDegrees,cropEdited:true,cropAdjustments:[...(evidence.cropAdjustments||[]),...(adjustment?[adjustment]:[])]},status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,orientationLabel:'Rotation adjusted',message:'Photo adjusted. Identify this coin again before confirming.'});
     }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=`Could not edit coin: ${error.message}`;}
     finally{if(revision===generation){busy=false;window.BatchReview?.redraw();render(crops);pumpOrientation();runQueue();}}
   }

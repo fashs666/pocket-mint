@@ -20,7 +20,7 @@
         automatic_applied_clockwise_degrees:evidence.angle||0,
         manual_correction_clockwise_degrees:correction,expected_clockwise_degrees:correction===null?null:normal((evidence.angle||0)+correction),
         automatic_correct:evidence.attempted&&correction!==null?normal(correction)===0:null,
-        crop_edited:Boolean(evidence.cropEdited),upright_confirmed:true});
+        crop_edited:Boolean(evidence.cropEdited),crop_adjustments:evidence.cropAdjustments||[],upright_confirmed:true});
     }
     return {id:crypto.randomUUID(),created_at:new Date().toISOString(),app_version:appVersion,catalogue_version:catalogueVersion,
       flow:'batch_rotation',report_type:'rotation_batch',outcome:'rotation_reviewed',rotation_report_version:1,
