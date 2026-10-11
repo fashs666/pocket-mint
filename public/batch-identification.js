@@ -38,6 +38,9 @@
   function clearIdentification(previous){
     return {...previous,choices:[],ready:false,coinId:null,designId:null,predictedCoinId:null,predictedChoices:[],observed:null,analysisError:null,reviewConfirmed:false,testSaved:false,testId:null,quota:false};
   }
+  function rotationEvidence(crop){
+    return results.get(crop.id)?.rotationEvidence||{attempted:false,confident:false,reason:'not_checked',angle:0,automaticBlob:crop.crop,manualDegrees:0};
+  }
   async function rotateCrop(crop,angle){
     if(busy||!activeCrop(crop)||results.get(crop.id)?.added)return;
     const revision=generation;busy=true;
@@ -47,7 +50,8 @@
     try{
       const blob=await window.BatchPhotoRotation.rotate(effectivePhoto(crop).blob,angle),reverse=await fileDataUrl(blob);
       if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==manual)return;
-      results.set(crop.id,{...clearIdentification(manual),status:'manual',reverse,reverseBlob:blob,message:'Rotation adjusted. Identify this coin again before confirming.'});
+      const evidence=rotationEvidence(crop);
+      results.set(crop.id,{...clearIdentification(manual),rotationEvidence:{...evidence,manualDegrees:evidence.manualDegrees===null?null:(evidence.manualDegrees||0)+angle},status:'manual',reverse,reverseBlob:blob,message:'Rotation adjusted. Identify this coin again before confirming.'});
     }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=error.message;}
     finally{if(revision===generation){busy=false;window.BatchReview?.redraw();pumpOrientation();runQueue();}}
   }
@@ -120,7 +124,7 @@
     if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
     const reverse=adjustment.file!==effectivePhoto(crop).blob?await fileDataUrl(adjustment.file):undefined;
     if(revision!==generation||!activeCrop(crop)||results.get(crop.id)!==expected)return;
-    results.set(crop.id,{...(reverse?clearIdentification(previous):previous),status:'manual',choices:reverse?[]:previous.choices||[],geometry:geometryOf(crop),ready:false,
+    results.set(crop.id,{...(reverse?clearIdentification(previous):previous),rotationEvidence:{attempted:true,confident:Boolean(adjustment.confident),reason:adjustment.reason||(adjustment.confident?'accepted':'uncertain'),angle:adjustment.confident?adjustment.angle||0:0,automaticBlob:adjustment.file,manualDegrees:0},status:'manual',choices:reverse?[]:previous.choices||[],geometry:geometryOf(crop),ready:false,
       orientationOnly:previous.orientationOnly??!previous.status,orientationAttempted:true,orientationLabel:adjustment.confident?(reverse?'Auto rotation · corrected':'Auto rotation · already upright'):adjustment.reason==='unavailable'?'Check rotation · service unavailable':adjustment.reason==='allowance'?'Check rotation · allowance reached':'Check rotation · automatic check uncertain',...(reverse?{reverse,reverseBlob:adjustment.file}:{}),
       message:adjustment.confident?'Orientation checked. Use Crop / rotate if it needs correcting.':'Orientation unclear. Use Crop / rotate to choose it yourself.'});
     window.BatchReview?.redraw();
@@ -139,7 +143,7 @@
       const adjusted=await window.CoinPhotoEditor.edit(source,{status:rotationStatus(crop)+'. Adjust the crop or direction below.'});
       if(!adjusted||revision!==generation||!activeCrop(crop))return;
       const reverse=await fileDataUrl(adjusted);if(revision!==generation||!activeCrop(crop))return;
-      results.set(crop.id,{status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,orientationLabel:'Rotation adjusted',message:'Photo adjusted. Identify this coin again before confirming.'});
+      results.set(crop.id,{rotationEvidence:{...rotationEvidence(crop),manualDegrees:null,cropEdited:true},status:'manual',choices:[],geometry:geometryOf(crop),ready:false,reverse,reverseBlob:adjusted,obverse:previous?.obverse,denomination:previous?.denomination,expanded:true,orientationAttempted:true,orientationLabel:'Rotation adjusted',message:'Photo adjusted. Identify this coin again before confirming.'});
     }catch(error){if(revision===generation)$('batchIdentifyStatus').textContent=`Could not edit coin: ${error.message}`;}
     finally{if(revision===generation){busy=false;window.BatchReview?.redraw();render(crops);pumpOrientation();runQueue();}}
   }
@@ -454,5 +458,7 @@
     finally{if(revision===generation){busy=false;render(crops);runQueue();}}
   };
   window.BatchIdentification={reset,sync,render,editCrop,autoRotate,rotateCrop,scheduleOrientation,prepareOrientation,rotationStatus,identificationStatus,startQueue,effectivePhoto,openCoin,closeWorkspace,isBusy:()=>busy,isIdentifying:()=>queueRunning||inFlight.size>0};
+  window.BatchIdentification.rotationEvidence=rotationEvidence;
+  window.BatchIdentification.orientationPending=()=>orientationJobs.size>0;
   window.BatchIdentificationCore={classify};
 })();

@@ -1,0 +1,11 @@
+# All-coin rotation testing — v0.14.52
+
+On the crop/rotation review screen, turn every displayed coin upright and press **Save rotation test for all coins** once. There are no per-coin saves. Identification need not run first. The action confirms upright ground truth for all current crops, excludes removed/skipped crops, and never writes to My Mint.
+
+One record is stored in the existing identificationTests store and exported through the existing Settings test-report JSON. It contains the working source photograph, source dimensions and every coin's bounds, original crop, automatic output and user-confirmed upright image. Embedded image references resolve within a deduplicated images dictionary. Coin images use the established 768px contained JPEG preparation; source-photo dimensions remain those of the batch working canvas, not necessarily the original camera file.
+
+The report records whether automatic orientation completed, whether it accepted a correction, its applied clockwise angle and the total manual quarter-turn correction. Free-angle/crop-editor adjustments retain image ground truth but leave numeric angle scoring null rather than inventing an angle. Changing geometry invalidates old evidence through the existing result reset. Late automatic replies cannot overwrite manual corrections.
+
+Save is unavailable during ongoing orientation, identification or manual editing. An unchanged batch cannot be saved twice. A failed storage write retains images/corrections and allows retry; one whole-batch write avoids partially saved coins. Navigating to a new photo during image preparation cancels the unsaved snapshot.
+
+Validation: full npm run check passes. Dedicated tests cover all three image versions, image-reference resolution and deduplication, corrected/unchanged/unknown angle records, JSON export and the actual batch-wide save handler (one atomic record, duplicate prevention and retry after failure). Existing detection, shared identification, rotation-pixel workflow contracts, asynchronous result guards and collection confirmation checks remain intact. Physical iPhone validation is still required. Automatic orientation algorithm and single-coin identification/camera remain unchanged.
