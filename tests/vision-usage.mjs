@@ -14,3 +14,8 @@ const missing=instrumentVision({fetch:async(_request,e)=>{await e.AI.run('unknow
 assert.equal(JSON.parse((await missing.fetch(req(),{AI:{run:async()=>({response:'ok'})}})).headers.get('x-pocket-mint-usage')).unknown,1);
 const staticWorker=instrumentVision({fetch:async()=>new Response('asset')});assert.equal((await staticWorker.fetch(new Request('https://mint.test/'),env)).headers.get('x-pocket-mint-usage'),null);
 console.log('PASS per-request token accounting, pricing conversion, missing/failed usage, untouched model inputs/output/body/status and static routing');
+const provider=instrumentVision({fetch:async(_request,e)=>{await e.AI.run('@cf/qwen/qwen3.8-27b',input);return new Response('ok');}});
+response=await provider.fetch(req(),{AI:{run:async()=>({choices:[{message:{content:'original'}}],usage:{neurons:75.25,prompt_tokens:1000,completion_tokens:30}})}});
+usage=JSON.parse(response.headers.get('x-pocket-mint-usage'));assert.equal(usage.measured,1);assert.equal(usage.neurons,75.25,'New model uses provider-reported neurons, not Scout pricing');
+response=await provider.fetch(req(),{AI:{run:async()=>({usage:{neurons:-1,prompt_tokens:1000,completion_tokens:30}})}});
+usage=JSON.parse(response.headers.get('x-pocket-mint-usage'));assert.equal(usage.unknown,1);assert.equal(usage.neurons,0);

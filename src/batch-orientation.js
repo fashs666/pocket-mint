@@ -2,6 +2,7 @@
    straight through to their original worker. */
 import originalWorker from './photo-worker.js';
 import {instrumentVision} from './vision-usage.js';
+import {renderedOrientation,ROTATION_ANGLES} from './rotation-choice.js';
 const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json','cache-control':'no-store'}});
 const angles=[0,90,180,-90];
 export function parseBatchOrientation(text){
@@ -35,6 +36,7 @@ const worker={async fetch(request,env,ctx){
  if(typeof body.image!=='string'||!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(body.image))return reply({error:'Invalid photo'},400);
  if(!env.AI)return reply({angle:0,confident:false,reason:'unavailable'});
  try{
+  if(Object.hasOwn(ROTATION_ANGLES,body.phase))return reply(await renderedOrientation(env.AI,body.phase,body.image));
   if(body.phase==='direction'||body.phase==='verify_direction'){
    const output=await env.AI.run('@cf/meta/llama-4-scout-17b-16e-instruct',{messages:[
     {role:'system',content:'Measure the orientation of one isolated coin photograph. Return unknown when visual evidence is weak. Do not identify, date or grade the coin.'},

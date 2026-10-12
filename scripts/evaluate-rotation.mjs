@@ -22,7 +22,8 @@ try{
  for(const test of cases){
   requests=[];const source='data:image/jpeg;base64,'+(await readFile(test.path)).toString('base64');
   const result=await page.evaluate(async({source,turn})=>{let file=await (await fetch(source)).blob();if(turn)file=await BatchPhotoRotation.rotate(file,turn);const result=await BatchPhotoRotation.suggest(file);return {confident:result.confident,angle:result.angle??0,reason:result.reason};},{source,turn:test.turn||0});
-  const evaluated={name:test.name,expected:test.expected,...result,correct:result.confident?result.angle===test.expected:null,requests};results.push(evaluated);console.log(JSON.stringify(evaluated));
+  const residual=result.confident?Math.abs((result.angle-test.expected+540)%360-180):null;
+  const evaluated={name:test.name,expected:test.expected,...result,residual_degrees:residual,tolerance_degrees:8,correct:residual===null?null:residual<=8,requests};results.push(evaluated);console.log(JSON.stringify(evaluated));
   await writeFile(output,JSON.stringify(results,null,2));if(result.reason==='allowance')break;
  }
 }finally{await browser.close();await new Promise(r=>server.close(r));}
