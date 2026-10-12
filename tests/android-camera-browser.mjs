@@ -18,7 +18,10 @@ await page.addInitScript(()=>{
  navigator.mediaDevices.getSupportedConstraints=()=>({pointsOfInterest:true});
 });
 try{
- await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('0.14.50'));
+ await page.goto(`http://127.0.0.1:${server.address().port}`);await page.waitForFunction(()=>document.querySelector('#diagnostics')?.textContent.includes('Phase 0 v'));
+ // The fake stream has no physical focus. Use a deterministic detail response
+ // for the mocked lens distance, while retaining real video frame callbacks.
+ await page.evaluate(()=>readAndroidFocusDetail=()=>coinCameraTrack?.getSettings().focusMode==='manual'&&coinCameraTrack?.getSettings().focusDistance===4?100:30);
  await page.evaluate(()=>{navigate('findView');showFindTab('identify');window.__defaultNative=null;document.querySelector('#identifyReverseCamera').click=()=>window.__defaultNative='reverse';});
  await page.locator('#identifyBrowserCamera').click();assert.equal(await page.evaluate(()=>__defaultNative),'reverse');assert(await page.locator('#coinCamera').isHidden(),'Phone camera remains an explicit option');
  await page.locator('[data-camera-side="reverse"]').click();
@@ -34,15 +37,15 @@ try{
  }
  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>layoutAndroidCoinGuide());
  const guide=await page.locator('#coinCameraGuide').boundingBox();const before=await page.evaluate(()=>__focusCalls.length);await page.mouse.click(guide.x+guide.width/2,guide.y+guide.height/2);await page.evaluate(()=>coinCameraFocusQueue);assert(await page.evaluate(n=>__focusCalls.length>n,before));
- assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'single-shot');assert.match(await page.locator('#coinCameraStatus').textContent(),/Focus requested/);
+ assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'manual');assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusDistance),4);assert.match(await page.locator('#coinCameraStatus').textContent(),/Coin detail focus adjusted/);
  await page.locator('#coinCameraOptions').click();assert(await page.locator('#coinCameraFocus').isVisible());assert(await page.locator('#coinCameraZoom').isVisible());
  await page.evaluate(async()=>{const original=navigator.mediaDevices.enumerateDevices.bind(navigator.mediaDevices);navigator.mediaDevices.enumerateDevices=async()=>[{kind:'videoinput',deviceId:'rear-main',label:'Back camera'},{kind:'videoinput',deviceId:'rear-wide',label:'Wide camera'}];await listAndroidCameraDevices(coinCameraTrack);navigator.mediaDevices.enumerateDevices=original;});
  assert(await page.locator('#coinCameraDevice').isVisible());assert.equal(await page.locator('#coinCameraDevice option').count(),2);
  await page.evaluate(()=>{window.__originalOpenCamera=openCoinCamera;openCoinCamera=(side,deviceId)=>window.__lensChoice={side,deviceId};});
  await page.locator('#coinCameraDevice').selectOption('rear-wide');assert.deepEqual(await page.evaluate(()=>__lensChoice),{side:'reverse',deviceId:'rear-wide'});await page.evaluate(()=>openCoinCamera=__originalOpenCamera);
  await page.locator('#coinCameraFocus').evaluate(e=>{e.value='3';e.dispatchEvent(new Event('input'));});await page.evaluate(()=>coinCameraFocusQueue);assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'manual');
- await page.locator('#coinCameraAutofocus').click();await page.evaluate(()=>coinCameraFocusQueue);assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'continuous');
- assert.match(await page.locator('#coinCameraStatus').textContent(),/full rim/);
+ await page.locator('#coinCameraAutofocus').click();await page.evaluate(()=>coinCameraFocusQueue);assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusMode),'manual');assert.equal(await page.evaluate(()=>coinCameraTrack.getSettings().focusDistance),4);
+ assert.match(await page.locator('#coinCameraStatus').textContent(),/Coin detail focus adjusted/);
  await page.locator('#coinCameraOptions').click();
  await page.screenshot({path:'/workspace/scratch/60af6b8f0471/android46-camera.png'});
  await page.locator('#coinCameraShutter').click();await page.waitForFunction(()=>document.querySelector('#coinCamera').hidden&&identifyState.reverse?.file);

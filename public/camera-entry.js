@@ -41,7 +41,7 @@ function readAndroidFocusDetail(){
 }
 async function scanAndroidCoinFocus(track,current){
   const cap=androidCameraCapabilities(track),range=cap.focusDistance,start=androidCameraSettings(track),baseline=readAndroidFocusDetail();
-  if(!cap.focusMode?.includes('manual')||!range||!Number.isFinite(range.min)||!Number.isFinite(range.max)||range.max<=range.min||!Number.isFinite(baseline)||baseline<1)return false;
+  if(!cap.focusMode?.includes('manual')||!range||!Number.isFinite(range.min)||!Number.isFinite(range.max)||range.max<=range.min||!Number.isFinite(baseline)||baseline<0)return false;
   const step=range.step||.01,values=[start.focusDistance,...[0,.03,.08,.18,.4,.7,1].map(f=>range.min+(range.max-range.min)*f)].filter(Number.isFinite).map(v=>Math.max(range.min,Math.min(range.max,range.min+Math.round((v-range.min)/step)*step)));
   let best={distance:start.focusDistance,score:baseline};
   try{
@@ -49,21 +49,39 @@ async function scanAndroidCoinFocus(track,current){
     for(const distance of new Set(values)){
       if(!current())return false;
       await applyAndroidFocus(track,{focusMode:'manual',focusDistance:distance},current);
-      await new Promise(resolve=>setTimeout(resolve,180));if(!current())return false;
-      const first=readAndroidFocusDetail();await new Promise(resolve=>setTimeout(resolve,80));if(!current())return false;
+      if(!await waitAndroidFocusFrame(current,180)){if(current())throw Error('No fresh camera frame');return false;}
+      const first=readAndroidFocusDetail();if(!await waitAndroidFocusFrame(current,80)){if(current())throw Error('No fresh camera frame');return false;}
       const second=readAndroidFocusDetail(),score=Math.min(first??0,second??0);
       if(score>best.score)best={distance,score};
     }
     if(!current())return false;
-    if(best.score>baseline*1.15&&Number.isFinite(best.distance)){
+    if(best.score>Math.max(10,baseline*1.15)&&Number.isFinite(best.distance)){
       await applyAndroidFocus(track,{focusMode:'manual',focusDistance:best.distance},current);
-      coinCameraDiagnostics.focus_mode='manual';coinCameraDiagnostics.focus_distance=best.distance;coinCameraDiagnostics.detail_focus_scan={before:baseline,after:best.score};
-      document.getElementById('coinCameraStatus').textContent='Coin detail focus adjusted. Check the lettering.';return true;
+      if(!await waitAndroidFocusFrame(current,180)){if(current())throw Error('No fresh camera frame');return false;}
+      const first=readAndroidFocusDetail();if(!await waitAndroidFocusFrame(current,80)){if(current())throw Error('No fresh camera frame');return false;}
+      const confirmed=Math.min(first??0,readAndroidFocusDetail()??0);
+      // Recheck the winning distance: motion/glare during a sweep is not a
+      // reason to lock the lens at a transient high-detail frame.
+      if(confirmed>Math.max(10,baseline*1.15,best.score*.85)){
+        coinCameraDiagnostics.focus_mode='manual';coinCameraDiagnostics.focus_distance=best.distance;coinCameraDiagnostics.detail_focus_scan={before:baseline,after:confirmed};
+        document.getElementById('coinCameraStatus').textContent='Coin detail focus adjusted. Check the lettering.';return true;
+      }
     }
   }catch{if(!current())return false;}
-  const restore=start.focusMode?{focusMode:start.focusMode,...(start.focusMode==='manual'&&Number.isFinite(start.focusDistance)?{focusDistance:start.focusDistance}:{})}:null;
+  const restore=start.focusMode?{focusMode:start.focusMode,...(start.focusMode==='manual'&&Number.isFinite(start.focusDistance)?{focusDistance:start.focusDistance}:{})}:cap.focusMode.includes('continuous')?{focusMode:'continuous'}:cap.focusMode.includes('single-shot')?{focusMode:'single-shot'}:Number.isFinite(start.focusDistance)?{focusMode:'manual',focusDistance:start.focusDistance}:null;
   if(restore&&current())try{await applyAndroidFocus(track,restore,current);}catch{}
   return false;
+}
+async function waitAndroidFocusFrame(current,settle=180){
+  await new Promise(resolve=>setTimeout(resolve,settle));if(!current())return false;
+  const video=document.getElementById('coinCameraVideo');
+  if(typeof video.requestVideoFrameCallback!=='function')return current();
+  return new Promise(resolve=>{
+    let callback,timer,done=false;
+    const finish=fresh=>{if(done)return;done=true;clearTimeout(timer);if(callback!==undefined)video.cancelVideoFrameCallback?.(callback);resolve(fresh&&current());};
+    timer=setTimeout(()=>finish(false),450);
+    callback=video.requestVideoFrameCallback(()=>finish(true));
+  });
 }
 function cameraOperation(promise,ms=1800){
   let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Camera operation timed out')),ms);})]).finally(()=>clearTimeout(timer));
@@ -142,19 +160,33 @@ async function refocusAndroidCoin(point={x:.5,y:.5},automatic=false,isLatest=()=
   if(!mode){if(await scanAndroidCoinFocus(track,current))return true;if(current())status.textContent=automatic?'Keep the full rim inside the circle. Move back if lettering is soft.':'Lens focus control unavailable. Try another camera in Options.';return false;}
   if(current()&&!automatic)status.textContent='Requesting focus… Hold still.';
   try{
+    const before=readAndroidFocusDetail();
+    // A second single-shot request can otherwise leave the same mode selected
+    // without starting a new sweep. Re-arm it before, never after, the request.
+    if(!automatic&&mode==='single-shot'&&androidCameraSettings(track).focusMode==='single-shot'&&modes.includes('continuous')){
+      await applyAndroidFocus(track,{focusMode:'continuous'},current);
+      if(!await waitAndroidFocusFrame(current,180))return false;
+    }
     let values={focusMode:mode},pointAccepted=false;
     if(navigator.mediaDevices?.getSupportedConstraints?.().pointsOfInterest){
       try{await applyAndroidFocus(track,{...values,pointsOfInterest:[point]},current);pointAccepted=true;}
       catch{try{await applyAndroidFocus(track,values,current);}catch(error){if(!current()||mode!=='single-shot'||!modes.includes('continuous'))throw error;await applyAndroidFocus(track,{focusMode:'continuous'},current);}}
     }else {try{await applyAndroidFocus(track,values,current);}catch(error){if(!current()||mode!=='single-shot'||!modes.includes('continuous'))throw error;await applyAndroidFocus(track,{focusMode:'continuous'},current);}}
-    if(!current())return false;
-    // Keep the requested point/mode. Switching modes immediately can interrupt a sweep.
+    // Constraint acceptance does not mean the preview has finished focusing.
+    if(!await waitAndroidFocusFrame(current,450)){if(current())throw Error('No fresh camera frame');return false;}
     const settings=androidCameraSettings(track);
     coinCameraDiagnostics.focus_mode=settings.focusMode||'unreported';coinCameraDiagnostics.focus_error=null;
     coinCameraDiagnostics.focus_point_requested=pointAccepted?point:null;
     coinCameraDiagnostics.focus_point_reported=settings.pointsOfInterest||null;
     coinCameraDiagnostics.tap_focus_verified=pointAccepted;
-    if(!automatic&&!pointAccepted&&await scanAndroidCoinFocus(track,current))return true;
+    const after=readAndroidFocusDetail();
+    coinCameraDiagnostics.focus_detail_before=before;coinCameraDiagnostics.focus_detail_after=after;
+    coinCameraDiagnostics.focus_detail_improved=Number.isFinite(before)&&Number.isFinite(after)?after>Math.max(10,before*1.15):null;
+    // Initial autofocus also needs the detail scan when exposed by this lens.
+    // A reported focus point is not proof that coin lettering became sharp.
+    const needsScan=automatic?Number.isFinite(after)&&after<35:!pointAccepted||coinCameraDiagnostics.focus_detail_improved!==true;
+    if(needsScan&&await scanAndroidCoinFocus(track,current))return true;
+    if(!current())return false;
     status.textContent=automatic?'Keep the full rim inside the circle.':pointAccepted?'Focus requested. Check the lettering.':'Camera refocus requested; tap position unsupported. Use Phone camera if soft.';
     return true;
   }catch{
@@ -167,7 +199,7 @@ if(originalCameraControls){
     if(!androidCoinCamera())return originalCameraControls();
     if(!coinCameraTrack)return;
     const track=coinCameraTrack,video=document.getElementById('coinCameraVideo'),cap=androidCameraCapabilities(track),settings=androidCameraSettings(track),modes=cap.focusMode||[];
-    coinCameraDiagnostics={focus_modes:[...modes],focus_mode:settings.focusMode||'unreported',manual_focus_available:Boolean(modes.includes('manual')&&cap.focusDistance),focus_error:null};
+    coinCameraDiagnostics={focus_modes:[...modes],focus_mode:settings.focusMode||'unreported',manual_focus_available:Boolean(modes.includes('manual')&&cap.focusDistance),focus_distance_range:cap.focusDistance||null,focus_distance:settings.focusDistance??null,focus_control_version:2,focus_error:null};
     const focusRow=document.getElementById('coinCameraFocusRow'),focus=document.getElementById('coinCameraFocus');focusRow.hidden=!coinCameraDiagnostics.manual_focus_available;
     if(!focusRow.hidden){Object.assign(focus,{min:cap.focusDistance.min,max:cap.focusDistance.max,step:cap.focusDistance.step||.01,value:settings.focusDistance??cap.focusDistance.min});}
     const zoomRow=document.getElementById('coinCameraZoomRow'),zoom=document.getElementById('coinCameraZoom');zoomRow.hidden=!cap.zoom;
@@ -177,7 +209,7 @@ if(originalCameraControls){
     if(!button)return;
     button.hidden=!autofocus;
     let focusRevision=0;
-    const request=(point,automatic=false)=>{const revision=++focusRevision;coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>revision===focusRevision&&coinCameraTrack===track?cameraOperation(refocusAndroidCoin(point,automatic,()=>revision===focusRevision),6500).catch(()=>{if(revision===focusRevision){focusRevision++;if(coinCameraTrack===track)document.getElementById('coinCameraStatus').textContent='Focus request timed out. Use Phone camera if soft.';}return false;}):false);return coinCameraFocusQueue;};
+    const request=(point,automatic=false)=>{const revision=++focusRevision;coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>revision===focusRevision&&coinCameraTrack===track?cameraOperation(refocusAndroidCoin(point,automatic,()=>revision===focusRevision),8000).catch(()=>{if(revision===focusRevision){focusRevision++;if(coinCameraTrack===track)document.getElementById('coinCameraStatus').textContent='Focus request timed out. Use Phone camera if soft.';}return false;}):false);return coinCameraFocusQueue;};
     button.onclick=()=>request(layoutAndroidCoinGuide(),true);
     focus.oninput=()=>{const revision=++focusRevision,value=focus.value;coinCameraFocusQueue=coinCameraFocusQueue.catch(()=>{}).then(()=>revision===focusRevision&&coinCameraTrack===track?setCoinCameraFocus(value):undefined);};
     let pointer=null;

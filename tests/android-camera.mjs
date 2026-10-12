@@ -52,3 +52,41 @@ context.navigator.mediaDevices.enumerateDevices=async()=>[{kind:'videoinput',dev
 const stopsBefore=stopped;selected=null;
 assert.equal(await vm.runInContext('preferAndroidFocusLens(oldStream,null,7)',context),context.oldStream);assert.equal(selected,null);assert.equal(stopped,stopsBefore,'Unsupported/unknown alternatives leave the current stream running');
 console.log('PASS detail-based focus scan, no-improvement restoration, stale scan cancellation and focusable rear-lens preference');
+
+// Extremely blurry previews used to bail out before trying any lens distance.
+context.coinCameraTrack=track;settings={focusMode:'continuous',focusDistance:1};
+track.applyConstraints=async c=>{settings={...settings,...(c.advanced?.[0]||Object.fromEntries(Object.entries(c).map(([k,v])=>[k,v.exact])))};};
+vm.runInContext('readAndroidFocusDetail=()=>coinCameraTrack.getSettings().focusDistance===4?100:0',context);
+assert(await vm.runInContext('scanAndroidCoinFocus(coinCameraTrack,()=>true)',context));assert.equal(settings.focusDistance,4,'Zero-detail baseline still scans for a usable focus distance');
+settings={focusMode:'continuous',focusDistance:1};vm.runInContext('readAndroidFocusDetail=()=>1',context);
+assert.equal(await vm.runInContext('scanAndroidCoinFocus(coinCameraTrack,()=>true)',context),false);assert.equal(settings.focusMode,'continuous','Flat/noisy preview cannot lock an arbitrary focus distance');
+
+// Opening autofocus now invokes the measured scan even if the focus point was
+// reported. Both manual and tap-only fallbacks are covered by the existing tests.
+vm.runInContext('const savedFocusScanner=scanAndroidCoinFocus',context);
+settings={focusMode:'continuous',focusDistance:1};let scans=0;
+context.countScan=()=>scans++;vm.runInContext('scanAndroidCoinFocus=async()=>{countScan();return true;}',context);
+assert(await vm.runInContext('refocusAndroidCoin({x:.5,y:.5},true)',context));assert.equal(scans,1,'Initial autofocus does not skip the coin-detail fallback');
+assert.equal(context.coinCameraDiagnostics.focus_detail_improved,false);
+vm.runInContext('readAndroidFocusDetail=()=>100',context);assert(await vm.runInContext('refocusAndroidCoin({x:.5,y:.5},true)',context));assert.equal(scans,1,'Already detailed opening preview retains autofocus instead of locking a background distance');
+vm.runInContext('readAndroidFocusDetail=()=>1',context);
+
+// Each repeated tap must re-arm a completed single-shot BEFORE requesting it.
+vm.runInContext('scanAndroidCoinFocus=async()=>false',context);settings={focusMode:'single-shot',focusDistance:1};calls=[];
+track.applyConstraints=async c=>{calls.push(c);settings={...settings,...c.advanced[0]};};
+assert(await vm.runInContext('refocusAndroidCoin()',context));assert.equal(calls[0].advanced[0].focusMode,'continuous');assert.equal(calls[1].advanced[0].focusMode,'single-shot');assert.equal(settings.focusMode,'single-shot');
+
+// Fresh-frame waiting uses the video callback; stopping the camera invalidates
+// the result and all pending handles are cleaned up.
+let frameCallback,cancelledFrame=0;
+el('coinCameraVideo').requestVideoFrameCallback=fn=>{frameCallback=fn;return 17;};el('coinCameraVideo').cancelVideoFrameCallback=id=>{assert.equal(id,17);cancelledFrame++;};
+context.frameCurrent=()=>true;
+const fresh=vm.runInContext('waitAndroidFocusFrame(frameCurrent,0)',context);await new Promise(r=>setTimeout(r,2));frameCallback();assert.equal(await fresh,true);assert.equal(cancelledFrame,1);
+context.frameCurrent=()=>false;assert.equal(await vm.runInContext('waitAndroidFocusFrame(frameCurrent,0)',context),false);
+vm.runInContext('scanAndroidCoinFocus=savedFocusScanner',context);settings={focusMode:'continuous',focusDistance:1};
+assert.equal(await vm.runInContext('scanAndroidCoinFocus(coinCameraTrack,()=>true)',context),false);assert.equal(settings.focusMode,'continuous','Missing fresh frames restore autofocus rather than leave a failed manual scan active');
+delete el('coinCameraVideo').requestVideoFrameCallback;
+settings={focusDistance:1};calls=[];
+track.applyConstraints=async c=>{calls.push(c);settings={focusDistance:c.advanced[0].focusDistance??settings.focusDistance};};
+assert.equal(await vm.runInContext('scanAndroidCoinFocus(coinCameraTrack,()=>true)',context),false);assert.equal(calls.at(-1).advanced[0].focusMode,'continuous','Unreported starting mode still restores a supported autofocus mode');
+console.log('PASS Android focus recovery: severe blur, blank/noise safety, automatic detail scan, repeated-tap re-arm and fresh-frame cleanup');
