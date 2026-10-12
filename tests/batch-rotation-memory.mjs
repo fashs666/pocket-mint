@@ -39,9 +39,9 @@ assert.equal((await rotationContext.window.BatchPhotoRotation.suggest({})).reaso
 rotationContext.window.PocketMintVisionAllowance.blocked=()=>false;
 const canvasSizes=[];
 rotationContext.decodeIdentifyPhoto=async()=>({width:180,height:180,close(){}});
-rotationContext.document={createElement:()=>({getContext:()=>({fillRect(){},fillText(){},save(){},restore(){},translate(){},rotate(){},scale(){},drawImage(){}}),toDataURL:()=> 'data:image/jpeg;base64,AA==',toBlob(callback,type){canvasSizes.push([this.width,this.height]);callback(new Blob(['rotated'],{type}));}})};
-rotationContext.fetch=async(_url,request)=>{const phase=JSON.parse(request.body).phase;events.push(phase);return {ok:true,json:async()=>({confident:true,angle:phase==='verify_choice'?-90:0})};};
-const fallback=await rotationContext.window.BatchPhotoRotation.suggest({});assert.equal(fallback.confident,true);assert.deepEqual(events,['choice','verify_choice']);
+rotationContext.document={createElement:()=>({getContext:()=>({fillRect(){},fillText(){},save(){},restore(){},beginPath(){},rect(){},clip(){},translate(){},rotate(){},scale(){},drawImage(){}}),toDataURL:()=> 'data:image/jpeg;base64,AA==',toBlob(callback,type){canvasSizes.push([this.width,this.height]);callback(new Blob(['rotated'],{type}));}})};
+rotationContext.fetch=async(_url,request)=>{const phase=JSON.parse(request.body).phase;events.push(phase);return {ok:true,json:async()=>({confident:true,angle:0})};};
+const fallback=await rotationContext.window.BatchPhotoRotation.suggest({});assert.equal(fallback.confident,true);assert.deepEqual(events,['coarse8','fine9']);
 events.length=0;rotationContext.window.BatchRotationMemory.match=async()=>({angle:14,reason:'saved_upright_reference'});
 const originalFile={},fineResult=await rotationContext.window.BatchPhotoRotation.suggest(originalFile);
 assert.equal(fineResult.angle,14);assert.notEqual(fineResult.file,originalFile);assert.equal(fineResult.file.type,'image/png');assert.equal(events.length,0);

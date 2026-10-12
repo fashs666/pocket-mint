@@ -1,6 +1,7 @@
 /* Orientation only for already isolated batch crops. No detection or grading. */
 (() => {
   let suggestions=new WeakMap(),referenceSignature='';
+  const coarseAngles=[0,45,90,135,180,-135,-90,-45],fineAngles=[-30,-22.5,-15,-7.5,0,7.5,15,22.5,30];
   async function suggest(file){
     const tests=typeof identificationTests==='undefined'?[]:identificationTests;
     const signature=tests.filter(t=>t.flow==='batch_rotation').map(t=>t.id).join('|');
@@ -20,21 +21,37 @@
       try{memory=await window.BatchRotationMemory?.match(file,typeof identificationTests==='undefined'?[]:identificationTests);}catch{/* Reference decode failure must not disable the existing fallback. */}
       if(memory)return {file:Math.abs(memory.angle)<1?file:await rotate(file,memory.angle),confident:true,angle:memory.angle,reason:memory.reason};
       if(window.PocketMintVisionAllowance?.blocked())return {file,confident:false,reason:'allowance'};
-      // Choosing an actual rendered view avoids unreliable numeric-angle inference.
-      const image=await choices(file);
-      const response=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'choice',image})});
+      // Eight directions avoid forcing every result into a quarter turn.
+      const image=await renderedChoices(file,coarseAngles);
+      const response=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'coarse8',image})});
       const direction=await response.json();
       if(!response.ok)return {file,confident:false,reason:direction.reason==='allowance'?'allowance':'unavailable'};
-      if(direction.confident!==true||![0,90,180,-90].includes(direction.angle))return {file,confident:false,reason:direction.reason||'uncertain'};
-      const candidate=Math.abs(direction.angle)<1?file:await rotate(file,direction.angle);
-      // Shift every verification view by 90°: the same upright choice must now
-      // occupy a different slot. Agreement is required; neither call sees the prior answer.
-      const checkImage=await choices(candidate,90);
-      const check=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(18000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'verify_choice',image:checkImage})});
+      if(direction.confident!==true||!coarseAngles.includes(direction.angle))return {file,confident:false,reason:direction.reason||'uncertain'};
+      // Render fine candidates directly from the original, avoiding resampling
+      // and shrinking the coin after an expanded oblique rotation.
+      const checkImage=await renderedChoices(file,fineAngles,direction.angle);
+      const check=await fetch('/api/batch-orientation',{method:'POST',signal:AbortSignal.timeout(30000),headers:{'content-type':'application/json'},body:JSON.stringify({phase:'fine9',image:checkImage})});
       const verification=await check.json();
       if(!check.ok)return {file,confident:false,reason:verification.reason==='allowance'?'allowance':'unavailable'};
-      return verification.confident===true&&verification.angle===-90?{file:candidate,confident:true,angle:direction.angle}:{file,confident:false,reason:verification.confident?'inconsistent':verification.reason||'uncertain'};
+      if(verification.confident!==true||!fineAngles.includes(verification.angle))return {file,confident:false,reason:verification.reason||'uncertain'};
+      // An outermost fine choice suggests the coarse direction was wrong or
+      // insufficiently resolved. Do not silently apply a boundary guess.
+      if(Math.abs(verification.angle)>=30)return {file,confident:false,reason:'inconsistent'};
+      const angle=((direction.angle+verification.angle+540)%360)-180;
+      return {file:angle===0?file:await rotate(file,angle),confident:true,angle,reason:'rendered_fine_orientation'};
     } catch {return {file,confident:false,reason:'unavailable'};}
+  }
+  async function renderedChoices(file,angles,offset=0){
+    const bitmap=await decodeIdentifyPhoto(file),canvas=document.createElement('canvas'),columns=angles.length===8?4:3;
+    canvas.width=384*columns;canvas.height=428*Math.ceil(angles.length/columns);
+    try{
+      const ctx=canvas.getContext('2d');ctx.fillStyle='#f3f0e9';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.font='bold 24px sans-serif';ctx.textAlign='center';
+      angles.forEach((angle,i)=>{
+        const x=i%columns*384,y=Math.floor(i/columns)*428;ctx.fillStyle='#151528';ctx.fillText(String(i+1),x+192,y+30);
+        ctx.save();ctx.beginPath();ctx.rect(x,y+44,384,384);ctx.clip();ctx.translate(x+192,y+236);ctx.rotate((angle+offset)*Math.PI/180);
+        const scale=336/Math.max(bitmap.width,bitmap.height);ctx.scale(scale,scale);ctx.drawImage(bitmap,-bitmap.width/2,-bitmap.height/2);ctx.restore();
+      });return canvas.toDataURL('image/jpeg',.85);
+    }finally{bitmap.close?.();canvas.width=canvas.height=0;}
   }
   async function choices(file,offset=0){
     const bitmap=await decodeIdentifyPhoto(file),canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1112;
@@ -62,5 +79,5 @@
       return output;
     }finally{bitmap.close?.();}
   }
-  window.BatchPhotoRotation={suggest,rotate,choices};
+  window.BatchPhotoRotation={suggest,rotate,choices,renderedChoices,coarseAngles,fineAngles};
 })();

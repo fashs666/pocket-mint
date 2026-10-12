@@ -14,7 +14,9 @@ export function instrumentVision(worker){return {async fetch(request,env,ctx){
   return async(...args)=>{
    usage.calls++;
    try{const output=await target.run(...args),tokens=output?.usage,rate=rates[args[0]];
-    if(rate&&Number.isFinite(tokens?.prompt_tokens)&&tokens.prompt_tokens>=0&&Number.isFinite(tokens?.completion_tokens)&&tokens.completion_tokens>=0){
+    if(Number.isFinite(tokens?.neurons)&&tokens.neurons>=0){
+     usage.measured++;usage.neurons+=tokens.neurons;
+    }else if(rate&&Number.isFinite(tokens?.prompt_tokens)&&tokens.prompt_tokens>=0&&Number.isFinite(tokens?.completion_tokens)&&tokens.completion_tokens>=0){
      usage.measured++;usage.neurons+=(tokens.prompt_tokens*rate[0]+tokens.completion_tokens*rate[1])/1e6;
     }else usage.unknown++;
     return output;
