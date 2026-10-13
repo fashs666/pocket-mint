@@ -1,4 +1,4 @@
-const CACHE = "pocket-mint-v0.14.56-rendered-rotation";
+const CACHE = "pocket-mint-v0.14.59-catalogue-condition-photos";
 const STATIC = ["./vision-allowance.js","./vision-allowance.css","./batch-single-adapter.js","./batch-rotation-report.js","./pm-live-headings.js","./batch-rotation-memory.js","./batch-photo-rotation.js","./artwork/headings/section-titles.png","./pm-headings.css","./artwork/headings/neon-titles.png","./fonts/coiny-latin-400.woff2","./fonts/coiny-LICENSE.txt","./frames/icon-stats.svg","./frames/icon-swaps.svg","./frames/icon-settings.svg","./frames/icon-help.svg","./frames/icon-about.svg","./fonts/short-stack-latin-400.woff2", "./fonts/short-stack-LICENSE.txt", "./frames/header-scribble.svg", "./", "./index.html", "./styles.css", "./progress.css", "./identify.css", "./pm-visual.css", "./pm-frames.css", "./frames/album-wobble.svg", "./frames/coin-wobble.svg", "./frames/icon-duplicates.svg", "./frames/icon-favourites.svg", "./frames/icon-owned.svg", "./frames/icon-wishlist.svg", "./frames/neon-wobble.svg", "./frames/plaque-wobble.svg", "./condition-data.js", "./condition-guide.js", "./condition-editor.js", "./condition-guide.css", "./series.js", "./camera-entry.js", "./camera-entry.css", "./auto-coin-photo.js", "./coin-photo-editor.js", "./coin-photo-editor.css", "./pm-stars.svg", "./pm-crescent.svg", "./pm-wordmark.webp", "./characters/grim-companion.webp", "./characters/grim-walk.webp", "./characters/grim-walk-b.webp", "./characters/grim-inspect.webp", "./characters/grim-walk-sheet.webp", "./characters/grim-clue-sheet.webp", "./characters/noxel-companion.webp", "./characters/noxel-scuttle.webp", "./characters/noxel-scuttle-b.webp", "./characters/noxel-peek.webp", "./characters/noxel-walk-sheet.webp", "./characters/noxel-discovery-sheet.webp", "./characters/grim-noxel-high-five.webp", "./companions.js", "./app.js", "./identification-report.js", "./progress.js", "./identify.js", "./batch-identify.js", "./batch-identification.js", "./batch-detection.js", "./batch-identify.css", "./catalogue.json", "./catalogue-v2.json", "./manifest.webmanifest", "./manifest-seal.webmanifest", "./manifest-spiral.webmanifest", "./manifest-character.webmanifest", "./icon-192.png", "./icon-512.png", "./icons/seal-192.png", "./icons/seal-512.png", "./icons/spiral-192.png", "./icons/character-192.png", "./icons/character-512.png"];
 
 importScripts("./condition-data.js");
@@ -7,9 +7,12 @@ self.addEventListener("install", event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(STATIC);
-    // Cache only controlled, locally supplied grading photographs.
-    const conditionImages = [...new Set(self.PocketMintConditionData.references.map(r => r.image).filter(p => /^condition-references\/[a-zA-Z0-9_./-]+$/.test(p || "") && !p.includes("..")))];
-    await Promise.all(conditionImages.map(p => cache.add(`./${p}`).catch(() => {})));
+    // Cache only controlled, rights-cleared grading photographs.
+    const conditionImages = [...new Set(self.PocketMintConditionData.references.map(r => r.image).filter(p =>
+      (/^condition-references\/[a-zA-Z0-9_./-]+$/.test(p || "") && !p.includes("..")) ||
+      /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\/(?:[a-zA-Z0-9_./-]|%[0-9A-Fa-f]{2})+$/.test(p || "")
+    ))];
+    await Promise.all(conditionImages.map(p => cache.add(p.startsWith("https://") ? p : `./${p}`).catch(() => {})));
     const catalogue = await fetch("./catalogue.json").then(response => response.json());
     const images = [...new Set((catalogue.coins || []).map(coin => coin.reference_image).filter(path => path && !/^https?:\/\//i.test(path)).map(path => `./${path}`))];
     await cache.addAll(images);

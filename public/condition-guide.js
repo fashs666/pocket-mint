@@ -18,14 +18,26 @@
         const ref=candidates[index]; if(!ref) return;
         const img=new Image(); img.alt=`${info(code).name} photographic example`;
         img.onload=()=>{
-          area.replaceChildren(img);
+          area.replaceChildren();
+          const stage=document.createElement('div');stage.className='cg-photo-stage';stage.append(img);
+          if(candidates.length>1){
+            const controls=document.createElement('div');controls.className='cg-photo-controls';
+            const previous=document.createElement('button');previous.type='button';previous.className='cg-photo-step';previous.textContent='‹';previous.setAttribute('aria-label','Previous photo example');previous.disabled=index===0;previous.addEventListener('click',()=>load(index-1));
+            const count=document.createElement('span');count.textContent=`Example ${index+1} of ${candidates.length}`;
+            const next=document.createElement('button');next.type='button';next.className='cg-photo-step';next.textContent='›';next.setAttribute('aria-label','Next photo example');next.disabled=index===candidates.length-1;next.addEventListener('click',()=>load(index+1));
+            controls.append(previous,count,next);stage.append(controls);
+          }
+          area.append(stage);
           (ref.callouts||[]).slice(0,3).forEach(point=>{
             if(!Number.isFinite(point.x)||!Number.isFinite(point.y)||!point.label)return;
             const label=document.createElement('span'); label.className='cg-callout';
             label.style.left=`${Math.max(12,Math.min(88,point.x))}%`;label.style.top=`${Math.max(8,Math.min(92,point.y))}%`;
             label.textContent=point.label;area.append(label);
           });
-          const note=document.createElement('small');note.className='cg-credit';note.textContent=`${ref.denomination?'Denomination reference':'General Australian reference'} · ${ref.source} · ${ref.rightsNote}`;area.append(note);
+          const note=document.createElement('small');note.className='cg-credit';note.textContent=`${ref.denomination?'Denomination reference':'General coin reference'} · ${ref.source} · ${ref.rightsNote} `;
+          const sourceLink=document.createElement('a');sourceLink.href=ref.sourceUrl;sourceLink.target='_blank';sourceLink.rel='noopener';sourceLink.textContent='Source';note.append(sourceLink);
+          if(ref.licenseUrl){note.append(document.createTextNode(' · '));const licenseLink=document.createElement('a');licenseLink.href=ref.licenseUrl;licenseLink.target='_blank';licenseLink.rel='noopener';licenseLink.textContent=ref.license||'Licence';note.append(licenseLink);}
+          area.append(note);
           const card=area.closest('[data-grade-card]');
           if(ref.description)card.querySelector('.cg-description').textContent=ref.description;
           if(Array.isArray(ref.lookFor)&&ref.lookFor.length)card.querySelector('.cg-look').replaceChildren(...ref.lookFor.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
@@ -41,15 +53,13 @@
   }
   function draw() {
     const index=data.grades.findIndex(g=>g.grade===grade);
-    const denomOptions=`<option value="">Australian coin grading</option>`+data.denominations.map(([id,label])=>`<option value="${id}" ${id===denomination?'selected':''}>${label} coins</option>`).join('');
-    dialog.innerHTML=`<div class="cg-shell"><header class="cg-header"><div><h2 id="cg-title"><span class="sr-only">Condition Guide</span><svg class="pm-title-art pm-title-condition" viewBox="38 533 1460 201" aria-hidden="true" focusable="false"><image href="artwork/headings/neon-titles.png" width="1536" height="1024"/></svg></h2><p class="cg-subtitle">Take a closer look</p><label class="cg-context"><span class="sr-only">Reference denomination</span><select id="cg-denomination">${denomOptions}</select></label></div><button type="button" class="cg-close" aria-label="Close Condition Guide">×</button></header>
+    dialog.innerHTML=`<div class="cg-shell"><header class="cg-header"><div><h2 id="cg-title"><span class="sr-only">Condition Guide</span><svg class="pm-title-art pm-title-condition" viewBox="38 533 1460 201" aria-hidden="true" focusable="false"><image href="artwork/headings/neon-titles.png" width="1536" height="1024"/></svg></h2><p class="cg-subtitle">Take a closer look</p></div><button type="button" class="cg-close" aria-label="Close Condition Guide">×</button></header>
       <div class="cg-body"><p class="cg-estimate">Your own estimate, using Australian adjectival grades. No certification.</p>
       ${comparing?`<div class="cg-compare-heading"><h3 id="cg-compare-title">Compare conditions</h3><button type="button" id="cg-back">Back to guide</button></div><div class="cg-comparison" aria-labelledby="cg-compare-title">${pair.map((code,i)=>`<section><label for="cg-side-${i}">${i?'Right':'Left'} condition</label><select id="cg-side-${i}">${gradeOptions(code)}</select>${card(code)}${options.onSelect?`<button type="button" class="cg-side-use" data-use-side="${code}">Use ${code} condition</button>`:''}</section>`).join('')}</div><p class="cg-comparison-hint">Compare the high points and remaining detail on both sides. From UNC upwards, compare strike, contact marks and original lustre: all must be unworn.</p>`:
       `<div class="cg-strip" role="tablist" aria-label="Condition grades">${data.grades.map(g=>`<button type="button" role="tab" id="cg-tab-${g.grade}" aria-controls="cg-panel" aria-selected="${g.grade===grade}" tabindex="${g.grade===grade?0:-1}" data-grade="${g.grade}">${g.grade}</button>`).join('')}</div><div id="cg-panel" role="tabpanel" aria-labelledby="cg-tab-${grade}" tabindex="0">${card(grade)}</div><div class="cg-prev-next"><button type="button" id="cg-prev" ${index===0?'disabled':''} aria-label="Previous grade">‹ ${data.grades[index-1]?.grade||''}</button><span aria-live="polite">${grade} · ${index+1} of 9</span><button type="button" id="cg-next" ${index===8?'disabled':''} aria-label="Next grade">${data.grades[index+1]?.grade||''} ›</button></div><button type="button" id="cg-compare">Compare conditions</button>`}
       <details class="cg-basics pm-cream-card"><summary>Look at the whole coin</summary><p>Check both sides, lettering and rim in good light. Wear flattens raised detail; a weak strike may leave detail incomplete from the start. Shine alone is not original mint lustre. Record cleaning, damage and toning separately. Marks also matter when distinguishing UNC, CHU and GEM.</p><a href="${data.source}" target="_blank" rel="noopener">ANDA grading guide</a></details></div>
       ${options.onSelect&&!comparing?`<footer class="cg-footer"><button type="button" id="cg-use">Use ${grade} condition</button><small>Returned to your editor. Save the record to keep it.</small></footer>`:''}</div>`;
     dialog.querySelector('.cg-close').onclick=close;
-    dialog.querySelector('#cg-denomination').onchange=e=>{denomination=e.target.value;draw();dialog.querySelector('#cg-denomination').focus();};
     dialog.querySelectorAll('[data-grade]').forEach(btn=>btn.onclick=()=>select(btn.dataset.grade));
     dialog.querySelector('#cg-prev')?.addEventListener('click',()=>step(-1));
     dialog.querySelector('#cg-next')?.addEventListener('click',()=>step(1));

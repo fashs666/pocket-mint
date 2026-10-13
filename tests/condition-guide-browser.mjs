@@ -70,7 +70,7 @@ try {
   await page.locator('#dQty').fill('1');await page.locator('#dNotes').fill('Unsaved note survives guide');
   await page.locator('#dFavourite').check();
   if(process.env.CONDITION_STYLE_PREVIEW){await page.locator('.editBlock h3').scrollIntoViewIfNeeded();await page.waitForTimeout(220);await page.screenshot({path:process.env.CONDITION_STYLE_PREVIEW+'-record.png'});}
-  await page.locator('.condition-help').click();assert.equal(await page.locator('#cg-denomination').inputValue(),'2');
+  await page.locator('.condition-help').click();assert.equal(await page.locator('#cg-denomination').count(),0,'Denomination choice remains hidden until matching grade photos exist');
   if(process.env.CONDITION_STYLE_PREVIEW){await page.waitForTimeout(220);await page.screenshot({path:process.env.CONDITION_STYLE_PREVIEW+'-guide.png'});}
   await page.locator('[data-grade="VF"]').click();await page.locator('#cg-use').click();await closed();
   assert.equal(await page.locator('#dCondition').inputValue(),'VF');
@@ -96,7 +96,7 @@ try {
   await page.locator('#dCondition').selectOption('');await page.locator('#saveDetail').click();await saved(null);
   await page.reload();await ready();await page.evaluate(id=>openCoin(coinById(id)),id);assert.equal(await page.locator('#dCondition').inputValue(),'');
   await page.locator('#doneDetail').click();await page.waitForFunction(()=>!document.querySelector('#coinDialog').open);
-  await page.evaluate(()=>openCoin(browseCatalogue.find(c=>c.denomination_cents===50)));await page.locator('.condition-help').click();assert.equal(await page.locator('#cg-denomination').inputValue(),'50');await page.locator('.cg-close').click();await closed();await page.locator('#doneDetail').click();await page.waitForFunction(()=>!document.querySelector('#coinDialog').open);
+  await page.evaluate(()=>openCoin(browseCatalogue.find(c=>c.denomination_cents===50)));await page.locator('.condition-help').click();assert.equal(await page.locator('#cg-denomination').count(),0,'No denomination selector is shown for another coin either');await page.locator('.cg-close').click();await closed();await page.locator('#doneDetail').click();await page.waitForFunction(()=>!document.querySelector('#coinDialog').open);
   await page.evaluate(()=>navigate('myMintView'));await page.locator('#myMintView [data-nav="helpView"]').click();await page.locator('#helpConditionGuide').click();assert.equal(await page.locator('#cg-use').count(),0);
   // Touch gestures change grades only on horizontal movement.
   await page.locator('[data-grade="VF"]').click();
@@ -120,18 +120,18 @@ try {
   }
   await page.setViewportSize({width:844,height:390});assert.equal(await page.locator('.cg-close').isVisible(),true);
   await page.setViewportSize({width:390,height:844});
-  // Controlled test-only reference dataset: missing denomination image falls back to general.
+  // Controlled test-only references demonstrate image fallback without a denomination chooser.
   await page.evaluate(()=>PocketMintConditionData.references.push(
-    {grade:'VF',denomination:'2',designId:null,image:'condition-references/missing.png',source:'Test-only fixture',rightsNote:'Not a grade example'},
+    {grade:'VF',denomination:null,designId:null,image:'condition-references/missing.png',source:'Test-only fixture',rightsNote:'Not a grade example'},
     {grade:'VF',denomination:null,designId:null,image:'condition-references/fixture.png',source:'Test-only fixture',rightsNote:'Not a grade example',callouts:[{x:50,y:25,label:'Fixture annotation'}]}
   ));
-  await page.locator('#cg-denomination').selectOption('2');await page.locator('[data-grade="VF"]').click();
+  await page.locator('[data-grade="VF"]').click();
   await page.locator('.cg-reference img').waitFor();assert.equal(await page.locator('.cg-callout').textContent(),'Fixture annotation');
   assert.ok((await page.locator('.cg-reference img').getAttribute('src')).includes('fixture.png'));
   await page.locator('[data-grade="G"]').click();assert.equal(await page.locator('.cg-reference img').count(),0);assert.equal(await page.locator('.cg-photo-missing').isVisible(),true);
   assert.equal(await page.evaluate(()=>JSON.stringify({catalogue,browseCatalogue,catalogueDesigns})),master,'catalogue must not receive condition fields');
   await page.waitForFunction(()=>navigator.serviceWorker.controller,{timeout:30000});
-  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.50-main-lens');return Promise.all(['pm-live-headings.js','batch-photo-rotation.js','fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
+  const assets=await page.evaluate(async()=>{const c=await caches.open('pocket-mint-v0.14.59-catalogue-condition-photos');return Promise.all(['pm-live-headings.js','batch-photo-rotation.js','fonts/coiny-latin-400.woff2','pm-headings.css','artwork/headings/neon-titles.png','artwork/headings/section-titles.png','condition-data.js','condition-guide.js','condition-editor.js','condition-guide.css'].map(async p=>Boolean(await c.match('./'+p))));});
   assert(assets.every(Boolean),'Guide, heading font and title assets must be cached offline');
   await context.setOffline(true);await page.reload();await ready();
   await page.evaluate(()=>navigate('helpView'));await page.locator('#helpConditionGuide').click();await page.locator('[data-grade="GEM"]').click();assert.equal(await page.locator('#conditionGuide [aria-selected="true"]').textContent(),'GEM');

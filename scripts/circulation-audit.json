@@ -1,17 +1,17 @@
 {
   "counts": {
-    "designs": 270,
+    "designs": 271,
     "byDenom": {
       "5c": 2,
       "10c": 2,
       "20c": 20,
       "50c": 35,
       "$1": 130,
-      "$2": 81
+      "$2": 82
     },
-    "series": 24,
-    "releases": 32,
-    "issueIds": 533,
+    "series": 25,
+    "releases": 33,
+    "issueIds": 534,
     "duplicateIds": [],
     "duplicateDesignIds": []
   },
@@ -26,23 +26,28 @@
   },
   "researchedTargets": {
     "$1": 130,
-    "$2": 81,
+    "$2": 82,
     "5c": 2,
     "10c": 2,
     "20c": 20,
     "50c": 35,
-    "total": 270
+    "total": 271
   },
   "corrections": [
     {
       "type": "denomination",
-      "details": "Tokyo 2020 six coloured Olympic and Paralympic coins are $2 till-change issues. Annual report overrides incorrect denomination on partner webpage. Historical IDs retained.",
+      "details": "Tokyo 2020 six coloured Olympic and Paralympic coins are $2 till-change issues. Annual report overrides incorrect denomination on partner webpage.",
       "source": "https://www.ramint.gov.au/sites/default/files/2022/Corporate_site/2021-22_ram_annual-report_digital.pdf"
     },
     {
       "type": "missing_design",
       "details": "2025 Torres Strait Islander Flag $2 was produced for circulation (2,087,802 pieces); exclude C-mintmark collector versions.",
       "source": "https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf"
+    },
+    {
+      "type": "missing_design",
+      "details": "2026 Bright Ideas $2 till coin entered circulation through participating newsXpress stores on 8 October 2026.",
+      "source": "https://ramint.gov.au/about-us/whats-new/celebrating-australian-inventions-bright-ideas"
     }
   ],
   "researchNotes": [
@@ -168,6 +173,11 @@
       "title": "AFL — Fremantle"
     },
     {
+      "id": "AU1-2023-AFL2023-GWS",
+      "reason": "AFL club coin or collector colour version",
+      "title": "AFL — GWS Giants"
+    },
+    {
       "id": "AU1-2023-AFL2023-GEELONG",
       "reason": "AFL club coin or collector colour version",
       "title": "AFL — Geelong Cats"
@@ -176,11 +186,6 @@
       "id": "AU1-2023-AFL2023-GOLDCOAST",
       "reason": "AFL club coin or collector colour version",
       "title": "AFL — Gold Coast Suns"
-    },
-    {
-      "id": "AU1-2023-AFL2023-GWS",
-      "reason": "AFL club coin or collector colour version",
-      "title": "AFL — GWS Giants"
     },
     {
       "id": "AU1-2023-AFL2023-HAWTHORN",
@@ -238,14 +243,14 @@
       "title": "Aussie Big Things — Giant Murray Cod (Coloured)"
     },
     {
-      "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY-COLOUR",
-      "reason": "Bluey collector or colour version",
-      "title": "Bluey Dollarbucks — Bluey (Coloured)"
-    },
-    {
       "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY-FRIENDS",
       "reason": "Bluey collector or colour version",
       "title": "Bluey Dollarbucks — Bluey & Friends"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY-COLOUR",
+      "reason": "Bluey collector or colour version",
+      "title": "Bluey Dollarbucks — Bluey (Coloured)"
     },
     {
       "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY-BINGO-FRIENDS",

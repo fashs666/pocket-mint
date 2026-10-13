@@ -14,4 +14,8 @@ const context={browseCatalogue};vm.createContext(context);vm.runInContext(search
 assert.equal(context.searchCatalogue('2020 para','$2')[0].id,'AU1-2020-TOKYO2020-PARA');assert.equal(context.searchCatalogue('2020 para','$1').length,0);
 assert.equal(context.searchCatalogue('AUS Commonwealth','$2').filter(c=>c.year===2022).length,3);
 assert.equal(context.searchCatalogue('Birmingham Commonwealth','$2').length,3);assert.equal(context.searchCatalogue('2018 AUS Commonwealth','$2')[0].title,'Gold Coast Commonwealth Games — Team Logo');
+const brightIdeas=catalogue.designs.filter(d=>d.title==='Bright Ideas — Australian Inventions');
+assert.equal(brightIdeas.length,1);assert.equal(brightIdeas[0].denomination,200);assert.equal(brightIdeas[0].yearVariants[0].year,2026);
+assert.equal(brightIdeas[0].seriesId,'bright_ideas');assert.equal(brightIdeas[0].image_status,'exact');
+assert.equal(legacy.coins.find(c=>c.id==='AU2-2026-BRIGHT_IDEAS')?.denomination_cents,200);
 console.log('PASS six Tokyo $2 denominations/specs, preserved issue/design IDs, mirrored data and Commonwealth batch aliases');

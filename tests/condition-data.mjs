@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import '../public/condition-data.js';
 const d=globalThis.PocketMintConditionData;
+const guideSource=readFileSync(new URL('../public/condition-guide.js',import.meta.url),'utf8');
+assert.equal(guideSource.includes('cg-denomination'),false,'Denomination chooser stays out of the guide until grade photos exist by denomination');
 assert.deepEqual(d.grades.map(g=>g.grade),['G','VG','F','VF','EF','aUNC','UNC','CHU','GEM']);
 for(const grade of d.grades){assert.ok(grade.name&&grade.description&&grade.lookFor.length);assert.equal(d.normalise({condition:grade.name}).conditionGrade,grade.grade);}
 assert.equal(d.normalise({condition:'About Uncirculated'}).conditionGrade,'aUNC');
@@ -20,3 +23,5 @@ console.log('Condition model: grades, legacy conversion, unset, independent issu
 
 for(const g of d.grades){assert.ok(d.referenceSources[g.grade].url.endsWith(`#page=${d.referenceSources[g.grade].page}`));assert.equal(d.referenceSources[g.grade].status,"publisher_link_only");}
 assert.equal(d.referenceAcquisition[0].status,"awaiting_local_download_and_visual_review");assert.equal(d.referenceAcquisition[0].license,"CC BY 4.0");
+assert.deepEqual(d.references.map(r=>r.grade),['G','VG','F','VF','EF','EF','aUNC','aUNC','UNC','CHU','GEM']);
+for(const r of d.references){assert.ok(r.license.startsWith('CC BY-SA '));assert.ok(r.sourceUrl.includes('commons.wikimedia.org/wiki/File:'));assert.ok(r.licenseUrl.includes('creativecommons.org/licenses/by-sa/'));assert.equal(d.referenceCandidates(r.grade,'',null).length,d.references.filter(item=>item.grade===r.grade).length);}

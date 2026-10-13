@@ -45,7 +45,7 @@ Registry entry schema:
 }
 ```
 
-Selection precedence: same design + denomination → denomination → general. Failed image loads try the next candidate, ending at the labelled pending area. Only controlled local paths with source/rights metadata are used. Service-worker caching includes guide assets and local reference photos; one missing future reference does not prevent installation.
+Selection precedence: same design + denomination → denomination → general. Failed image loads try the next candidate, ending at the labelled pending area. References may use controlled local paths or the allowlisted Wikimedia Commons image host and require source/rights metadata. Service-worker caching includes guide assets and approved reference photos; one missing future reference does not prevent installation.
 
 ## Verification
 
@@ -65,3 +65,19 @@ Every pending grade card now links directly to the relevant page of ANDA's offic
 The controlled `referenceAcquisition` queue records an independently sourced UNC candidate: Museums Victoria NU 49844, 2023/2024 $2 A Royal Transition coins, photograph by Nick Crotty, CC BY 4.0. The museum explicitly describes both coins as uncirculated and its photograph as reusable with attribution. Source: https://collections.museumsvictoria.com.au/items/2722365 . Original download: https://collections.museumsvictoria.com.au/items/2722365/media/1944032/large . Licence: https://creativecommons.org/licenses/by/4.0/ . This is a museum-described uncirculated example, not independent ANDA certification or justification for CHU/GEM.
 
 Download returned HTTP 403 in the current workspace. No local image was installed or claimed as installed. The candidate stays inactive until the original file is acquired and visually reviewed; the commemorative-card windows may introduce glare. The local `references` array remains empty, and no asset is added to the offline library. Other investigated museum coin records often have image permission without documented condition, or documented condition without image permission; these were not promoted into grading references. No permission request was sent.
+
+## Photo additions — 13 October 2026
+
+Two grade-described photographs with confirmed CC BY-SA 3.0 terms are now wired into the guide: an Australian New Guinea 1936 shilling described as Extremely Fine, and an Australian 1951 florin described as Almost Uncirculated. Each card links to its Wikimedia Commons source and licence and carries a note that it is a historic pre-decimal coin, so its design-specific wear points do not map directly to decimal coins. Sources: https://commons.wikimedia.org/wiki/File:Australian_New_Guinea_1936_Silver_Shilling.jpg and https://commons.wikimedia.org/wiki/File:Florin_1951_Australian_Commonwealth_50_Years._AU_Silver_Coin.jpg .
+
+The Wikimedia images are cached by the service worker after fetch, so offline viewing depends on the device having loaded them once while online. At this stage, G, VG, F, VF, CHU and GEM still use ANDA's publisher-hosted examples. Decimal-denomination examples remain outstanding.
+
+## Follow-up image-rights search — 13 October 2026
+
+The Australian photo search did not find more grade-described, reuse-cleared examples. TDK APDC's Australian pre-decimal grading index has useful comparisons but no stated reuse licence, so those photos were not embedded. The search did surface several suitable non-Australian examples; the next section records the implemented additions. The existing Australian EF and aUNC references remain alongside the international examples. All are broad condition illustrations, not design-specific guidance for Australian decimal coins.
+
+## International photo additions — 13 October 2026
+
+Added licensed non-Australian coin photographs for G, VG, F, VF, UNC, CHU and GEM, plus alternate EF and aUNC examples. G/VG/F/VF examples are Roman coins documented by the Portable Antiquities Scheme and released under CC BY-SA 4.0; the F and VF candidates show corrosion/edge damage or only one side, so their captions call out those limits. The Weimar 50 pfennig provides a second EF example (CC BY-SA 4.0). The France 1831 coin is described as uncirculated (CC BY-SA 4.0); Guatemala 1847 is described as choice uncirculated (CC BY-SA 3.0); and a Moroccan 5 francs scan is described as Gem Uncirculated (CC BY-SA 2.5). The Saxony 1913 3 Mark is described as almost uncirculated and provides a second aUNC example (CC BY-SA 4.0). Cards with multiple examples have previous/next controls, and each displayed photo links to its Commons file page and licence. These are not Australian grade certifications and their design high points do not map to decimal coins. Wikimedia images are fetched and cached by the service worker when online; an image must load at least once before it is available offline.
+
+The Condition Guide no longer shows a denomination chooser. The editor may pass a coin denomination internally, but denomination-specific examples are not shown as an option until grade-verified photos exist for those denominations.
