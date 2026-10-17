@@ -75,14 +75,15 @@ vm.runInContext('identifyState.testLogSaved=false;identifyState.analysisError=nu
 await shortcut.saveIdentificationTest('failed');
 assert.equal(saved.length,3);assert.equal(saved[2].outcome,'no_match');assert.equal(saved[2].predicted_coin_id,null);
 console.log('PASS failed single tests save without selecting a value or catalogue issue');
-const node=tag=>({tag,dataset:{},children:[],value:'',disabled:false,textContent:'',setAttribute(){},add(child){this.children.push(child);},append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;}});
+const node=tag=>({tag,dataset:{},attributes:{},children:[],value:'',disabled:false,textContent:'',setAttribute(name,value){this.attributes[name]=value;},add(child){this.children.push(child);},append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;}});
 const batchElements=new Map();const batchElement=id=>{if(!batchElements.has(id))batchElements.set(id,node('div'));return batchElements.get(id);};
 const batchSaved=[];
 const failureContext={window:{PocketMintIdentificationReport:shortcut.window.PocketMintIdentificationReport},document:{createElement:node,getElementById:batchElement},Option:function(text,value){return {text,value};},browseCatalogue:variants,catalogue:variants,coinById:id=>variants.find(coin=>coin.id===id),APP_VERSION:'test',catMeta:{},crypto:{randomUUID:()=>`batch-${batchSaved.length}`},identificationTests:[],renderAll(){},put:async(store,test)=>{assert.equal(store,'identificationTests');batchSaved.push(test);}};
 vm.createContext(failureContext);
 const batchSource=(await readFile('public/batch-identification.js','utf8')).replace('window.BatchIdentificationCore={classify};','window.BatchIdentificationCore={classify,renderTestReport,saveBatchTests,setResult:(id,result)=>results.set(id,result)};');
 vm.runInContext(batchSource,failureContext);
-function findButton(root,text){for(const child of root.children){if(child.textContent===text)return child;const found=child.children&&findButton(child,text);if(found)return found;}}
+function findButton(root,text){for(const child of root.children){const label=[child.textContent,...(child.children||[]).map(item=>item.textContent)].filter(Boolean).join('');if(label===text)return child;const found=child.children&&findButton(child,text);if(found)return found;}}
+function findElement(root,predicate){for(const child of root.children){if(predicate(child))return child;const found=child.children&&findElement(child,predicate);if(found)return found;}}
 for(const status of ['error','no_match','multiple_coins','needs_other_side','low_quality','check_coin','not_coin']){
   const card=node('article'),result={status,message:'Diagnostic failure',analysisError:status==='error'?{diagnostic_code:'VISION-01'}:null};
   failureContext.window.BatchIdentificationCore.renderTestReport(card,result,{detectionNumber:1});
@@ -98,6 +99,22 @@ for(const status of ['confident','year_uncertain','design_uncertain']){
  await button.onclick();assert.equal(batchSaved.at(-1).outcome,'partial','Correct design but wrong denomination is not scored fully correct');assert.equal(batchSaved.at(-1).issue_correct,null,'Unconfirmed year is not scored');
 }
 console.log('PASS positive feedback for confident, unknown-year and uncertain designs, with honest partial scoring');
+{
+ const card=node('article'),result={status:'confident',predictedCoinId:five.id,choices:[{id:five.id,coin:five}],observed:{denomination:'5c'}};
+ failureContext.window.BatchIdentificationCore.renderTestReport(card,result,{detectionNumber:8});
+ const actualInput=findElement(card,item=>item.attributes?.['aria-label']==='Coin 8 actual coin');
+ const denominationInput=findElement(card,item=>item.attributes?.['aria-label']==='Coin 8 actual denomination');
+ assert.ok(actualInput&&denominationInput);
+ const suggestions=findElement(card,item=>item.className==='batchSuggestions');assert.equal(suggestions.children.length,0,'Suggestions stay hidden until a name is typed');
+ actualInput.value=`${two.year} ${two.title}`;actualInput.oninput();
+ assert.equal(denominationInput.value,'$2','Typing a unique catalogue issue fills the denomination');
+ const suggestion=findButton(card,`${two.title} · $2 · ${two.year}`);assert.ok(suggestion,'Matching coin appears as a clickable choice');
+ assert.ok(suggestion.children.some(item=>item.tag==='img'),'Suggestions include the catalogue reference image');
+ suggestion.onclick();assert.equal(result.expectedCoinId,two.id);assert.equal(denominationInput.value,'$2');
+ await findButton(card,'Save test report').onclick();
+ assert.equal(batchSaved.at(-1).expected_coin_id,two.id);assert.equal(batchSaved.at(-1).expected_denomination,'$2');
+}
+console.log('PASS typed catalogue coin fills denomination; clicking exact issue saves its ID and value');
 failureContext.designVariants=coin=>variants.filter(item=>item.design_id===coin.design_id);
 const batchCrops=[1,2,3].map(n=>({id:`physical-${n}`,detectionNumber:n,reviewed:true,x:n,y:0,width:40,height:40,cropUrl:'data:image/jpeg;base64,AA=='}));
 const core=failureContext.window.BatchIdentificationCore;

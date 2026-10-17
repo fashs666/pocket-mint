@@ -288,17 +288,36 @@
     for(const value of ['5c','10c','20c','50c','$1','$2'])denomination.add(new Option(value,value));
     denomination.value=result.expectedDenomination||'';
     const denomLabel=document.createElement('label');denomLabel.textContent='Actual denomination';denomLabel.append(denomination);correction.append(denomLabel);
-    const expected=document.createElement('input');expected.setAttribute('aria-label',`Coin ${crop.detectionNumber} actual coin`);expected.placeholder='Type the coin name';expected.value=result.expectedLabel||'';
-    const options=document.createElement('datalist');options.id=`batchExpected-${crop.detectionNumber}`;expected.setAttribute('list',options.id);
-    function fillOptions(){options.replaceChildren(...browseCatalogue.filter(coin=>coin.denomination_display===denomination.value).map(coin=>new Option(`${coin.year} ${coin.title}`)));}
-    denomination.onchange=()=>{result.expectedDenomination=denomination.value;result.expectedLabel='';expected.value='';fillOptions();};
-    expected.oninput=()=>{result.expectedLabel=expected.value;};fillOptions();
-    const expectedLabel=document.createElement('label');expectedLabel.textContent='Actual coin (choose a catalogue suggestion)';expectedLabel.append(expected,options);correction.append(expectedLabel);
+    const expected=document.createElement('input');expected.type='search';expected.autocomplete='off';expected.setAttribute('aria-label',`Coin ${crop.detectionNumber} actual coin`);expected.placeholder='Type a coin name, e.g. Echidna';expected.value=result.expectedLabel||'';
+    const options=document.createElement('div');options.className='batchSuggestions';options.setAttribute('role','listbox');
+    let selectedExpected=result.expectedCoinId?coinById(result.expectedCoinId):null;
+    function fillOptions(){
+      const query=expected.value.trim().toLocaleLowerCase();
+      const words=query.split(/\s+/).filter(Boolean);
+      options.replaceChildren();
+      if(words.join('').length<2)return;
+      const matches=browseCatalogue.filter(coin=>{
+        const haystack=`${coin.year} ${coin.title} ${coin.denomination_display} ${coin.series_id||''} ${coin.id} ${(coin.searchAliases||[]).join(' ')}`.toLocaleLowerCase();
+        return words.every(word=>haystack.includes(word));
+      }).slice(0,8);
+      if(!matches.length){const empty=document.createElement('p');empty.textContent='No catalogue matches yet. Try another name or year.';options.append(empty);return;}
+      options.replaceChildren(...matches.map(coin=>{
+        const option=document.createElement('button');option.type='button';option.className='batchSuggestion';option.setAttribute('role','option');
+        const image=document.createElement('img');image.src=coin.reference_image;image.alt='';image.onerror=()=>image.remove();
+        const caption=document.createElement('span');caption.textContent=`${coin.title} · ${coin.denomination_display} · ${coin.year}`;option.append(image,caption);
+        option.onclick=()=>{selectedExpected=coin;result.expectedCoinId=coin.id;result.expectedDenomination=coin.denomination_display;result.expectedLabel=`${coin.year} ${coin.title}`;expected.value=result.expectedLabel;denomination.value=coin.denomination_display;fillOptions();};
+        return option;
+      }));
+      if(query&&matches.length){const denominations=new Set(matches.map(coin=>coin.denomination_display));if(denominations.size===1){denomination.value=matches[0].denomination_display;result.expectedDenomination=matches[0].denomination_display;}}
+    }
+    denomination.onchange=()=>{result.expectedDenomination=denomination.value;selectedExpected=null;result.expectedCoinId=null;};
+    expected.oninput=()=>{selectedExpected=null;result.expectedCoinId=null;result.expectedLabel=expected.value;fillOptions();};fillOptions();
+    const expectedLabel=document.createElement('label');expectedLabel.textContent='Actual coin';expectedLabel.append(expected,options);correction.append(expectedLabel);
     const save=document.createElement('button');save.type='button';save.textContent='Save test report';
     const status=document.createElement('p');status.setAttribute('role','status');
     async function saveReport(quick=false,failed=false,outcomeOverride=null){
       if(result.testSaving||result.testSaved)return;
-      const actual=quick?coinById(result.predictedCoinId):window.PocketMintIdentificationReport.resolveExpected(expected.value,browseCatalogue.filter(coin=>coin.denomination_display===denomination.value));
+      const actual=quick?coinById(result.predictedCoinId):selectedExpected||coinById(result.expectedCoinId)||window.PocketMintIdentificationReport.resolveExpected(expected.value,browseCatalogue);
       if(!actual&&!failed){status.textContent='Choose a denomination and exact catalogue issue to compare.';return;}
       result.testSaving=true;save.disabled=true;
       try{
