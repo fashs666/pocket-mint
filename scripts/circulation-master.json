@@ -38,6 +38,12 @@
       "publisher": "Royal Australian Mint",
       "url": "https://ramint.gov.au/collect/check-your-change",
       "role": "Primary official 2025–2026 circulating and retailer till release checklist"
+    },
+    {
+      "id": "ram-coin-catalogue",
+      "publisher": "Royal Australian Mint",
+      "url": "https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins",
+      "role": "2016–2024 six-denomination issue table; historical comparison still pending"
     }
   ],
   "expected": [
@@ -88,14 +94,6 @@
         "ram-2026"
       ],
       "eligibility": "eligible"
-    },
-    {
-      "id": "AU200-2025-ABORIGINAL-ELDER",
-      "sourceIds": [
-        "ram-check-your-change"
-      ],
-      "eligibility": "eligible",
-      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
     },
     {
       "id": "AU50-2026-UNITY-GURINDJI-WAVE-HILL-WALK-OFF",
@@ -226,7 +224,7 @@
       "reason": "Do not auto-add collector-only Fremantle Dockers issues without change-release proof"
     }
   ],
-  "warning": "This is an initial independently maintained seed, not a comprehensive denomination/year master. Missing entries in this seed cannot establish global catalogue completeness.",
+  "warning": "The manifest currently validates selected releases, mainly 2025–2026; it is not a fully enumerated 2016–2026 official-source master. Do not claim complete coverage from this seed.",
   "policyNotes": [
     {
       "year": 2023,
