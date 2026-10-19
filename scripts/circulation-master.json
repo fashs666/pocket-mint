@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "asOf": "2026-10-19",
+  "asOf": "2026-10-20",
   "policy": "Only demonstrably released for circulation or distributed as change; no proof, PNC-only or collector-only variants.",
   "sources": [
     {
@@ -32,6 +32,12 @@
       "publisher": "Royal Australian Mint",
       "url": "https://ramint.gov.au/about-us/whats-new/celebrating-australian-inventions-bright-ideas",
       "role": "2026 Bright Ideas till issue"
+    },
+    {
+      "id": "ram-check-your-change",
+      "publisher": "Royal Australian Mint",
+      "url": "https://ramint.gov.au/collect/check-your-change",
+      "role": "Primary official 2025–2026 circulating and retailer till release checklist"
     }
   ],
   "expected": [
@@ -82,6 +88,126 @@
         "ram-2026"
       ],
       "eligibility": "eligible"
+    },
+    {
+      "id": "AU200-2025-ABORIGINAL-ELDER",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU50-2026-UNITY-GURINDJI-WAVE-HILL-WALK-OFF",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU1-2026-SIX-ROOS",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2025-AUSTRALIAN-WOMENS-WEEKLY-BIRTHDAY-CAKE-BOOK-HICKORY-DICKORY-WATCH",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2025-80-YEARS-ON-WWII-POPPY-WREATH",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2026-DAWN-SERVICE",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2026-AUSTRALIAN-COMMONWEALTH-GAMES-TEAM-GYMNASTICS",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2026-AUSTRALIAN-COMMONWEALTH-GAMES-TEAM-33-WHEELCHAIR-BASKETBALL",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2026-AUSTRALIAN-COMMONWEALTH-GAMES-TEAM-ATHLETICS",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2026-BLUEY-BLUEY",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2026-BLUEY-BINGO",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2025-AUSTRALIAN-OPEN-MENS",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2025-AUSTRALIAN-OPEN-WOMENS",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2025-RUGBY-AUSTRALIA-WALLABIES",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
+    },
+    {
+      "id": "AU200-2025-RUGBY-AUSTRALIA-WALLAROOS",
+      "sourceIds": [
+        "ram-check-your-change"
+      ],
+      "eligibility": "eligible",
+      "reason": "Listed within the Mint 2025–2026 official circulating/till-release checklist; crosscheck design identity."
     }
   ],
   "seriesExpectations": [
@@ -100,5 +226,17 @@
       "reason": "Do not auto-add collector-only Fremantle Dockers issues without change-release proof"
     }
   ],
-  "warning": "This is an initial independently maintained seed, not a comprehensive denomination/year master. Missing entries in this seed cannot establish global catalogue completeness."
+  "warning": "This is an initial independently maintained seed, not a comprehensive denomination/year master. Missing entries in this seed cannot establish global catalogue completeness.",
+  "policyNotes": [
+    {
+      "year": 2023,
+      "source": "https://collectables.auspost.com.au/about-collecting/collecting-series/aussie-big-things-2023",
+      "determination": "2023 Aussie Big Things eligible: Australia Post expressly offered the coins as cash change."
+    },
+    {
+      "year": 2025,
+      "source": "https://collectables.auspost.com.au/about-collecting/collecting-series/aussie-big-things-2-2025",
+      "determination": "2025 Aussie Big Things 2: only two exclusive change designs eligible; ten separately sold coins do not meet the change rule."
+    }
+  ]
 }
