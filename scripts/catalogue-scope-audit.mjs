@@ -1,6 +1,6 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 const read=async file=>JSON.parse(await readFile(file,'utf8'));
-const [browse,identify,master]=await Promise.all([read('public/catalogue-v2.json'),read('public/catalogue.json'),read('scripts/circulation-master.json')]);
+const [browse,identify,master,prior]=await Promise.all([read('public/catalogue-v2.json'),read('public/catalogue.json'),read('scripts/circulation-master.json'),read('scripts/circulation-audit.json')]);
 const browseVariants=new Map(browse.designs.flatMap(d=>(d.yearVariants||[]).map(v=>[v.id,{...v,design:d}])));
 const identifyCoins=new Map(identify.coins.map(c=>[c.id,c]));
 const issues=[];
@@ -24,8 +24,12 @@ for(const series of master.seriesExpectations||[]){
 }
 const browseOnly=[...browseVariants.keys()].filter(id=>!identifyCoins.has(id));
 const identifyOnly=[...identifyCoins.keys()].filter(id=>!browseVariants.has(id));
-const summary={browseDesigns:browse.designs.length,browseVariants:browseVariants.size,legacyIdentifyRecords:identifyCoins.size,browseOnly:browseOnly.length,identifyOnly:identifyOnly.length,errors:issues.filter(i=>i.severity==='error').length,warnings:issues.filter(i=>i.severity==='warning').length,information:issues.filter(i=>i.severity==='info').length};
-const report={summary,issues,browseOnly,identifyOnly,interpretation:'Browse-only/Identify-only differences are scope differences by default. Verify releases and candidate eligibility before treating them as bugs.'};
+const reviewedExclusions=new Set((prior.excluded||[]).map(x=>x.id));
+const intentionalExcluded=identifyOnly.filter(id=>reviewedExclusions.has(id));
+const unexplainedIdentifyOnly=identifyOnly.filter(id=>!reviewedExclusions.has(id));
+for(const id of unexplainedIdentifyOnly)add('unexplained_identify_only','warning',id,'Identify entry absent from Browse and not in reviewed exclusions');
+const summary={browseDesigns:browse.designs.length,browseVariants:browseVariants.size,legacyIdentifyRecords:identifyCoins.size,browseOnly:browseOnly.length,identifyOnly:identifyOnly.length,reviewedExclusions:intentionalExcluded.length,unexplainedIdentifyOnly:unexplainedIdentifyOnly.length,errors:issues.filter(i=>i.severity==='error').length,warnings:issues.filter(i=>i.severity==='warning').length,information:issues.filter(i=>i.severity==='info').length};
+const report={summary,issues,browseOnly,identifyOnly,intentionalExcluded,unexplainedIdentifyOnly,interpretation:'Browse-only/Identify-only differences are scope differences by default. Verify releases and candidate eligibility before treating them as bugs.'};
 if(process.argv.includes('--write')){await mkdir('reports',{recursive:true});await writeFile('reports/catalogue-scope-report.json',JSON.stringify(report,null,2)+'\n');}
 console.log(JSON.stringify({summary,issues:issues.slice(0,30)},null,2));
 if(process.argv.includes('--strict')&&summary.errors)process.exitCode=1;
