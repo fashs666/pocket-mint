@@ -16,13 +16,13 @@ for(const [index,t] of rows.entries()){
  const candidates=(t.candidates||t.matches||t.results||[]).map(x=>typeof x==='string'?x:x?.id||x?.coin_id).filter(Boolean);
  const catalogueStatus=expected?'present_in_browse':expectedId?'unknown_expected_id':'unresolved_expected_coin';
  let category;
- if(!expected)category='needs_ground_truth';
- else if(predicted?.id===expected.id)category='correct';
+ if(t.outcome==='unsupported')category='reported_not_in_catalogue_needs_eligibility_review';
+ else if(!expected)category='needs_ground_truth';
+ else if(predicted?.id===expected.id)category=t.outcome==='correct'?'correct':'prediction_correct_but_reported_failure';
  else if(predicted?.designId===expected.designId)category='correct_design_wrong_year';
  else if(candidates.includes(expected.id))category='ranking_or_confirmation_failure';
  else if(predicted||candidates.length)category='wrong_candidate_or_no_top_match';
  else category='no_match_recorded';
- const identifyScope=t.expected_coin_id&&expected?undefined:undefined;
  findings.push({index,testId:t.id||null,flow:t.flow||null,expectedId:expected?.id||expectedId,predictedId:predicted?.id||predictedId,category,catalogueStatus,candidateCount:candidates.length,aiCallsTriggered:0});
 }
 const totals=Object.fromEntries([...new Set(findings.map(f=>f.category))].map(c=>[c,findings.filter(f=>f.category===c).length]));
