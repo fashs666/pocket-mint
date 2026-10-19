@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-10-19",
+  "policy": "Only demonstrably released for circulation or distributed as change; no proof, PNC-only or collector-only variants.",
+  "sources": [
+    {
+      "id": "ram-bluey",
+      "publisher": "Royal Australian Mint",
+      "url": "https://ramint.gov.au/collect/national-coin-collection/corporate-partnerships/australia-post-programs/bluey-dollarbucks",
+      "role": "Individual Bluey and Bingo $1 mintages"
+    },
+    {
+      "id": "ram-bluey-annual",
+      "publisher": "Royal Australian Mint",
+      "url": "https://www.ramint.gov.au/sites/default/files/2025-04/2023-24-annual-report-appendices-coin-production.pdf",
+      "role": "Distinguish individual Bluey from PNC editions"
+    },
+    {
+      "id": "auspost-big2",
+      "publisher": "Australia Post",
+      "url": "https://collectables.auspost.com.au/about-collecting/collecting-series/aussie-big-things-2-2025",
+      "role": "Two exclusive change-only designs; ten additional individual coins are sold separately"
+    },
+    {
+      "id": "ram-torres",
+      "publisher": "Royal Australian Mint",
+      "url": "https://www.ramint.gov.au/sites/default/files/2025-11/2024-25%20Annual%20Report.pdf",
+      "role": "Circulation production record"
+    },
+    {
+      "id": "ram-2026",
+      "publisher": "Royal Australian Mint",
+      "url": "https://ramint.gov.au/about-us/whats-new/celebrating-australian-inventions-bright-ideas",
+      "role": "2026 Bright Ideas till issue"
+    }
+  ],
+  "expected": [
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-BLUEY",
+      "sourceIds": [
+        "ram-bluey",
+        "ram-bluey-annual"
+      ],
+      "eligibility": "reviewed",
+      "reason": "Named individual uncirculated issue; final general-change policy classification should be independently checked"
+    },
+    {
+      "id": "AU1-2024-BLUEY_DOLLARBUCKS-BINGO",
+      "sourceIds": [
+        "ram-bluey",
+        "ram-bluey-annual"
+      ],
+      "eligibility": "reviewed",
+      "reason": "Named individual uncirculated issue; final general-change policy classification should be independently checked"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-TILL-1",
+      "sourceIds": [
+        "auspost-big2"
+      ],
+      "eligibility": "eligible",
+      "reason": "Change-only design; placeholder identity pending named design mapping"
+    },
+    {
+      "id": "AU1-2025-AUSSIE_BIG_THINGS_2-TILL-2",
+      "sourceIds": [
+        "auspost-big2"
+      ],
+      "eligibility": "eligible",
+      "reason": "Change-only design; placeholder identity pending named design mapping"
+    },
+    {
+      "id": "AU200-2025-30TH-ANNIVERSARY-OF-THE-TORRES-STRAIT-ISLANDER-FLAG",
+      "sourceIds": [
+        "ram-torres"
+      ],
+      "eligibility": "eligible"
+    },
+    {
+      "id": "AU2-2026-BRIGHT_IDEAS",
+      "sourceIds": [
+        "ram-2026"
+      ],
+      "eligibility": "eligible"
+    }
+  ],
+  "seriesExpectations": [
+    {
+      "name": "Great Aussie Coin Hunt 3",
+      "pattern": "AU1-2022-GACH3-",
+      "suffixes": "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      "expected": 26,
+      "sourceId": null,
+      "verification": "historical audit baseline; primary-source link pending"
+    }
+  ],
+  "exclusions": [
+    {
+      "pattern": "DOCKERS",
+      "reason": "Do not auto-add collector-only Fremantle Dockers issues without change-release proof"
+    }
+  ],
+  "warning": "This is an initial independently maintained seed, not a comprehensive denomination/year master. Missing entries in this seed cannot establish global catalogue completeness."
+}
