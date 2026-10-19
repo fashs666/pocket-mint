@@ -33,7 +33,7 @@ for(const d of catalogue.designs){
 for(const coin of legacy.coins){
   if(!issueIds.has(coin.id))flag('catalogue_sync','warning','Legacy Identify issue absent from v2 Browse catalogue',{issueId:coin.id});
   if(!coin.reference_image)flag('missing_reference_image','warning','Legacy Identify coin lacks reference image',{issueId:coin.id});
-  else if(!/^https?:\\/\\//i.test(coin.reference_image)){
+  else if(!/^https?:\/\//i.test(coin.reference_image)){
     try{await access(path.join(root,'public',coin.reference_image));}
     catch{flag('broken_image','error','Referenced local image file is missing',{issueId:coin.id,image:coin.reference_image});}
   }
@@ -60,8 +60,8 @@ const report={summary,issues,notes:[
   'The checker is read-only; no catalogue, identification engine, collection, or cloud AI changes are performed.'
 ]};
 const output=process.argv.includes('--write');
-if(output){await mkdir(path.join(root,'reports'),{recursive:true});await writeFile(path.join(root,'reports/catalogue-integrity.json'),JSON.stringify(report,null,2)+'\\n');}
+if(output){await mkdir(path.join(root,'reports'),{recursive:true});await writeFile(path.join(root,'reports/catalogue-integrity.json'),JSON.stringify(report,null,2)+'\n');}
 console.log(JSON.stringify(summary,null,2));
-for(const issue of issues.slice(0,25))console.log(\`[\${issue.severity}] \${issue.category}: \${issue.detail} \${issue.issueId||issue.designId||''}\`);
-if(issues.length>25)console.log(\`... \${issues.length-25} additional items; run with --write for full JSON report\`);
+for(const issue of issues.slice(0,25))console.log(`[${issue.severity}] ${issue.category}: ${issue.detail} ${issue.issueId||issue.designId||''}`);
+if(issues.length>25)console.log(`... ${issues.length-25} additional items; run with --write for full JSON report`);
 if(process.argv.includes('--strict')&&summary.errors)process.exitCode=1;
