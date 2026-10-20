@@ -40,3 +40,32 @@ All 18 entries marked eligible in scripts/circulation-master.json are present in
 - https://collectables.auspost.com.au/about-collecting/collecting-series/aussie-big-things-2023
 - https://collectables.auspost.com.au/about-collecting/collecting-series/aussie-big-things-2-2025
 - https://www.ramint.gov.au/collect/national-coin-collection/corporate-partnerships/australia-post-programs/bluey-dollarbucks
+
+
+## Retained issues that still need attention (rolling backlog)
+
+| ID | Priority | Issue | Next action | Status |
+|---|---|---|---|---|
+| C01 | High | 2025 Aussie Big Things 2 two generic till-design labels | Verify named artwork and replace placeholders without changing existing IDs | Open |
+| C02 | Medium | 2024 Bluey/Bingo $1 classification | Determine eligibility using evidence of distribution as change, not legal-tender status alone | Open |
+| C03 | High | Standard-year variants across 1966–2026 | Reconcile issued years, effigy splits, and official mintage records | In review |
+| C04 | Medium | 2016–2024 previous backlog | Finish Mint and Australia Post release-by-release validation | In review |
+| C05 | Medium | 1966–2015 older circulating releases | Finish line-by-line official denomination tables and reconcile variation records | In review |
+| C06 | High | 1966 silver round 50c vs 1969 dodecagonal | Preserve both distinct designs and physical specifications; spot-check Browse and identification | Catalogue entries present |
+| C07 | High | No-production years (1986–87 and 1989–93 20c; 1987 and 1989–91 $1) | Never invent standard dated variants; keep checks tied to published production records | Confirmed |
+| C08 | Medium | 2016 decimal-currency changeover special obverses | Check all six reverse-equivalent variant images and ensure correct orientation/reference side | Six entries present |
+| C09 | Medium | Historical 1c and 2c scope | Current Pocket Mint scope starts at 5c; do not add pre-withdrawal 1c/2c without project decision | Scope exclusion |
+| C10 | Medium | 2015 ANZAC to Afghanistan / Anzacs Remembered 20c programme | Keep uncirculated News Corp program coins outside core unless individually evidenced in change | Requires eligibility review |
+| C11 | High | 2001 Federation multi-design set | Validate all 20c state/territory and 50c Federation variants, references and search aliases | Records present |
+| C12 | Medium | 2025 Torres Strait Islander Flag $2 visual matching | Recognition test, not missing catalogue entry | Record present |
+
+### Older-period official Mint evidence
+- https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/five-cents
+- https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/ten-cents
+- https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/twenty-cents
+- https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/fifty-cents
+- https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/one-dollar
+- https://www.ramint.gov.au/collect/national-coin-collection/circulating-coins/two-dollars
+
+### Older-period audit boundary
+Review concerns the six intended denominations, 5c–$2, and years 1966–2016 inclusive. Catalogue integrity comparisons do not establish end-to-end image, matching, or deployed-build correctness. The full 50-year line-by-line reconciliation is not yet certified.
